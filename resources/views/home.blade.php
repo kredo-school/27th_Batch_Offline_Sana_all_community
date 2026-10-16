@@ -1,23 +1,15 @@
 @extends('layouts.app')
 
+@section('title', 'Home')
+
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
 
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
+     <div class="position-relative">
+  <!-- Your Image -->
+  <img class="img-fluid w-100" src="{{ asset('images/TopPicture.png') }}" alt="Sana All Community">
 
-                    {{ __('You are logged in!') }}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+  
+      
+      {{-- <a href="#" class="btn btn-success text-white">ACTIVITY</a>
+      <a href="#" class="btn btn-warning text-white">COMMUNITY</a> --}}
 @endsection
