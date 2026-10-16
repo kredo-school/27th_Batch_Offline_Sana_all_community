@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'register')
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
@@ -21,6 +23,35 @@
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="username" class="col-md-4 col-form-label text-md-end">{{ __('Username') }}</label>
+
+                            <div class="col-md-6">
+                                <input id="username" type="text" class="form-control @error('username') is-invalid @enderror"
+                                    name="username" value="{{ old('username') }}" required autocomplete="username">
+
+                                @error('username')
+                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="preferred_language" class="col-md-4 col-form-label text-md-end">{{ __('Preferred language') }}</label>
+
+                            <div class="col-md-6">
+                                <select id="preferred_language" name="preferred_language"
+                                    class="form-select @error('preferred_language') is-invalid @enderror" required>
+                                    <option value="en" @selected(old('preferred_language', 'en') === 'en')>English</option>
+                                    <option value="ja" @selected(old('preferred_language') === 'ja')>Japanese</option>
+                                </select>
+
+                                @error('preferred_language')
+                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                                 @enderror
                             </div>
                         </div>
