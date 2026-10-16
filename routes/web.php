@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\CommunitiesController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\EventController;
 Auth::routes();
 
 // Data without login
@@ -85,3 +86,10 @@ Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
+
+// ==========================================================================
+// ============================ Event Management ============================
+// ==========================================================================
+Route::get('/events', [EventController::class, 'index'])->name('events.index');
+Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+Route::post('/events', [EventController::class, 'store'])->name('events.store');

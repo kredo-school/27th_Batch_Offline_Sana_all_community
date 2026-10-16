@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('target_language', 5);
             $table->text('translated_text');
             $table->timestamps();
-            $table->unique(['translatable_type', 'translatable_id', 'field', 'target_language']);
+            $table->unique(['translatable_type', 'translatable_id', 'field', 'target_language'], 'translations_unique');
         });
     }
 
