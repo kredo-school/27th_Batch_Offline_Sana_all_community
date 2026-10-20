@@ -100,7 +100,7 @@
                     </div> --}}
 
                     <!-- search Navbar -->
-                    
+
 
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -124,7 +124,7 @@
                             </li>
 
                              <ul class="dropdown-menu" aria-labelledby="categoryDropdown">
-                                 
+
                                         <li>
                                             <a class="dropdown-item"href="#">
                                                 japanese
@@ -158,7 +158,7 @@
                             @else
                                 <a href="#" class="btn btn-success text-white">POST</a>
                                 <li class="nav-item dropdown">
-                                       
+
                                     <a id="navbarDropdown" class="nav-link dropdown-toggle text-dark" href="#"
                                         role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                                         v-pre>
@@ -167,7 +167,7 @@
                                         @else
                                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                         @endif
-                                        Hello, {{ Auth::user()->username }} 
+                                        Hello, {{ Auth::user()->username }}
                                         <i class="fa-solid fa-list"></i>
                                     </a>
 
