@@ -173,7 +173,8 @@
             @forelse ($events as $event)
                 @include('events.partials.card', ['event' => $event])
             @empty
-                <article class="event-card">
+                <p>Not Yet Event</p>
+                {{-- <article class="event-card">
                     <div class="event-card-image-wrapper">
                         <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image">
                         <button type="button" class="favorite-button" aria-label="お気に入り">
@@ -196,7 +197,7 @@
                             <a href="#">View details &gt;</a>
                         </div>
                     </div>
-                </article>
+                </article> --}}
             @endforelse
         </div>
 

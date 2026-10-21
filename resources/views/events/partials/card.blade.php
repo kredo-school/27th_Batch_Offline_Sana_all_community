@@ -89,6 +89,26 @@
         color: #9f1239;
     }
 
+    .event-status.status-today {
+        background: #fda4af;
+        color: #9f1239;
+    }
+
+    .event-status.status-warning {
+        background: #fde047;
+        color: #713f12;
+    }
+
+    .event-status.status-info {
+        background: #7dd3fc;
+        color: #075985;
+    }
+
+    .event-status.status-closed {
+        background: #e5e7eb;
+        color: #4b5563;
+    }
+
     /* タイトル & 説明文 */
     .event-card-title {
         font-size: 16px;
@@ -145,14 +165,21 @@
 <article class="event-card">
     <div class="event-card-image-wrapper">
         <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image">
-        <button type="button" class="favorite-button {{ !empty($event->is_bookmarked) ? 'active' : '' }}" aria-label="bookmark">
+        <button type="button" class="favorite-button {{ !empty($event->is_bookmarked) ? 'active' : '' }}"
+            aria-label="bookmark">
             {{ !empty($event->is_bookmarked) ? '♥' : '♡' }}
         </button>
     </div>
     <div class="event-card-body">
         <div class="event-card-badges">
             <span class="badge event-category">{{ $event->category_name }}</span>
-            <span class="badge event-status">Today</span>
+            @php
+                $joinTillBadge = $event->join_till_badge;
+            @endphp
+
+            <span class="badge event-status {{ $joinTillBadge['class'] }}">
+                {{ $joinTillBadge['label'] }}
+            </span>
         </div>
         <h2 class="event-card-title">{{ $event->title }}</h2>
         <p class="event-card-description">{{ $event->description }}</p>

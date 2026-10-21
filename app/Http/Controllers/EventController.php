@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventCategory;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\Auth;
 
 class EventController extends Controller
 {
@@ -155,7 +156,7 @@ class EventController extends Controller
             $validated['image'] = $request->file('image')->store('events', 'public');
         }
 
-        $validated['owner_id'] = auth()->id();
+        $validated['owner_id'] = Auth::id();
 
         $categoryId = $validated['category_id'];
         unset($validated['category_id']);
@@ -187,7 +188,7 @@ class EventController extends Controller
 
         $comment = new Comment();
         $comment->event_id = $event->id;
-        $comment->user_id = auth()->id();
+        $comment->user_id = Auth::id();
         $comment->content = $request->content;
         $comment->save();
 
