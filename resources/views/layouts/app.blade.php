@@ -36,6 +36,20 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('images/mainimage.jpg') }}">
 
     <style>
+        .navbar-brand-logo {
+            display: block;
+            width: auto;
+            height: 45px;
+            object-fit: contain;
+        }
+
+        .navbar-avatar {
+            width: 36px;
+            height: 36px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
         .auth-main {
             display: grid;
             min-height: calc(100svh - 68px);
@@ -90,8 +104,8 @@
         <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;"
-                        class="">
+                    <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community"
+                        class="navbar-brand-logo">
                 </a>
                 <p class="h5"><strong class="text-bold">Sana ALL</strong><br>Community</p>
 
@@ -170,7 +184,7 @@
                                                 ? $avatarPath : asset('storage/'.$avatarPath);
                                         @endphp
                                         <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}"
-                                            class="rounded-circle">
+                                            class="navbar-avatar" width="36" height="36">
                                     @else
                                         {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                     @endif
