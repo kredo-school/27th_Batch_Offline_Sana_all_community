@@ -21,6 +21,10 @@
             href="{{ route('admin.notifications') }}" @if (request()->routeIs('admin.notifications')) aria-current="page" @endif>
             <i class="fa-solid fa-bell"></i><span>Notifications</span>
         </a>
+        <a class="admin-nav-link {{ request()->routeIs('admin.messages') ? 'active' : '' }}"
+            href="{{ route('admin.messages') }}" @if (request()->routeIs('admin.messages')) aria-current="page" @endif>
+            <i class="fa-solid fa-envelope"></i><span>Messages</span>
+        </a>
         <a class="admin-nav-link {{ request()->routeIs('admin.comments') ? 'active' : '' }}"
             href="{{ route('admin.comments') }}" @if (request()->routeIs('admin.comments')) aria-current="page" @endif>
             <i class="fa-solid fa-comments"></i><span>Comments</span>

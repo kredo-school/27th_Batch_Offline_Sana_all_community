@@ -40,6 +40,11 @@ class Event extends Model
         return $this->belongsToMany(Category::class, 'event_categories')->using(EventCategory::class);
     }
 
+    public function getCategoryNamesAttribute(): string
+    {
+        return $this->categories->pluck('name')->implode(', ');
+    }
+
     public function participants()
     {
         return $this->hasMany(EventParticipant::class);
