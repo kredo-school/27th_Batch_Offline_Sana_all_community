@@ -10,7 +10,7 @@ class EventsController extends Controller
     public function index()
     {
         $records = Event::query()
-            ->with('owner')
+            ->with(['owner', 'categories'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -19,7 +19,11 @@ class EventsController extends Controller
         $columns = [
             'Title' => 'title',
             'Owner' => 'owner.name',
+            'Categories' => 'category_names',
             'Starts' => 'start_at',
+            'Join till' => 'join_till',
+            'Ends' => 'end_at',
+            'Approval' => 'approval_required',
             'Status' => 'status',
         ];
 

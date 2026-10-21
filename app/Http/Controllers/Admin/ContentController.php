@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\Community;
 use App\Models\Event;
 use App\Models\EventReview;
+use App\Models\Message;
 use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -27,8 +28,19 @@ class ContentController extends Controller
             'User' => 'user.name',
             'Type' => 'type',
             'Title' => 'title',
+            'Message' => 'message',
             'Read at' => 'read_at',
             'Created' => 'created_at',
+        ]);
+    }
+
+    public function messages()
+    {
+        return $this->listing(Message::query()->with(['sender', 'receiver']), 'Messages', [
+            'From' => 'sender.username',
+            'To' => 'receiver.username',
+            'Message' => 'message',
+            'Sent' => 'created_at',
         ]);
     }
 
