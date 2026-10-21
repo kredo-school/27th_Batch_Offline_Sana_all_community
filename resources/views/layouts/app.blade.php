@@ -16,7 +16,7 @@
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
 
     <!-- Scripts -->
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- BOOTSTRAP -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -115,7 +115,7 @@
 
                         <!-- CATEGORIES -->
                         <li class="nav-item d-flex align-items-center category-nav">
-                            <a class="nav-link text-dark" href="#">EVENTS</a>
+                            <a class="nav-link text-dark" href="{{ route('events.index') }}">EVENTS</a>
                             <a class="nav-link text-dark" href="#">EXCHANGE</a>
                             <a class="nav-link text-dark" href="#">MEET UP</a>
                             <a class="nav-link text-dark" href="#">JOB</a>
