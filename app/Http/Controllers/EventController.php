@@ -100,6 +100,7 @@ class EventController extends Controller
 
         // Event
         $events = $query
+            ->with(['categories'])
             ->paginate(10)
             ->through(function ($event) {
                 $event->category_name = ucfirst($event->category);
@@ -138,7 +139,7 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'title'             => 'required|string|max:60',
-            'category_id'       => 'required|exists:categories,id',
+            'category_id'       => 'array|exists:categories,id',
             'price'             => 'required|numeric|min:0',
             'start_at'          => 'required|date',
             'end_at'            => 'required|date|after_or_equal:start_at',
@@ -154,6 +155,15 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('events', 'public');
+        }
+
+        if ($request->category_id) {
+            $event_categories = [];
+            foreach ($request->category_id as $category_id) {
+                $event_categories[] = ['category_id' => $category_id];
+            }
+
+            $request->eventCategory()->creatMany($event_categories);
         }
 
         $validated['owner_id'] = Auth::id();

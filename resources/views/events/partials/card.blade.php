@@ -172,7 +172,10 @@
     </div>
     <div class="event-card-body">
         <div class="event-card-badges">
-            <span class="badge event-category">{{ $event->category_name }}</span>
+            @foreach ($event->categories as $event_category)
+                <span class="badge event-category">{{ $event_category->name }}</span>
+            @endforeach
+
             @php
                 $joinTillBadge = $event->join_till_badge;
             @endphp
