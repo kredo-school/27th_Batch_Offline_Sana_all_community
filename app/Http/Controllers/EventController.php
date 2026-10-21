@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Event;
 use App\Models\EventCategory;
+use App\Models\EventParticipant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
@@ -48,16 +50,12 @@ class EventController extends Controller
         $startOfMonth = Carbon::parse($displayMonth)->startOfMonth();
         $endOfMonth = Carbon::parse($displayMonth)->endOfMonth();
 
-        // カレンダーの表示開始日（月曜始まりか日曜始まりかに合わせる。今回は日曜始まりの例）
         $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
         $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
 
-        // --- 【カレンダー用判定処理（数日間対応）】 ---
-        // カレンダー表示範囲と重なるイベントを取得
         $calendarEvents = Event::where(function ($q) use ($startDate, $endDate) {
             $q->where('start_at', '<=', $endDate)->where('end_at', '>=', $startDate);
         })->orWhere(function ($q) use ($startDate, $endDate) {
-            // 予約受付終了日がカレンダー範囲内にあるものも含める
             $q->whereBetween('join_till', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
         })->get();
 
@@ -125,7 +123,14 @@ class EventController extends Controller
     {
         $event->load(['owner', 'categories', 'comments.user']);
 
-        return view('events.detail', compact('event'));
+        $myParticipation = null;
+        if (auth()->check()) {
+            $myParticipation = EventParticipant::where('event_id', $event->id)
+                ->where('user_id', auth()->id())
+                ->first();
+        }
+
+        return view('events.detail', compact('event', 'myParticipation'));
     }
 
     public function create()
@@ -179,6 +184,10 @@ class EventController extends Controller
 
     public function edit(Event $event)
     {
+        if ($event->owner_id !== auth()->id()) {
+            abort(403);
+        }
+
         $categories = Category::all();
         $selectedCategoryId = EventCategory::where('event_id', $event->id)->value('category_id');
 
@@ -187,7 +196,41 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
-        return redirect()->route('events.edit', $event);
+        // 主催者以外は保存できない
+        if ($event->owner_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title'             => 'required|string|max:60',
+            'category_id'       => 'required|exists:categories,id',
+            'price'             => 'required|numeric|min:0',
+            'start_at'          => 'required|date',
+            'end_at'            => 'required|date|after_or_equal:start_at',
+            'join_till'         => 'required|date|before_or_equal:start_at',
+            'capacity'          => 'required|integer|min:1',
+            'description'       => 'required|string|max:500',
+            'location'          => 'required|string|max:60',
+            'image'             => 'nullable|image|max:2048',
+            'language'          => 'required|in:en,ja',
+            'visibility'        => 'required|in:public,members,followers',
+            'approval_required' => 'required|boolean',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($event->image) {
+                Storage::disk('public')->delete($event->image);
+            }
+            $validated['image'] = $request->file('image')->store('events', 'public');
+        }
+
+        $categoryId = $validated['category_id'];
+        unset($validated['category_id']);
+
+        $event->update($validated);
+        $event->categories()->sync([$categoryId]);
+
+        return redirect()->route('events.show', $event)->with('success', 'Your event has been updated.');
     }
 
     public function storeComment(Request $request, Event $event)
@@ -203,5 +246,51 @@ class EventController extends Controller
         $comment->save();
 
         return redirect()->route('events.show', $event);
+    }
+
+    public function requestJoin(Event $event)
+    {
+        $alreadyRequested = EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+        if ($alreadyRequested) {
+            return back()->with('error', 'You have already requested to join this event.');
+        }
+
+        if (now()->greaterThan($event->join_till)) {
+            return back()->with('error', 'Registration for this event is closed.');
+        }
+
+        $joinedCount = EventParticipant::where('event_id', $event->id)
+            ->where('status', 'approved')
+            ->count();
+        if ($event->capacity && $joinedCount >= $event->capacity) {
+            return back()->with('error', 'This event is full.');
+        }
+
+        $participant = new EventParticipant();
+        $participant->event_id = $event->id;
+        $participant->user_id = auth()->id();
+        $participant->status = $event->approval_required ? 'pending' : 'approved';
+        $participant->requested_at = now();
+        if (! $event->approval_required) {
+            $participant->responded_at = now();
+        }
+        $participant->save();
+
+        $message = $event->approval_required
+            ? 'Your request has been sent. Please wait for the host to approve it.'
+            : 'You have joined this event!';
+
+        return redirect()->route('events.show', $event)->with('success', $message);
+    }
+
+    public function cancelJoin(Event $event)
+    {
+        EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->delete();
+
+        return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
     }
 }

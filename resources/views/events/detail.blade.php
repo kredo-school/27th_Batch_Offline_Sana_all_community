@@ -104,7 +104,7 @@
 
 @php
     $category = $event->categories->first();
-    $joined = $event->participants()->count();
+    $joined = $event->participants()->where('status', 'approved')->count();
     $percent = $event->capacity ? min(100, round($joined / $event->capacity * 100)) : 0;
     $daysLeft = (int) floor(now()->diffInDays($event->join_till, false));
     $isOwner = auth()->id() === $event->owner_id;
@@ -124,6 +124,12 @@
 
     {{-- back --}}
     <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to events</a>
+    @if (session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
     <div class="row g-4">
 
@@ -252,11 +258,37 @@
                 <div class="progress mb-3" style="height: 6px;">
                     <div class="progress-bar" style="width: {{ $percent }}%;"></div>
                 </div>
-
-                <button type="button" class="btn btn-primary w-100">Request to join</button>
-                @if ($event->approval_required)
-                    <div class="event-help text-center mt-2">Host approval required</div>
+                @if ($isOwner)
+                    <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">Edit event</a>
                 @endif
+                @guest
+                    <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
+                @else
+                    @if (! $myParticipation)    
+                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#joinModal">
+                            Request to join
+                        </button>
+                        @if ($event->approval_required)
+                            <div class="event-help text-center mt-2">Host approval required</div>
+                        @endif
+                    @elseif ($myParticipation->status === 'pending')
+                        <div class="alert alert-warning text-center small py-2 mb-2">Waiting for host approval</div>
+                        <form action="{{ route('events.join.cancel', $event) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger w-100">Cancel request</button>
+                        </form>
+                    @elseif ($myParticipation->status === 'approved')
+                        <div class="alert alert-success text-center small py-2 mb-2">You're joined!</div>
+                        <form action="{{ route('events.join.cancel', $event) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger w-100">Cancel</button>
+                        </form>
+                    @else   
+                        <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.</div>
+                    @endif
+                @endguest
             </div>
 
             {{-- map --}}
@@ -284,4 +316,40 @@
         </div>
     </div>
 </div>
+@auth
+<div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ route('events.join', $event) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Do you want to join this event?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <div class="event-info-label">Event name</div>
+                        <div class="event-info-value">{{ $event->title }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="event-info-label">Date</div>
+                        <div class="event-info-value">{{ $dateText }}</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="event-info-label">Fee</div>
+                        <div class="event-info-value">{{ $priceText }}</div>
+                    </div>
+                    @if ($event->approval_required)
+                        <p class="event-help mb-0 mt-3">The host needs to approve your request before you can join.</p>
+                    @endif
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endauth
 @endsection
