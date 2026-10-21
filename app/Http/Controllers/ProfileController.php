@@ -21,6 +21,7 @@ class ProfileController extends Controller
             'attendingEvents', 'eventsOwned', 'followers', 'following',
         ])->findOrFail($id);
         $events = $user->eventsOwned()
+            ->with('categories')
             ->when(Auth::id() !== $user->id, function ($query) {
                 $query->where('visibility', 'public')->where('status', 'published');
             })
