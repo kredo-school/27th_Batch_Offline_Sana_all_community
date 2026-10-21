@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Event;
@@ -83,7 +84,7 @@ class EventController extends Controller
 
         $comment = new Comment();
         $comment->event_id = $event->id;
-        $comment->user_id = auth()->id();
+        $comment->user_id = Auth::id();
         $comment->content = $request->content;
         $comment->save();
 

@@ -39,6 +39,13 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('/{id}/update', [ReviewController::class, 'update'])->name('update');
         Route::get('/{id}', [ReviewController::class, 'show'])->name('show');
     });
+
+    // Profile(daichi)
+    Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
+        Route::get('/profile/{id}/show', [ProfileController::class, 'show'])->name('show');
+        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
+        Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    });
     
 
     // ==========================================================================================
