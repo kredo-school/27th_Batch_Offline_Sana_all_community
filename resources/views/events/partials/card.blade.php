@@ -1,60 +1,166 @@
-@props([
-    'event', // イベントデータのオブジェクトまたは配列
-])
+<style>
+    /* カード全体のスタイル */
+    .event-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-<div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative">
-    <!-- Bookmark -->
-    <button type="button"
-        class="btn p-0 position-absolute top-0 end-0 m-3 z-3 text-white bg-transparent border-0 bookmark-btn"
-        aria-label="Bookmark">
-        <i class="bi {{ $event['is_bookmarked'] ?? false ? 'bi-heart-fill text-danger' : 'bi-heart' }} fs-4"></i>
-    </button>
+    .event-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
 
-    <!-- Image -->
-    <div class="position-relative" style="height: 180px;">
-        <img src="{{ $event['image_url'] ?? asset('images/default-event.jpg') }}" class="w-100 h-100 object-fit-cover"
-            alt="{{ $event['title'] }}">
+    /* 画像エリア */
+    .event-card-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 160px;
+        background-color: #f3f4f6;
+    }
+
+    .event-card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* お気に入り（ハート）ボタン */
+    .favorite-button {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #9ca3af;
+        transition: color 0.2s, background 0.2s;
+    }
+
+    .favorite-button:hover,
+    .favorite-button.active {
+        color: #ec4899;
+        background: #ffffff;
+    }
+
+    /* カード本文 */
+    .event-card-body {
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    /* バッジ */
+    .event-card-badges {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .event-card .badge {
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .event-category {
+        background: #BEDB74;
+        color: #365314;
+    }
+
+    .event-status {
+        background: #fecdd3;
+        color: #9f1239;
+    }
+
+    /* タイトル & 説明文 */
+    .event-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }
+
+    .event-card-description {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 16px 0;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 38px;
+    }
+
+    /* フッター（日付・リンク） */
+    .event-card-footer {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .event-card-footer a {
+        color: #111827;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 1200px) {
+        .event-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 640px) {
+        .event-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<article class="event-card">
+    <div class="event-card-image-wrapper">
+        <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image">
+        <button type="button" class="favorite-button {{ !empty($event->is_bookmarked) ? 'active' : '' }}" aria-label="bookmark">
+            {{ !empty($event->is_bookmarked) ? '♥' : '♡' }}
+        </button>
     </div>
-
-    <div class="card-body d-flex flex-column p-4">
-        <!-- Category & Status -->
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <span class="badge rounded-pill bg-success-subtle text-success px-3 py-1 fw-semibold">
-                {{ $event['category'] }}
-            </span>
-            @if (!empty($event['status_label']))
-                <span
-                    class="badge rounded-pill {{ $event['status_badge_class'] ?? 'bg-danger-subtle text-danger' }} px-3 py-1 fw-semibold">
-                    {{ $event['status_label'] }}
-                </span>
-            @endif
-            @if ($event['join_till'])
-
-            @else ()
-
-
-
-            @endif
+    <div class="event-card-body">
+        <div class="event-card-badges">
+            <span class="badge event-category">{{ $event->category_name }}</span>
+            <span class="badge event-status">Today</span>
         </div>
-
-        <!-- Title -->
-        <h5 class="card-title fw-bold text-dark mb-2 text-truncate">
-            {{ $event['title'] }}
-        </h5>
-
-        <!-- Description -->
-        <p class="card-text text-muted small mb-4 flex-grow-1">
-            {{ $event['description'] }}
-        </p>
-
-        <!-- Footer -->
-        <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-auto">
-            <span class="text-secondary small">
-                Held on {{ $event['held_date'] }}
-            </span>
-            <a href="{{ $event['url'] ?? '#' }}" class="text-dark fw-bold text-decoration-none small stretched-link">
-                View details >
-            </a>
+        <h2 class="event-card-title">{{ $event->title }}</h2>
+        <p class="event-card-description">{{ $event->description }}</p>
+        <div class="event-card-footer">
+            <time datetime="{{ $event->held_at ?? '#' }}">
+                Held on {{ !empty($event->held_at) ? \Carbon\Carbon::parse($event->held_at)->format('M d') : '10/30' }}
+            </time>
+            <a href="#">View details &gt;</a>
         </div>
     </div>
-</div>
+</article>
