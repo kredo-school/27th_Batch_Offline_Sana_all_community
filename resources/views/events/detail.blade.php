@@ -258,7 +258,9 @@
                 <div class="progress mb-3" style="height: 6px;">
                     <div class="progress-bar" style="width: {{ $percent }}%;"></div>
                 </div>
-
+                @if ($isOwner)
+                    <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">Edit event</a>
+                @endif
                 @guest
                     <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
                 @else
