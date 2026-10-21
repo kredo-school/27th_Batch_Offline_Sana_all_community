@@ -31,6 +31,12 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('images/mainimage.jpg') }}">
 
     <style>
+        .navbar-avatar {
+            width: 36px;
+            height: 36px;
+            object-fit: cover;
+        }
+
         .auth-main {
             display: grid;
             min-height: calc(100svh - 68px);
@@ -414,7 +420,7 @@
                                                 $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                     ? $avatarPath : asset('storage/'.$avatarPath);
                                             @endphp
-                                            <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle">
+                                            <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
                                         @else
                                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                         @endif
