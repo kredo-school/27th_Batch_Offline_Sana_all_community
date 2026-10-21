@@ -52,6 +52,9 @@ class RegisterController extends Controller
             'preferred_language' => ['required', 'in:en,ja'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'agree' => ['accepted'],
+        ], [
+            'agree.accepted' => 'You must agree to the terms and policy to create an account.',
         ]);
     }
 

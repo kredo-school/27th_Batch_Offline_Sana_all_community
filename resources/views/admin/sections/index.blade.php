@@ -90,6 +90,10 @@
             background-color: transparent !important;
         }
 
+        .btn-noti{
+            width:150px;
+        }
+
         @media (max-width: 760px) {
             .admin-section-layout {
                 grid-template-columns: minmax(0, 1fr);
@@ -129,7 +133,25 @@
                         <i class="fa-solid fa-plus me-1"></i>Add category
                     </a>
                 @endif
+                @if ($title === 'Notifications')
+                    <a href="{{ route('admin.notifications.create') }}" class="btn btn-primary btn-sm mt-3">
+                        <i class="fa-solid fa-plus me-1"></i>Create Notification
+                    </a>
+                @endif
             </header>
+
+            @if (session('status'))
+                <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
+            @endif
+
+            @if ($title === 'Notifications')
+                <div class="mb-3 d-flex flex-wrap gap-1">
+                    <a href="{{ route('admin.notifications') }}" class="btn btn-danger text-white btn-noti">All</a>
+                    <a href="{{ route('admin.notifications', ['type' => 'general']) }}" class="btn btn-primary text-white btn-noti">General</a>
+                    <a href="{{ route('admin.notifications', ['type' => 'maintenance']) }}" class="btn btn-warning text-white btn-noti">Maintenance</a>
+                    <a href="{{ route('admin.notifications', ['type' => 'community']) }}" class="btn btn-success text-white btn-noti">Community</a>
+                </div>
+            @endif
 
             <div class="admin-section-table-wrap">
                 <table class="table admin-section-table align-middle">
@@ -138,7 +160,7 @@
                             @foreach ($columns as $label => $key)
                                 <th>{{ $label }}</th>
                             @endforeach
-                            @if ($title === 'Categories')
+                            @if (in_array($title, ['Categories', 'Notifications'], true))
                                 <th>Actions</th>
                             @endif
                         </tr>
@@ -147,8 +169,14 @@
                         @forelse ($records as $record)
                             <tr>
                                 @foreach ($columns as $key)
-                                    @php($value = data_get($record, $key))
+                                    @php
+                                        $value = data_get($record, $key);
+                                    @endphp
+                                    @if ($title === 'Notifications' && $key === 'title')
+                                        <td><a href="{{ route('admin.notifications.show', $record) }}">{{ $value ?: '-' }}</a></td>
+                                    @else
                                     <td>{{ $value instanceof \DateTimeInterface ? $value->format('M d, Y H:i') : (is_string($value) ? \Illuminate\Support\Str::limit($value, 120) : ($value ?? '-')) }}</td>
+                                    @endif
                                 @endforeach
                                 @if ($title === 'Categories')
                                     <td>
@@ -168,11 +196,29 @@
                                             </form>
                                         </div>
                                     </td>
+                                @elseif ($title === 'Notifications')
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a href="{{ route('admin.notifications.edit', $record) }}"
+                                                class="btn btn-outline-primary btn-sm" aria-label="Edit notification {{ $record->id }}">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            <form action="{{ route('admin.notifications.destroy', $record) }}" method="POST"
+                                                onsubmit="return confirm('Delete this notification?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    aria-label="Delete notification {{ $record->id }}">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ count($columns) + ($title === 'Categories' ? 1 : 0) }}" class="text-center text-secondary py-4">
+                                <td colspan="{{ count($columns) + (in_array($title, ['Categories', 'Notifications'], true) ? 1 : 0) }}" class="text-center text-secondary py-4">
                                     No {{ strtolower($title) }} to display.
                                 </td>
                             </tr>
@@ -181,9 +227,8 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center gap-3 mt-3 flex-wrap">
-                <span class="text-secondary small">Showing {{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }} of {{ $records->total() }}</span>
-                {{ $records->links() }}
+            <div class="d-flex justify-content-center align-items-center gap-3 mt-3 flex-wrap">
+                {{ $records->withQueryString()->links() }}
             </div>
         </section>
     </div>
