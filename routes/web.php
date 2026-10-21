@@ -108,3 +108,5 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
 Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
+Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
+Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');

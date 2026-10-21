@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Event;
 use App\Models\EventCategory;
+use App\Models\EventParticipant;
 
 class EventController extends Controller
 {
@@ -20,7 +21,14 @@ class EventController extends Controller
     {
         $event->load(['owner', 'categories', 'comments.user']);
 
-        return view('events.detail', compact('event'));
+        $myParticipation = null;
+        if (auth()->check()) {
+            $myParticipation = EventParticipant::where('event_id', $event->id)
+                ->where('user_id', auth()->id())
+                ->first();
+        }
+
+        return view('events.detail', compact('event', 'myParticipation'));
     }
 
     public function create()
@@ -89,5 +97,51 @@ class EventController extends Controller
         $comment->save();
 
         return redirect()->route('events.show', $event);
+    }
+
+    public function requestJoin(Event $event)
+    {
+        $alreadyRequested = EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+        if ($alreadyRequested) {
+            return back()->with('error', 'You have already requested to join this event.');
+        }
+
+        if (now()->greaterThan($event->join_till)) {
+            return back()->with('error', 'Registration for this event is closed.');
+        }
+
+        $joinedCount = EventParticipant::where('event_id', $event->id)
+            ->where('status', 'approved')
+            ->count();
+        if ($event->capacity && $joinedCount >= $event->capacity) {
+            return back()->with('error', 'This event is full.');
+        }
+
+        $participant = new EventParticipant();
+        $participant->event_id = $event->id;
+        $participant->user_id = auth()->id();
+        $participant->status = $event->approval_required ? 'pending' : 'approved';
+        $participant->requested_at = now();
+        if (! $event->approval_required) {
+            $participant->responded_at = now();
+        }
+        $participant->save();
+
+        $message = $event->approval_required
+            ? 'Your request has been sent. Please wait for the host to approve it.'
+            : 'You have joined this event!';
+
+        return redirect()->route('events.show', $event)->with('success', $message);
+    }
+
+    public function cancelJoin(Event $event)
+    {
+        EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->delete();
+
+        return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
     }
 }
