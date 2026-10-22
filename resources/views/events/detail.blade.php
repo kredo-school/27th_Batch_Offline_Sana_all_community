@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app-with-event-sidebar')
 
 @section('content')
 <style>

@@ -112,11 +112,10 @@ class EventController extends Controller
                 return $event;
             });
 
-        return view('events.index', [
-            'events' => $events,
-            'calendarDays' => $calendarDays,
-            'displayMonth' => $startOfMonth->format('M, Y'),
-        ]);
+        return view('events.index', array_merge(
+        ['events' => $events],
+        $this->calendarData()
+    ));
     }
 
     public function show(Event $event)
@@ -130,14 +129,14 @@ class EventController extends Controller
                 ->first();
         }
 
-        return view('events.detail', compact('event', 'myParticipation'));
+        return view('events.detail', array_merge(compact('event', 'myParticipation'), $this->calendarData()));
     }
 
     public function create()
     {
         $categories = Category::all();
 
-        return view('events.create', compact('categories'));
+        return view('events.create', array_merge(compact('categories'), $this->calendarData()));
     }
 
     public function store(Request $request)
@@ -191,7 +190,7 @@ class EventController extends Controller
         $categories = Category::all();
         $selectedCategoryId = EventCategory::where('event_id', $event->id)->value('category_id');
 
-        return view('events.edit', compact('event', 'categories', 'selectedCategoryId'));
+        return view('events.edit', array_merge(compact('event', 'categories', 'selectedCategoryId'), $this->calendarData()));
     }
 
     public function update(Request $request, Event $event)
@@ -303,7 +302,7 @@ class EventController extends Controller
             ->orderBy('requested_at')
             ->get();
 
-        return view('events.participants', compact('event', 'participants', 'isOwner'));
+        return view('events.participants', array_merge(compact('event', 'participants', 'isOwner'), $this->calendarData()));
     }
 
     public function approveParticipant(Event $event, EventParticipant $participant)
@@ -337,5 +336,63 @@ class EventController extends Controller
         $participant->save();
 
         return back()->with('success', $participant->user->name . ' has been rejected.');
+    }
+
+    private function calendarData(): array
+    {
+        // get month and year that be displayed
+        $displayMonth = request()->input('month', now()->format('Y-m'));
+        $startOfMonth = Carbon::parse($displayMonth)->startOfMonth();
+        $endOfMonth = Carbon::parse($displayMonth)->endOfMonth();
+
+        $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
+        $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
+
+        $calendarEvents = Event::where(function ($q) use ($startDate, $endDate) {
+            $q->where('start_at', '<=', $endDate)->where('end_at', '>=', $startDate);
+        })->orWhere(function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('join_till', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+        })->get();
+
+        // イベント日（start_at 〜 end_at）に該当する日付をすべて抽出してフラグ用配列を作る
+        $eventDatesMap = [];
+        foreach ($calendarEvents as $event) {
+            $eventStart = Carbon::parse($event->start_at)->startOfDay();
+            $eventEnd = Carbon::parse($event->end_at)->endOfDay();
+
+            $eventPeriod = CarbonPeriod::create($eventStart, $eventEnd);
+            foreach ($eventPeriod as $date) {
+                $eventDatesMap[$date->format('Y-m-d')] = true;
+            }
+        }
+
+        // 予約受付終了日のマップを作る
+        $deadlinesMap = [];
+        foreach ($calendarEvents as $event) {
+            if ($event->join_till) {
+                $deadlineDate = Carbon::parse($event->join_till)->format('Y-m-d');
+                $deadlinesMap[$deadlineDate] = true;
+            }
+        }
+
+        // カレンダーの全マス目（1日ずつ）に対して判定を行う
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $calendarDays = [];
+
+        foreach ($period as $date) {
+            $dateString = $date->format('Y-m-d');
+
+            $calendarDays[] = [
+                'date' => $dateString,
+                'is_other_month' => $date->month !== $startOfMonth->month,
+                'is_event_date' => isset($eventDatesMap[$dateString]),
+                'is_closed_date' => isset($deadlinesMap[$dateString]),
+            ];
+        }
+
+        return [
+            'calendarDays' => $calendarDays,
+            'displayMonth' => $startOfMonth->format('M, Y'),
+        ];
     }
 }
