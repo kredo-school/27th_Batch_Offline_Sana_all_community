@@ -293,4 +293,49 @@ class EventController extends Controller
 
         return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
     }
+
+    public function participants(Event $event)
+    {
+        $isOwner = $event->owner_id === auth()->id();
+        $participants = EventParticipant::with('user')
+            ->where('event_id', $event->id)
+            ->when(! $isOwner, fn ($query) => $query->where('status', 'approved'))
+            ->orderBy('requested_at')
+            ->get();
+
+        return view('events.participants', compact('event', 'participants', 'isOwner'));
+    }
+
+    public function approveParticipant(Event $event, EventParticipant $participant)
+    {
+        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+            abort(403);
+        }
+
+        $joinedCount = EventParticipant::where('event_id', $event->id)
+            ->where('status', 'approved')
+            ->count();
+        if ($event->capacity && $joinedCount >= $event->capacity) {
+            return back()->with('error', 'This event is already full.');
+        }
+
+        $participant->status = 'approved';
+        $participant->responded_at = now();
+        $participant->save();
+
+        return back()->with('success', $participant->user->name . ' has been approved.');
+    }
+
+    public function rejectParticipant(Event $event, EventParticipant $participant)
+    {
+        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+            abort(403);
+        }
+
+        $participant->status = 'rejected';
+        $participant->responded_at = now();
+        $participant->save();
+
+        return back()->with('success', $participant->user->name . ' has been rejected.');
+    }
 }

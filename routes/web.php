@@ -132,3 +132,6 @@ Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('ev
 Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
 Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
 Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
+Route::get('/events/{event}/participants', [EventController::class, 'participants'])->name('events.participants');
+Route::patch('/events/{event}/participants/{participant}/approve', [EventController::class, 'approveParticipant'])->name('events.participants.approve');
+Route::patch('/events/{event}/participants/{participant}/reject', [EventController::class, 'rejectParticipant'])->name('events.participants.reject');

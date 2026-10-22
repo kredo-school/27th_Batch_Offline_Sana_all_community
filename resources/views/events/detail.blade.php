@@ -261,34 +261,36 @@
                 @if ($isOwner)
                     <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">Edit event</a>
                 @endif
-                @guest
-                    <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
-                @else
-                    @if (! $myParticipation)    
-                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#joinModal">
-                            Request to join
-                        </button>
-                        @if ($event->approval_required)
-                            <div class="event-help text-center mt-2">Host approval required</div>
+                @unless ($isOwner)
+                    @guest
+                        <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
+                    @else
+                        @if (! $myParticipation)    
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#joinModal">
+                                Request to join
+                            </button>
+                            @if ($event->approval_required)
+                                <div class="event-help text-center mt-2">Host approval required</div>
+                            @endif
+                        @elseif ($myParticipation->status === 'pending')
+                            <div class="alert alert-warning text-center small py-2 mb-2">Waiting for host approval</div>
+                            <form action="{{ route('events.join.cancel', $event) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger w-100">Cancel request</button>
+                            </form>
+                        @elseif ($myParticipation->status === 'approved')
+                            <div class="alert alert-success text-center small py-2 mb-2">You're joined!</div>
+                            <form action="{{ route('events.join.cancel', $event) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger w-100">Cancel</button>
+                            </form>
+                        @else   
+                            <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.</div>
                         @endif
-                    @elseif ($myParticipation->status === 'pending')
-                        <div class="alert alert-warning text-center small py-2 mb-2">Waiting for host approval</div>
-                        <form action="{{ route('events.join.cancel', $event) }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger w-100">Cancel request</button>
-                        </form>
-                    @elseif ($myParticipation->status === 'approved')
-                        <div class="alert alert-success text-center small py-2 mb-2">You're joined!</div>
-                        <form action="{{ route('events.join.cancel', $event) }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger w-100">Cancel</button>
-                        </form>
-                    @else   
-                        <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.</div>
-                    @endif
-                @endguest
+                    @endguest
+                @endunless
             </div>
 
             {{-- map --}}
@@ -312,7 +314,7 @@
                 </div>
             </div>
 
-            <button type="button" class="btn btn-primary btn-sm">See all participants</button>
+            <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">See all participants</a>
         </div>
     </div>
 </div>
