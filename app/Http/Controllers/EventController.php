@@ -338,6 +338,23 @@ class EventController extends Controller
         return back()->with('success', $participant->user->name . ' has been rejected.');
     }
 
+    public function destroyComment(Event $event, Comment $comment)
+    {
+        // 別のイベントのコメントなら止める
+        if ($comment->event_id !== $event->id) {
+            abort(404);
+        }
+
+        // 主催者でもコメントを書いた本人でもなければ止める
+        if (auth()->id() !== $event->owner_id && auth()->id() !== $comment->user_id) {
+            abort(403);
+        }
+
+        $comment->delete();
+
+        return redirect()->route('events.show', $event)->with('success', 'The comment has been deleted.');
+    }
+
     private function calendarData(): array
     {
         // get month and year that be displayed
