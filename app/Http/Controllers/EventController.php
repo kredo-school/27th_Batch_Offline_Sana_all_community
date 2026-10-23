@@ -249,6 +249,9 @@ class EventController extends Controller
 
     public function requestJoin(Event $event)
     {
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has been cancelled.');
+        }
         $alreadyRequested = EventParticipant::where('event_id', $event->id)
             ->where('user_id', auth()->id())
             ->exists();
@@ -340,12 +343,10 @@ class EventController extends Controller
 
     public function destroyComment(Event $event, Comment $comment)
     {
-        // 別のイベントのコメントなら止める
         if ($comment->event_id !== $event->id) {
             abort(404);
         }
 
-        // 主催者でもコメントを書いた本人でもなければ止める
         if (auth()->id() !== $event->owner_id && auth()->id() !== $comment->user_id) {
             abort(403);
         }
@@ -353,6 +354,27 @@ class EventController extends Controller
         $comment->delete();
 
         return redirect()->route('events.show', $event)->with('success', 'The comment has been deleted.');
+    }
+
+    public function cancelEvent(Request $request, Event $event)
+    {
+        if ($event->owner_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has already been cancelled.');
+        }
+
+        $request->validate([
+            'cancel_reason' => 'required|string|max:500',
+        ]);
+
+        $event->status = 'cancelled';
+        $event->cancel_reason = $request->cancel_reason;
+        $event->save();
+
+        return redirect()->route('events.show', $event)->with('success', 'The event has been cancelled.');
     }
 
     private function calendarData(): array

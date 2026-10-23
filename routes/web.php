@@ -120,19 +120,20 @@ Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
 // ============================ Event Management ============================
 // ==========================================================================
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
+Route::get('/events', [EventController::class, 'index'])->name('events.index');
+Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
     Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
     Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::patch('/events/{event}/cancel', [EventController::class, 'cancelEvent'])->name('events.cancel');
+    Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
+    Route::delete('/events/{event}/comments/{comment}', [EventController::class, 'destroyComment'])->name('events.comments.destroy');
+    Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
+    Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
+    Route::get('/events/{event}/participants', [EventController::class, 'participants'])->name('events.participants');
+    Route::patch('/events/{event}/participants/{participant}/approve', [EventController::class, 'approveParticipant'])->name('events.participants.approve');
+    Route::patch('/events/{event}/participants/{participant}/reject', [EventController::class, 'rejectParticipant'])->name('events.participants.reject');
 });
-
-Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
-Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
-Route::delete('/events/{event}/comments/{comment}', [EventController::class, 'destroyComment'])->name('events.comments.destroy');
-Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
-Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
-Route::get('/events/{event}/participants', [EventController::class, 'participants'])->name('events.participants');
-Route::patch('/events/{event}/participants/{participant}/approve', [EventController::class, 'approveParticipant'])->name('events.participants.approve');
-Route::patch('/events/{event}/participants/{participant}/reject', [EventController::class, 'rejectParticipant'])->name('events.participants.reject');

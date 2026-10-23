@@ -134,6 +134,7 @@
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
         $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP';
+        $isCancelled = $event->status === 'cancelled';
     @endphp
 
     <div class="container py-4" style="max-width: 1000px;">
@@ -146,6 +147,14 @@
         @endif
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
+        @endif
+        @if ($isCancelled)
+            <div class="alert alert-danger">
+                <strong>This event has been cancelled.</strong>
+                @if ($event->cancel_reason)
+                    <div class="mt-1" style="white-space: pre-line;">Reason: {{ $event->cancel_reason }}</div>
+                @endif
+            </div>
         @endif
 
         <div class="row g-4">
@@ -162,7 +171,9 @@
                     @endif
 
                     <span class="event-deadline">
-                        @if ($daysLeft > 0)
+                        @if ($isCancelled)
+                            cancelled
+                        @elseif ($daysLeft > 0)
                             closes in {{ $daysLeft }} days
                         @elseif ($daysLeft === 0)
                             closes today
@@ -328,11 +339,16 @@
                     <div class="progress mb-3" style="height: 6px;">
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>
                     </div>
-                    @if ($isOwner)
+                    @if ($isCancelled)
+                        <div class="alert alert-secondary text-center small py-2 mb-0">This event has been cancelled.</div>
+                    @elseif ($isOwner)
                         <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">Edit
                             event</a>
-                    @endif
-                    @unless ($isOwner)
+                        <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal"
+                            data-bs-target="#cancelEventModal">
+                            Cancel the event
+                        </button>
+                    @else
                         @guest
                             <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
                         @else
@@ -359,10 +375,11 @@
                                     <button type="submit" class="btn btn-outline-danger w-100">Cancel</button>
                                 </form>
                             @else
-                                <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.</div>
+                                <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.
+                                </div>
                             @endif
                         @endguest
-                    @endunless
+                    @endif
                 </div>
 
                 {{-- map --}}
@@ -427,4 +444,45 @@
             </div>
         </div>
     @endauth
+    @if ($isOwner && !$isCancelled)
+        <div class="modal fade" id="cancelEventModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-danger">
+                    <form action="{{ route('events.cancel', $event) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Cancel the event</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-danger mb-3">Are you sure you want to cancel this event? This cannot be undone.
+                            </p>
+                            <div class="mb-2">
+                                <div class="event-info-label">Event name</div>
+                                <div class="event-info-value">{{ $event->title }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="event-info-label">Date</div>
+                                <div class="event-info-value">{{ $dateText }}</div>
+                            </div>
+                            <label for="cancel_reason" class="event-info-label">Reason</label>
+                            <textarea name="cancel_reason" id="cancel_reason" rows="3" maxlength="500" required
+                                class="form-control @error('cancel_reason') is-invalid @enderror"
+                                placeholder="Please tell the participants why the event is cancelled.">{{ old('cancel_reason') }}</textarea>
+                            @error('cancel_reason')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">Back</button>
+                            <button type="submit" class="btn btn-danger">Cancel the event</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection
