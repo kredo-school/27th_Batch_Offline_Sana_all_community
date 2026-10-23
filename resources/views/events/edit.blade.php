@@ -297,7 +297,7 @@
 
         {{-- button --}}
         <div class="d-flex justify-content-end gap-2">
-            <a href="{{ route('events.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary px-4">Cancel</a>
             <button type="submit" class="btn btn-primary px-4">Edit event</button>
         </div>
     </form>
