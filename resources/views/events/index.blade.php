@@ -19,6 +19,7 @@
             gap: 24px;
             width: 100%;
             box-sizing: border-box;
+            margin-top: 24px;
         }
 
         /* カード全体のスタイル（完成イメージの上質な比率） */
@@ -32,6 +33,7 @@
             width: 100%;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
         }
 
         .event-card:hover {
@@ -150,6 +152,27 @@
             text-decoration: none;
         }
 
+        .event-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+
+            display: flex;
+            gap: 8px;
+        }
+
+        .event-actions .btn {
+            white-space: nowrap;
+        }
+
+        .no-events-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 0;
+            width: 100%;
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 1100px) {
             .event-grid {
@@ -173,32 +196,49 @@
             @forelse ($events as $event)
                 @include('events.partials.card', ['event' => $event])
             @empty
-                <p>Not Yet Event</p>
-                {{-- <article class="event-card">
-                    <div class="event-card-image-wrapper">
-                        <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image">
-                        <button type="button" class="favorite-button" aria-label="お気に入り">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="event-card-body">
-                        <div class="event-card-badges">
-                            <span class="badge event-category">Sports</span>
-                            <span class="badge event-status">Today</span>
-                        </div>
-                        <h2 class="event-card-title">Let's play volleyball together!!</h2>
-                        <p class="event-card-description">You can play volleyball in this event! We warmly welcome players
-                            with no prior experience.</p>
-                        <div class="event-card-footer">
-                            <time>Held on Sa, Oct, 17</time>
-                            <a href="#">View details &gt;</a>
-                        </div>
-                    </div>
-                </article> --}}
+                <div class="no-events-container">
+                    <h3 class="text-muted text-center mb-0">Not Event Yet</h3>
+                </div>
             @endforelse
+            <div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteEventModalLabel">
+                                Are you sure delete this event?
+                            </h5>
+
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>
+                                Delete "<span id="deleteEventName"></span>".
+                            </p>
+
+                            <p class="text-danger mb-0">
+                                This action cannot be undone.
+                            </p>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+
+                            <form id="deleteEventForm" method="POST">
+                                @csrf
+                                @method('DELETE')
+
+                                <button type="submit" class="btn btn-danger">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if ($events instanceof \Illuminate\Pagination\LengthAwarePaginator)

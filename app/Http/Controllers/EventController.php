@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bookmark;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
@@ -11,6 +12,7 @@ use App\Models\EventCategory;
 use App\Models\EventParticipant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
@@ -19,6 +21,10 @@ class EventController extends Controller
     {
         $query = Event::query();
 
+        // get categories
+        $categories = Category::query()
+            ->orderBy('name')
+            ->pluck('name', 'id');
 
         // search keywords
         $query->when($request->filled('keyword'), function ($query) use ($request) {
@@ -32,9 +38,12 @@ class EventController extends Controller
 
         // search categories
         $query->when(
-            $request->filled('category') && $request->input('category') !== 'all',
+            $request->filled('category') &&
+                $request->input('category') !== 'all',
             function ($query) use ($request) {
-                $query->where('category', $request->input('category'));
+                $query->whereHas('categories', function ($categoryQuery) use ($request) {
+                    $categoryQuery->where('categories.id', $request->input('category'));
+                });
             }
         );
 
@@ -96,36 +105,71 @@ class EventController extends Controller
             ];
         }
 
-        // Event
+        ////////////// Event ////////////////////////
         $events = $query
             ->with(['categories'])
-            ->paginate(10)
-            ->through(function ($event) {
-                $event->category_name = ucfirst($event->category);
-                $event->status_label = $event->start_at->isToday()
-                    ? 'Today'
-                    : $event->start_at->diffForHumans();
+            ->paginate(10);
 
-                $event->status_color = 'blue';
-                $event->is_bookmarked = false;
+        // 現在表示しているイベントの中で、ログインユーザーがブックマーク済みのIDを取得
+        $bookmarkedEventIds = collect();
 
-                return $event;
-            });
+        if (Auth::check()) {
+            $bookmarkedEventIds = Bookmark::query()
+                ->where('user_id', Auth::id())
+                ->whereIn(
+                    'event_id',
+                    $events->getCollection()->pluck('id')
+                )
+                ->pluck('event_id')
+                ->flip();
+        }
+
+        // 表示用の値を付与
+        $events->getCollection()->transform(function ($event) use ($bookmarkedEventIds) {
+            $event->category_name = ucfirst($event->category);
+
+            $event->status_label = $event->start_at->isToday()
+                ? 'Today'
+                : $event->start_at->diffForHumans();
+
+            $event->status_color = 'blue';
+
+            // ここで実際の登録状態を設定
+            $event->is_bookmarked = $bookmarkedEventIds->has($event->id);
+
+            $event->is_owner = Auth::check() && (int) $event->owner_id === (int) Auth::id();
+
+            return $event;
+        });
 
         return view('events.index', array_merge(
-        ['events' => $events],
-        $this->calendarData()
-    ));
+            [
+                'events' => $events,
+                'categories' => $categories
+            ],
+            $this->calendarData()
+        ));
     }
 
     public function show(Event $event)
     {
         $event->load(['owner', 'categories', 'comments.user']);
 
+        $event->is_owner = Auth::check() && (int) $event->owner_id === (int) Auth::id();
+
+        $event->is_bookmarked = false;
+
+        if (Auth::check()) {
+            $event->is_bookmarked = Bookmark::query()
+                ->where('user_id', Auth::id())
+                ->where('event_id', $event->id)
+                ->exists();
+        }
+
         $myParticipation = null;
-        if (auth()->check()) {
+        if (Auth::check()) {
             $myParticipation = EventParticipant::where('event_id', $event->id)
-                ->where('user_id', auth()->id())
+                ->where('user_id', Auth::id())
                 ->first();
         }
 
@@ -143,7 +187,7 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'title'             => 'required|string|max:60',
-            'category_id'       => 'array|exists:categories,id',
+            'category_id'       => 'required|integer|exists:categories,id',
             'price'             => 'required|numeric|min:0',
             'start_at'          => 'required|date',
             'end_at'            => 'required|date|after_or_equal:start_at',
@@ -161,15 +205,6 @@ class EventController extends Controller
             $validated['image'] = $request->file('image')->store('events', 'public');
         }
 
-        if ($request->category_id) {
-            $event_categories = [];
-            foreach ($request->category_id as $category_id) {
-                $event_categories[] = ['category_id' => $category_id];
-            }
-
-            $request->eventCategory()->creatMany($event_categories);
-        }
-
         $validated['owner_id'] = Auth::id();
 
         $categoryId = $validated['category_id'];
@@ -183,7 +218,7 @@ class EventController extends Controller
 
     public function edit(Event $event)
     {
-        if ($event->owner_id !== auth()->id()) {
+        if ($event->owner_id !== Auth::id()) {
             abort(403);
         }
 
@@ -196,13 +231,13 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         // 主催者以外は保存できない
-        if ($event->owner_id !== auth()->id()) {
+        if ($event->owner_id !== Auth::id()) {
             abort(403);
         }
 
         $validated = $request->validate([
             'title'             => 'required|string|max:60',
-            'category_id'       => 'required|exists:categories,id',
+            'category_id'       => 'required|integer|exists:categories,id',
             'price'             => 'required|numeric|min:0',
             'start_at'          => 'required|date',
             'end_at'            => 'required|date|after_or_equal:start_at',
@@ -253,7 +288,7 @@ class EventController extends Controller
             return back()->with('error', 'This event has been cancelled.');
         }
         $alreadyRequested = EventParticipant::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->exists();
         if ($alreadyRequested) {
             return back()->with('error', 'You have already requested to join this event.');
@@ -272,7 +307,7 @@ class EventController extends Controller
 
         $participant = new EventParticipant();
         $participant->event_id = $event->id;
-        $participant->user_id = auth()->id();
+        $participant->user_id = Auth::id();
         $participant->status = $event->approval_required ? 'pending' : 'approved';
         $participant->requested_at = now();
         if (! $event->approval_required) {
@@ -290,7 +325,7 @@ class EventController extends Controller
     public function cancelJoin(Event $event)
     {
         EventParticipant::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->delete();
 
         return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
@@ -298,10 +333,10 @@ class EventController extends Controller
 
     public function participants(Event $event)
     {
-        $isOwner = $event->owner_id === auth()->id();
+        $isOwner = $event->owner_id === Auth::id();
         $participants = EventParticipant::with('user')
             ->where('event_id', $event->id)
-            ->when(! $isOwner, fn ($query) => $query->where('status', 'approved'))
+            ->when(! $isOwner, fn($query) => $query->where('status', 'approved'))
             ->orderBy('requested_at')
             ->get();
 
@@ -310,7 +345,7 @@ class EventController extends Controller
 
     public function approveParticipant(Event $event, EventParticipant $participant)
     {
-        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+        if ($event->owner_id !== Auth::id() || $participant->event_id !== $event->id) {
             abort(403);
         }
 
@@ -330,7 +365,7 @@ class EventController extends Controller
 
     public function rejectParticipant(Event $event, EventParticipant $participant)
     {
-        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+        if ($event->owner_id !== Auth::id() || $participant->event_id !== $event->id) {
             abort(403);
         }
 
@@ -347,7 +382,7 @@ class EventController extends Controller
             abort(404);
         }
 
-        if (auth()->id() !== $event->owner_id && auth()->id() !== $comment->user_id) {
+        if (Auth::id() !== $event->owner_id && Auth::id() !== $comment->user_id) {
             abort(403);
         }
 
@@ -358,7 +393,7 @@ class EventController extends Controller
 
     public function cancelEvent(Request $request, Event $event)
     {
-        if ($event->owner_id !== auth()->id()) {
+        if ($event->owner_id !== Auth::id()) {
             abort(403);
         }
 
@@ -433,5 +468,88 @@ class EventController extends Controller
             'calendarDays' => $calendarDays,
             'displayMonth' => $startOfMonth->format('M, Y'),
         ];
+    }
+
+    public function destroy(Event $event)
+    {
+        if ((int) $event->owner_id !== (int) Auth::id()) {
+            abort(403);
+        }
+
+        $imagePath = $event->image;
+        $event->categories()->detach();
+
+        DB::transaction(function () use ($event) {
+            $event->categories()->detach();
+            Bookmark::where('event_id', $event->id)->delete();
+            EventParticipant::where('event_id', $event->id)->delete();
+            Comment::where('event_id', $event->id)->delete();
+        });
+
+        if ($imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
+
+        $event->delete();
+
+        return redirect()
+            ->route('events.index')
+            ->with('success', 'Event has been deleted.');
+    }
+
+    /////////// Bookmark /////////////////////
+    public function addBookmark(Event $event)
+    {
+        Bookmark::firstOrCreate([
+            'user_id' => Auth::id(),
+            'event_id' => $event->id,
+        ]);
+
+        return back()->with(
+            'success',
+            'Event added to bookmarks.'
+        );
+    }
+
+    public function removeBookmark(Event $event)
+    {
+        Bookmark::query()
+            ->where('user_id', Auth::id())
+            ->where('event_id', $event->id)
+            ->delete();
+
+        return back()->with(
+            'success',
+            'Event removed from bookmarks.'
+        );
+    }
+
+    public function bookmarkIndex()
+    {
+        $events = Event::query()
+            ->whereIn(
+                'id',
+                Bookmark::query()
+                    ->where('user_id', Auth::id())
+                    ->select('event_id')
+            )
+            ->with(['categories'])
+            ->orderBy('start_at')
+            ->paginate(10);
+
+        $events->getCollection()->transform(function ($event) {
+            $event->category_name = ucfirst($event->category);
+
+            $event->status_label = $event->start_at->isToday()
+                ? 'Today'
+                : $event->start_at->diffForHumans();
+
+            $event->status_color = 'blue';
+            $event->is_bookmarked = true;
+
+            return $event;
+        });
+
+        return view('bookmarks.index', compact('events'));
     }
 }

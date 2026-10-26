@@ -18,7 +18,7 @@
         align-items: center;
         flex: 1;
         background: #fff;
-        border: 1px solid #dddddd;
+        border: 1px solid #DDDDDD;
         border-radius: 14px;
         padding: 0 16px;
     }
@@ -45,7 +45,7 @@
         font-weight: 600;
     }
 
-    .event-actions {
+    .event-action {
         display: flex;
         align-items: center;
         gap: 12px;
@@ -59,7 +59,7 @@
         align-items: center;
         justify-content: center;
         background: #fff;
-        border: 1px solid #dddddd;
+        border: 1px solid #DDDDDD;
         border-radius: 12px;
         color: #333;
         cursor: pointer;
@@ -68,7 +68,7 @@
     }
 
     .sort-dropdown-btn:hover {
-        background: #f8f9fa;
+        background: #F8F9FA;
     }
 
     .create-event-button {
@@ -93,7 +93,7 @@
     .category-button {
         padding: 8px 18px;
         background: #fff;
-        border: 1px solid #dddddd;
+        border: 1px solid #DDDDDD;
         border-radius: 999px;
         color: #666;
         text-decoration: none;
@@ -103,14 +103,17 @@
 
     .category-button:hover,
     .category-button.active {
+
         background: #000;
+
         border-color: #000;
+
         color: #fff;
     }
 </style>
 
 <section class="event-filters">
-    {{-- 検索フォーム --}}
+    {{-- Search Form --}}
     <form action="{{ route('events.index') }}" method="GET" class="event-search-form">
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
@@ -128,31 +131,33 @@
 
         <button type="submit" class="btn btn-primary search-button">
             Search
+
         </button>
     </form>
 
-    {{-- 並び替え（左のマーク） & イベント作成ボタン --}}
-    <div class="event-actions">
+    {{-- Sort & Create event Button --}}
+    <div class="event-action">
         <div class="dropdown">
-            <button class="sort-dropdown-btn" type="button" id="sortDropdownMenu" data-bs-toggle="dropdown" aria-expanded="false" aria-label="並び替えメニュー">
+            <button class="sort-dropdown-btn" type="button" id="sortDropdownMenu" data-bs-toggle="dropdown"
+                aria-expanded="false" aria-label="並び替えメニュー">
                 <i class="fa-solid fa-sort"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="sortDropdownMenu">
                 <li>
                     <a class="dropdown-item {{ request('sort', 'date_asc') === 'date_asc' ? 'active' : '' }}"
-                       href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_asc'])) }}">
+                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_asc'])) }}">
                         Nearest
                     </a>
                 </li>
                 <li>
                     <a class="dropdown-item {{ request('sort') === 'date_desc' ? 'active' : '' }}"
-                       href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_desc'])) }}">
+                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_desc'])) }}">
                         Furthest
                     </a>
                 </li>
                 <li>
                     <a class="dropdown-item {{ request('sort') === 'created_desc' ? 'active' : '' }}"
-                       href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'created_desc'])) }}">
+                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'created_desc'])) }}">
                         Latest
                     </a>
                 </li>
@@ -161,32 +166,30 @@
 
         <a href="{{ route('events.create') }}" class="btn btn-primary create-event-button">
             + Create event
+
         </a>
     </div>
 
-    {{-- カテゴリー選択 --}}
+    {{-- Chose Category --}}
     <div class="category-list">
-        @php
-            $categories = [
-                'all' => 'All',
-                'meetup' => 'Meetup',
-                'sports' => 'Sports',
-                'game' => 'Game',
-                'job' => 'Job',
-                'hiking' => 'Hiking',
-                'cooking' => 'Cooking',
-                'traveling' => 'Traveling',
-                'exchange' => 'Exchange',
-            ];
-        @endphp
+        {{-- All --}}
+        <a href="{{ route('events.index', [
+            'category' => null,
+            'keyword' => request('keyword'),
+            'sort' => request('sort'),
+        ]) }}"
+            class="category-button {{ request('category', 'all') === 'all' ? 'active' : '' }}">
+            All
+        </a>
 
+        {{-- Categories --}}
         @foreach ($categories as $value => $label)
             <a href="{{ route('events.index', [
-                'category' => $value === 'all' ? null : $value,
+                'category' => $value,
                 'keyword' => request('keyword'),
                 'sort' => request('sort'),
             ]) }}"
-                class="category-button {{ request('category', 'all') === $value ? 'active' : '' }}">
+                class="category-button {{ (string) request('category') === (string) $value ? 'active' : '' }}">
                 {{ $label }}
             </a>
         @endforeach
