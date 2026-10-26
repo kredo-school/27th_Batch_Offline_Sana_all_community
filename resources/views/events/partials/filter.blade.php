@@ -118,16 +118,14 @@
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
             <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="Search events"
-                aria-label="イベントを検索">
+                aria-label="search-event">
         </div>
 
         @if (request('category'))
             <input type="hidden" name="category" value="{{ request('category') }}">
         @endif
 
-        @if (request('sort'))
-            <input type="hidden" name="sort" value="{{ request('sort') }}">
-        @endif
+        <input type="hidden" name="sort" value="{{ $sort }}">
 
         <button type="submit" class="btn btn-primary search-button">
             Search
@@ -139,25 +137,34 @@
     <div class="event-action">
         <div class="dropdown">
             <button class="sort-dropdown-btn" type="button" id="sortDropdownMenu" data-bs-toggle="dropdown"
-                aria-expanded="false" aria-label="並び替えメニュー">
+                aria-expanded="false" aria-label="sort-menu">
                 <i class="fa-solid fa-sort"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="sortDropdownMenu">
                 <li>
-                    <a class="dropdown-item {{ request('sort', 'date_asc') === 'date_asc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_asc'])) }}">
+                    <a class="dropdown-item {{ $sort === 'date_asc' ? 'active' : '' }}"
+                        href="{{ route('events.index', array_merge(request()->all(), [
+                                'sort' => 'date_asc',
+                            ]),
+                        ) }}">
                         Nearest
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item {{ request('sort') === 'date_desc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'date_desc'])) }}">
+                    <a class="dropdown-item {{ $sort === 'date_desc' ? 'active' : '' }}"
+                        href="{{ route('events.index', array_merge(request()->all(), [
+                                'sort' => 'date_desc',
+                            ]),
+                        ) }}">
                         Furthest
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item {{ request('sort') === 'created_desc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), ['sort' => 'created_desc'])) }}">
+                    <a class="dropdown-item {{ $sort === 'created_desc' ? 'active' : '' }}"
+                        href="{{ route('events.index', array_merge(request()->all(), [
+                                'sort' => 'created_desc',
+                            ]),
+                        ) }}">
                         Latest
                     </a>
                 </li>
@@ -176,7 +183,7 @@
         <a href="{{ route('events.index', [
             'category' => null,
             'keyword' => request('keyword'),
-            'sort' => request('sort'),
+            'sort' => $sort,
         ]) }}"
             class="category-button {{ request('category', 'all') === 'all' ? 'active' : '' }}">
             All

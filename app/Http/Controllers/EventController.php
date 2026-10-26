@@ -48,7 +48,25 @@ class EventController extends Controller
         );
 
         // sort
-        match ($request->input('sort', 'date_asc')) {
+        $allowedSorts = [
+            'date_asc',
+            'date_desc',
+            'created_desc',
+        ];
+
+        if ($request->filled('sort')) {
+            // URLにsortがある場合は、その値を使用してセッションに保存
+            $sort = in_array($request->input('sort'), $allowedSorts, true)
+                ? $request->input('sort')
+                : 'date_asc';
+
+            $request->session()->put('events.sort', $sort);
+        } else {
+            // URLにsortがない場合は、最後に保存した値を使用
+            $sort = $request->session()->get('events.sort', 'date_asc');
+        }
+
+        match ($sort) {
             'date_desc' => $query->orderByDesc('start_at'),
             'created_desc' => $query->latest(),
             default => $query->orderBy('start_at'),
@@ -108,7 +126,8 @@ class EventController extends Controller
         ////////////// Event ////////////////////////
         $events = $query
             ->with(['categories'])
-            ->paginate(10);
+            ->paginate(24)
+            ->withQueryString();
 
         // 現在表示しているイベントの中で、ログインユーザーがブックマーク済みのIDを取得
         $bookmarkedEventIds = collect();
@@ -145,7 +164,8 @@ class EventController extends Controller
         return view('events.index', array_merge(
             [
                 'events' => $events,
-                'categories' => $categories
+                'categories' => $categories,
+                'sort' => $sort
             ],
             $this->calendarData()
         ));
