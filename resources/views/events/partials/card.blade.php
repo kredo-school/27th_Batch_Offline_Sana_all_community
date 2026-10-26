@@ -190,7 +190,7 @@
             <time datetime="{{ $event->held_at ?? '#' }}">
                 Held on {{ !empty($event->held_at) ? \Carbon\Carbon::parse($event->held_at)->format('M d') : '10/30' }}
             </time>
-            <a href="#">View details &gt;</a>
+            <a href="{{ route('events.show', $event->id) }}">View details &gt;</a>
         </div>
     </div>
 </article>

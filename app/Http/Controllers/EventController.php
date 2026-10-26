@@ -112,11 +112,10 @@ class EventController extends Controller
                 return $event;
             });
 
-        return view('events.index', [
-            'events' => $events,
-            'calendarDays' => $calendarDays,
-            'displayMonth' => $startOfMonth->format('M, Y'),
-        ]);
+        return view('events.index', array_merge(
+        ['events' => $events],
+        $this->calendarData()
+    ));
     }
 
     public function show(Event $event)
@@ -130,14 +129,14 @@ class EventController extends Controller
                 ->first();
         }
 
-        return view('events.detail', compact('event', 'myParticipation'));
+        return view('events.detail', array_merge(compact('event', 'myParticipation'), $this->calendarData()));
     }
 
     public function create()
     {
         $categories = Category::all();
 
-        return view('events.create', compact('categories'));
+        return view('events.create', array_merge(compact('categories'), $this->calendarData()));
     }
 
     public function store(Request $request)
@@ -191,7 +190,7 @@ class EventController extends Controller
         $categories = Category::all();
         $selectedCategoryId = EventCategory::where('event_id', $event->id)->value('category_id');
 
-        return view('events.edit', compact('event', 'categories', 'selectedCategoryId'));
+        return view('events.edit', array_merge(compact('event', 'categories', 'selectedCategoryId'), $this->calendarData()));
     }
 
     public function update(Request $request, Event $event)
@@ -250,6 +249,9 @@ class EventController extends Controller
 
     public function requestJoin(Event $event)
     {
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has been cancelled.');
+        }
         $alreadyRequested = EventParticipant::where('event_id', $event->id)
             ->where('user_id', auth()->id())
             ->exists();
@@ -292,5 +294,144 @@ class EventController extends Controller
             ->delete();
 
         return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
+    }
+
+    public function participants(Event $event)
+    {
+        $isOwner = $event->owner_id === auth()->id();
+        $participants = EventParticipant::with('user')
+            ->where('event_id', $event->id)
+            ->when(! $isOwner, fn ($query) => $query->where('status', 'approved'))
+            ->orderBy('requested_at')
+            ->get();
+
+        return view('events.participants', array_merge(compact('event', 'participants', 'isOwner'), $this->calendarData()));
+    }
+
+    public function approveParticipant(Event $event, EventParticipant $participant)
+    {
+        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+            abort(403);
+        }
+
+        $joinedCount = EventParticipant::where('event_id', $event->id)
+            ->where('status', 'approved')
+            ->count();
+        if ($event->capacity && $joinedCount >= $event->capacity) {
+            return back()->with('error', 'This event is already full.');
+        }
+
+        $participant->status = 'approved';
+        $participant->responded_at = now();
+        $participant->save();
+
+        return back()->with('success', $participant->user->name . ' has been approved.');
+    }
+
+    public function rejectParticipant(Event $event, EventParticipant $participant)
+    {
+        if ($event->owner_id !== auth()->id() || $participant->event_id !== $event->id) {
+            abort(403);
+        }
+
+        $participant->status = 'rejected';
+        $participant->responded_at = now();
+        $participant->save();
+
+        return back()->with('success', $participant->user->name . ' has been rejected.');
+    }
+
+    public function destroyComment(Event $event, Comment $comment)
+    {
+        if ($comment->event_id !== $event->id) {
+            abort(404);
+        }
+
+        if (auth()->id() !== $event->owner_id && auth()->id() !== $comment->user_id) {
+            abort(403);
+        }
+
+        $comment->delete();
+
+        return redirect()->route('events.show', $event)->with('success', 'The comment has been deleted.');
+    }
+
+    public function cancelEvent(Request $request, Event $event)
+    {
+        if ($event->owner_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has already been cancelled.');
+        }
+
+        $request->validate([
+            'cancel_reason' => 'required|string|max:500',
+        ]);
+
+        $event->status = 'cancelled';
+        $event->cancel_reason = $request->cancel_reason;
+        $event->save();
+
+        return redirect()->route('events.show', $event)->with('success', 'The event has been cancelled.');
+    }
+
+    private function calendarData(): array
+    {
+        // get month and year that be displayed
+        $displayMonth = request()->input('month', now()->format('Y-m'));
+        $startOfMonth = Carbon::parse($displayMonth)->startOfMonth();
+        $endOfMonth = Carbon::parse($displayMonth)->endOfMonth();
+
+        $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
+        $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
+
+        $calendarEvents = Event::where(function ($q) use ($startDate, $endDate) {
+            $q->where('start_at', '<=', $endDate)->where('end_at', '>=', $startDate);
+        })->orWhere(function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('join_till', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+        })->get();
+
+        // イベント日（start_at 〜 end_at）に該当する日付をすべて抽出してフラグ用配列を作る
+        $eventDatesMap = [];
+        foreach ($calendarEvents as $event) {
+            $eventStart = Carbon::parse($event->start_at)->startOfDay();
+            $eventEnd = Carbon::parse($event->end_at)->endOfDay();
+
+            $eventPeriod = CarbonPeriod::create($eventStart, $eventEnd);
+            foreach ($eventPeriod as $date) {
+                $eventDatesMap[$date->format('Y-m-d')] = true;
+            }
+        }
+
+        // 予約受付終了日のマップを作る
+        $deadlinesMap = [];
+        foreach ($calendarEvents as $event) {
+            if ($event->join_till) {
+                $deadlineDate = Carbon::parse($event->join_till)->format('Y-m-d');
+                $deadlinesMap[$deadlineDate] = true;
+            }
+        }
+
+        // カレンダーの全マス目（1日ずつ）に対して判定を行う
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $calendarDays = [];
+
+        foreach ($period as $date) {
+            $dateString = $date->format('Y-m-d');
+
+            $calendarDays[] = [
+                'date' => $dateString,
+                'is_other_month' => $date->month !== $startOfMonth->month,
+                'is_event_date' => isset($eventDatesMap[$dateString]),
+                'is_closed_date' => isset($deadlinesMap[$dateString]),
+            ];
+        }
+
+        return [
+            'calendarDays' => $calendarDays,
+            'displayMonth' => $startOfMonth->format('M, Y'),
+        ];
     }
 }
