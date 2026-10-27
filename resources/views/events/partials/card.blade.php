@@ -38,22 +38,70 @@
         right: 12px;
         width: 36px;
         height: 36px;
-        border-radius: 50%;
+        border-radius: 0;
         border: none;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(4px);
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         color: #9ca3af;
-        transition: color 0.2s, background 0.2s;
+        transition: color 0.2s ease;
     }
 
     .favorite-button:hover,
     .favorite-button.active {
         color: #ec4899;
-        background: #ffffff;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    /* Owner Actions Button */
+    .event-actions {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 20;
+    }
+
+    .event-menu-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 36px;
+        height: 36px;
+
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+
+        cursor: pointer;
+    }
+
+    .event-menu-button:hover,
+    .event-menu-button:focus {
+        background: rgba(0, 0, 0, 0.25);
+        color: #ffffff;
+        outline: none;
+    }
+
+    .event-actions .dropdown-menu {
+        min-width: 120px;
+        z-index: 30;
+    }
+
+    .event-actions .dropdown-item {
+        font-size: 14px;
     }
 
     /* カード本文 */
@@ -148,6 +196,7 @@
         text-decoration: none;
     }
 
+
     /* レスポンシブ対応 */
     @media (max-width: 1200px) {
         .event-grid {
@@ -164,12 +213,43 @@
 
 <article class="event-card">
     <div class="event-card-image-wrapper">
-        <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image">
-        <button type="button" class="favorite-button {{ !empty($event->is_bookmarked) ? 'active' : '' }}"
-            aria-label="bookmark">
-            {{ !empty($event->is_bookmarked) ? '♥' : '♡' }}
-        </button>
+        {{-- <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image"> --}}
+        <img src="{{ asset('storage/events/' . $event->image) }}" alt="{{ $event->title }}" class="event-card-image">
+
+        @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
+            {{-- 自分が作成したイベント --}}
+            @include('events.partials.event-actions', [
+                'event' => $event,
+            ])
+        @else
+            {{-- 他人のイベントはブックマークボタン --}}
+            @auth
+                @php
+                    $isBookmarked = (bool) ($event->is_bookmarked ?? false);
+                @endphp
+
+                <form method="POST"
+                    action="{{ $isBookmarked ? route('bookmarks.destroy', $event) : route('bookmarks.store', $event) }}">
+                    @csrf
+
+                    @if ($isBookmarked)
+                        @method('DELETE')
+                    @endif
+
+                    <button type="submit" class="favorite-button {{ $isBookmarked ? 'active' : '' }}"
+                        aria-label="{{ $isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks' }}"
+                        aria-pressed="{{ $isBookmarked ? 'true' : 'false' }}">
+                        {{ $isBookmarked ? '♥' : '♡' }}
+                    </button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="favorite-button" aria-label="Please log in to bookmark this">
+                    ♡
+                </a>
+            @endauth
+        @endif
     </div>
+
     <div class="event-card-body">
         <div class="event-card-badges">
             @foreach ($event->categories as $event_category)
@@ -194,3 +274,12 @@
         </div>
     </div>
 </article>
+
+@if (
+    auth()->check()
+    && (int) $event->owner_id === (int) auth()->id()
+)
+    @include('events.partials.delete-event-modal', [
+        'event' => $event,
+    ])
+@endif

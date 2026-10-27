@@ -134,7 +134,7 @@ class User extends Authenticatable
 
     public function bookmarkedEvents()
     {
-        return $this->belongsToMany(Event::class, 'bookmarks')->withPivot('created_at');
+        return $this->belongsToMany(Event::class, 'bookmarks', 'user_id', 'event_id')->withPivot('created_at');
     }
 
     public function sentMessages()

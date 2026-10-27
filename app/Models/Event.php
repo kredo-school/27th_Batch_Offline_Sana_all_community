@@ -11,8 +11,22 @@ class Event extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'owner_id', 'community_id', 'title', 'description', 'language', 'region', 'location',
-        'start_at', 'join_till', 'end_at', 'capacity', 'price', 'approval_required', 'visibility', 'status', 'image',
+        'owner_id',
+        'community_id',
+        'title',
+        'description',
+        'language',
+        'region',
+        'location',
+        'start_at',
+        'join_till',
+        'end_at',
+        'capacity',
+        'price',
+        'approval_required',
+        'visibility',
+        'status',
+        'image',
     ];
 
     protected function casts(): array
@@ -76,6 +90,16 @@ class Event extends Model
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class);
+    }
+
+    public function bookmarkedBy()
+    {
+        return $this->belongsToMany(User::class, 'bookmarks', 'event_id', 'user_id')->withPivot('created_at');
+    }
+
+    public function bookmarkedUsers()
+    {
+        return $this->belongsToMany(User::class, 'bookmarks', 'event_id', 'user_id')->withPivot('created_at');
     }
 
     public function translations()

@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
 Auth::routes();
@@ -45,7 +46,7 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('messages.send');
     Route::get('messages/{user}', [MessageController::class, 'show'])->name('show');
 
-   
+
     // Review(Masa)
     Route::group(['prefix' => 'review', 'as' => 'review.'], function () {
         Route::post('/{product_id}/store', [ReviewController::class, 'store'])->name('store');
@@ -61,7 +62,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     });
-    
+
 
     // ==========================================================================================
     // ====================================ADMIN ROUTES==========================================
@@ -128,6 +129,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
     Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
     Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+
     Route::patch('/events/{event}/cancel', [EventController::class, 'cancelEvent'])->name('events.cancel');
     Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
     Route::delete('/events/{event}/comments/{comment}', [EventController::class, 'destroyComment'])->name('events.comments.destroy');
@@ -136,4 +138,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/events/{event}/participants', [EventController::class, 'participants'])->name('events.participants');
     Route::patch('/events/{event}/participants/{participant}/approve', [EventController::class, 'approveParticipant'])->name('events.participants.approve');
     Route::patch('/events/{event}/participants/{participant}/reject', [EventController::class, 'rejectParticipant'])->name('events.participants.reject');
+
+    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+
+    // Bookmark
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmark');
+    Route::post('/events/{event}/bookmark', [BookmarkController::class, 'store'])->name('bookmarks.store');
+    Route::delete('/events/{event}/bookmark', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 });
+
+
+Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
+Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
+Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
+Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
+
