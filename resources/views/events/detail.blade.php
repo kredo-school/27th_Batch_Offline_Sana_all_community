@@ -114,6 +114,33 @@
             justify-content: center;
             font-weight: 600;
         }
+
+        .star-rating {
+            display: inline-flex;
+            flex-direction: row-reverse;
+            gap: 4px;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            font-size: 28px;
+            color: #ddd;
+            cursor: pointer;
+        }
+
+        .star-rating input:checked~label,
+        .star-rating label:hover,
+        .star-rating label:hover~label {
+            color: #f5b301;
+        }
+
+        .review-stars {
+            color: #f5b301;
+            letter-spacing: 1px;
+        }
     </style>
 
     @php
@@ -135,6 +162,12 @@
                 : $event->end_at->format('M j (D) H:i'));
         $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP';
         $isCancelled = $event->status === 'cancelled';
+        $hasEnded = $event->end_at->isPast();
+        $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;
+        $canReview =
+            $hasEnded && !$isCancelled && $myParticipation && $myParticipation->status === 'approved' && !$myReview;
+        $reviewCount = $event->reviews->count();
+        $averageRating = $reviewCount ? round($event->reviews->avg('rating'), 1) : 0;
     @endphp
 
     <div class="container py-4" style="max-width: 1000px;">
@@ -239,24 +272,107 @@
                     <h5>Description</h5>
                     <p class="mb-0" style="white-space: pre-line;">{{ $event->description }}</p>
                 </div>
+                {{-- reviews (イベント終了後だけ) --}}
+                @if ($hasEnded)
+                    <div class="event-card">
+                        <h5 class="mb-3">Reviews({{ $reviewCount }})</h5>
+
+                        {{-- 平均と評価ごとの棒グラフ --}}
+                        <div class="d-flex align-items-center gap-4 mb-3">
+                            <div class="text-center">
+                                <div class="fs-2">{{ $averageRating }}</div>
+                                <div class="review-stars">
+                                    {{ str_repeat('★', (int) round($averageRating)) }}{{ str_repeat('☆', 5 - (int) round($averageRating)) }}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                @for ($star = 5; $star >= 1; $star--)
+                                    @php
+                                        $count = $event->reviews->where('rating', $star)->count();
+                                        $percent = $reviewCount ? round(($count / $reviewCount) * 100) : 0;
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-2 small">
+                                        <span style="width: 24px;">{{ $star }}★</span>
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: {{ $percent }}%;">
+                                            </div>
+                                        </div>
+                                        <span style="width: 24px;" class="text-end">{{ $count }}</span>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+
+                        {{-- 投稿フォーム(参加した人だけ) --}}
+                        @if ($canReview)
+                            <form action="{{ route('events.reviews.store', $event) }}" method="POST"
+                                class="border rounded p-3 mb-3">
+                                @csrf
+                                <div class="event-info-label mb-1">How was this event?</div>
+                                <div class="star-rating mb-2">
+                                    @for ($star = 5; $star >= 1; $star--)
+                                        <input type="radio" name="rating" id="star{{ $star }}"
+                                            value="{{ $star }}" @checked(old('rating') == $star) required>
+                                        <label for="star{{ $star }}">★</label>
+                                    @endfor
+                                </div>
+                                @error('rating')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+
+                                <textarea name="comment" rows="3" maxlength="500" class="form-control mb-2"
+                                    placeholder="Share your experience (optional)">{{ old('comment') }}</textarea>
+                                @error('comment')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+
+                                <button type="submit" class="btn btn-primary">Post review</button>
+                            </form>
+                        @elseif ($myReview)
+                            <p class="event-help">You have already reviewed this event.</p>
+                        @endif
+
+                        {{-- レビュー一覧 --}}
+                        @forelse ($event->reviews as $review)
+                            <div class="d-flex gap-2 mb-3">
+                                <div class="event-avatar">{{ strtoupper(substr($review->user->name ?? '?', 0, 1)) }}</div>
+                                <div>
+                                    <div>
+                                        <strong>{{ $review->user->name ?? 'Unknown' }}</strong>
+                                        <span
+                                            class="review-stars ms-1">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
+                                        <span class="event-help ms-1">{{ $review->created_at->diffForHumans() }}</span>
+                                    </div>
+                                    @if ($review->comment)
+                                        <div style="white-space: pre-line;">{{ $review->comment }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <p class="event-help mb-0">No reviews yet.</p>
+                        @endforelse
+                    </div>
+                @endif
 
                 {{-- comments --}}
                 <div class="event-card">
                     <h5>Comments({{ $event->comments->count() }})</h5>
 
-                    @auth
-                        <form action="{{ route('events.comments.store', $event) }}" method="POST" class="d-flex gap-2 mb-1">
-                            @csrf
-                            <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
-                                placeholder="write a comment....." maxlength="500" required>
-                            <button type="submit" class="btn btn-primary">Post</button>
-                        </form>
-                        @error('content')
-                            <div class="text-danger small">{{ $message }}</div>
-                        @enderror
+                    @if (! $hasEnded)
+                        @auth
+                            <form action="{{ route('events.comments.store', $event) }}" method="POST" class="d-flex gap-2 mb-1">
+                                @csrf
+                                <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
+                                    placeholder="write a comment....." maxlength="500" required>
+                                <button type="submit" class="btn btn-primary">Post</button>
+                            </form>
+                            @error('content') <div class="text-danger small">{{ $message }}</div> @enderror
+                        @else
+                            <p class="event-help">Please log in to write a comment.</p>
+                        @endauth
                     @else
-                        <p class="event-help">Please log in to write a comment.</p>
-                    @endauth
+                        <p class="event-help">Comments are closed because this event has ended.</p>
+                    @endif
 
                     <div class="mt-3">
                         @foreach ($event->comments as $comment)
@@ -267,7 +383,8 @@
                             @endphp
 
                             <div class="d-flex gap-2 mb-3">
-                                <div class="event-avatar">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}</div>
+                                <div class="event-avatar">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}
+                                </div>
                                 <div class="flex-grow-1">
                                     <div>
                                         <strong>{{ $comment->user->name ?? 'Unknown' }}</strong>

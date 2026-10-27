@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Models\EventReview;
 
 class EventController extends Controller
 {
@@ -173,7 +174,7 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        $event->load(['owner', 'categories', 'comments.user']);
+        $event->load(['owner', 'categories', 'comments.user', 'reviews.user']);
 
         $event->is_owner = Auth::check() && (int) $event->owner_id === (int) Auth::id();
 
@@ -289,6 +290,9 @@ class EventController extends Controller
 
     public function storeComment(Request $request, Event $event)
     {
+        if ($event->end_at->isPast()) {
+        return back()->with('error', 'Comments are closed because this event has ended.');
+        } 
         $request->validate([
             'content' => 'required|string|max:500',
         ]);
@@ -430,6 +434,50 @@ class EventController extends Controller
         $event->save();
 
         return redirect()->route('events.show', $event)->with('success', 'The event has been cancelled.');
+    }
+
+    public function storeReview(Request $request, Event $event)
+    {
+        // イベントが終わっていなければ止める
+        if (! $event->end_at->isPast()) {
+            return back()->with('error', 'You can write a review after the event ends.');
+        }
+
+        // 中止されたイベントは止める
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has been cancelled.');
+        }
+
+        // 参加確定した人だけ
+        $joined = EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->where('status', 'approved')
+            ->exists();
+        if (! $joined) {
+            abort(403);
+        }
+
+        // すでにレビューしていたら止める
+        $alreadyReviewed = EventReview::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+        if ($alreadyReviewed) {
+            return back()->with('error', 'You have already reviewed this event.');
+        }
+
+        $request->validate([
+            'rating'  => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:500',
+        ]);
+
+        $review = new EventReview();
+        $review->event_id = $event->id;
+        $review->user_id = auth()->id();
+        $review->rating = $request->rating;
+        $review->comment = $request->comment;
+        $review->save();
+
+        return redirect()->route('events.show', $event)->with('success', 'Thank you for your review!');
     }
 
     private function calendarData(): array
