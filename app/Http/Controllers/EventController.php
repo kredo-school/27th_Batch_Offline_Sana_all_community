@@ -15,6 +15,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
+use App\Models\UserReview;
 
 class EventController extends Controller
 {
@@ -174,27 +175,20 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        $event->load(['owner', 'categories', 'comments.user', 'reviews.user']);
-
-        $event->is_owner = Auth::check() && (int) $event->owner_id === (int) Auth::id();
-
-        $event->is_bookmarked = false;
-
-        if (Auth::check()) {
-            $event->is_bookmarked = Bookmark::query()
-                ->where('user_id', Auth::id())
-                ->where('event_id', $event->id)
-                ->exists();
-        }
-
+        $event->load(['owner', 'categories', 'comments.user', 'reviews.user', 'userReviews']);
         $myParticipation = null;
-        if (Auth::check()) {
+        if (auth()->check()) {
             $myParticipation = EventParticipant::where('event_id', $event->id)
-                ->where('user_id', Auth::id())
+                ->where('user_id', auth()->id())
                 ->first();
         }
-
-        return view('events.detail', array_merge(compact('event', 'myParticipation'), $this->calendarData()));
+        $hostEventIds = Event::where('owner_id', $event->owner_id)->pluck('id');
+        $hostRating = round((float) UserReview::whereIn('event_id', $hostEventIds)->avg('rating'), 1);
+        $hostReviewCount = UserReview::whereIn('event_id', $hostEventIds)->count();
+        return view('events.detail', array_merge(
+            compact('event', 'myParticipation', 'hostRating', 'hostReviewCount'),
+            $this->calendarData()
+        ));
     }
 
     public function create()
@@ -478,6 +472,52 @@ class EventController extends Controller
         $review->save();
 
         return redirect()->route('events.show', $event)->with('success', 'Thank you for your review!');
+    }
+
+    public function storeHostReview(Request $request, Event $event)
+    {
+        if (! $event->end_at->isPast()) {
+            return back()->with('error', 'You can review the host after the event ends.');
+        }
+
+        if ($event->status === 'cancelled') {
+            return back()->with('error', 'This event has been cancelled.');
+        }
+
+        // 主催者は自分をレビューできない
+        if ($event->owner_id === auth()->id()) {
+            abort(403);
+        }
+
+        // 参加確定した人だけ
+        $joined = EventParticipant::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->where('status', 'approved')
+            ->exists();
+        if (! $joined) {
+            abort(403);
+        }
+
+        $alreadyReviewed = UserReview::where('event_id', $event->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+        if ($alreadyReviewed) {
+            return back()->with('error', 'You have already reviewed the host.');
+        }
+
+        $request->validate([
+            'host_rating'  => 'required|integer|min:1|max:5',
+            'host_comment' => 'nullable|string|max:500',
+        ]);
+
+        $review = new UserReview();
+        $review->event_id = $event->id;
+        $review->user_id = auth()->id();
+        $review->rating = $request->host_rating;
+        $review->comment = $request->host_comment;
+        $review->save();
+
+        return redirect()->route('events.show', $event)->with('success', 'Thank you for reviewing the host!');
     }
 
     private function calendarData(): array

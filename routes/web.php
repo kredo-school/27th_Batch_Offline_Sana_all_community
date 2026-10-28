@@ -134,6 +134,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
     Route::delete('/events/{event}/comments/{comment}', [EventController::class, 'destroyComment'])->name('events.comments.destroy');
     Route::post('/events/{event}/reviews', [EventController::class, 'storeReview'])->name('events.reviews.store');
+    Route::post('/events/{event}/host-reviews', [EventController::class, 'storeHostReview'])->name('events.host-reviews.store');
     Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
     Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
     Route::get('/events/{event}/participants', [EventController::class, 'participants'])->name('events.participants');

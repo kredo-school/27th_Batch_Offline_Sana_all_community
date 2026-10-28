@@ -168,6 +168,14 @@
             $hasEnded && !$isCancelled && $myParticipation && $myParticipation->status === 'approved' && !$myReview;
         $reviewCount = $event->reviews->count();
         $averageRating = $reviewCount ? round($event->reviews->avg('rating'), 1) : 0;
+        $myHostReview = auth()->check() ? $event->userReviews->firstWhere('user_id', auth()->id()) : null;
+        $canReviewHost =
+            $hasEnded &&
+            !$isCancelled &&
+            !$isOwner &&
+            $myParticipation &&
+            $myParticipation->status === 'approved' &&
+            !$myHostReview;
     @endphp
 
     <div class="container py-4" style="max-width: 1000px;">
@@ -358,15 +366,18 @@
                 <div class="event-card">
                     <h5>Comments({{ $event->comments->count() }})</h5>
 
-                    @if (! $hasEnded)
+                    @if (!$hasEnded)
                         @auth
-                            <form action="{{ route('events.comments.store', $event) }}" method="POST" class="d-flex gap-2 mb-1">
+                            <form action="{{ route('events.comments.store', $event) }}" method="POST"
+                                class="d-flex gap-2 mb-1">
                                 @csrf
                                 <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
                                     placeholder="write a comment....." maxlength="500" required>
                                 <button type="submit" class="btn btn-primary">Post</button>
                             </form>
-                            @error('content') <div class="text-danger small">{{ $message }}</div> @enderror
+                            @error('content')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
                         @else
                             <p class="event-help">Please log in to write a comment.</p>
                         @endauth
@@ -465,6 +476,8 @@
                             data-bs-target="#cancelEventModal">
                             Cancel the event
                         </button>
+                    @elseif ($hasEnded)
+                        <div class="alert alert-secondary text-center small py-2 mb-0">This event has ended.</div>
                     @else
                         @guest
                             <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
@@ -515,13 +528,31 @@
                         <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
                         <div>
                             <div>{{ $event->owner->name ?? 'Unknown' }}</div>
-                            <div class="event-help">host</div>
+                            <div class="event-help">
+                                host
+                                @if ($hostReviewCount)
+                                    <span class="review-stars ms-1">★</span> {{ $hostRating }} ({{ $hostReviewCount }})
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">See all
-                    participants</a>
+                @if ($hasEnded && !$isOwner)
+                    @if ($canReviewHost)
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#hostReviewModal">
+                            Review the host
+                        </button>
+                    @elseif ($myHostReview)
+                        <p class="event-help mb-0">You have reviewed the host. Thank you!</p>
+                    @elseif (auth()->guest())
+                        <p class="event-help mb-0">Log in to review the host.</p>
+                    @endif
+                @else
+                    <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">See all
+                        participants</a>
+                @endif
             </div>
         </div>
     </div>
@@ -596,6 +627,54 @@
                             <button type="button" class="btn btn-outline-secondary"
                                 data-bs-dismiss="modal">Back</button>
                             <button type="submit" class="btn btn-danger">Cancel the event</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+    @if ($canReviewHost)
+        <div class="modal fade" id="hostReviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form action="{{ route('events.host-reviews.store', $event) }}" method="POST">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title">Review the host</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
+                                <div>
+                                    <div>{{ $event->owner->name ?? 'Unknown' }}</div>
+                                    <div class="event-help">host of {{ $event->title }}</div>
+                                </div>
+                            </div>
+
+                            <div class="event-info-label mb-1">How was the host?</div>
+                            <div class="star-rating mb-2">
+                                @for ($star = 5; $star >= 1; $star--)
+                                    <input type="radio" name="host_rating" id="hostStar{{ $star }}"
+                                        value="{{ $star }}" @checked(old('host_rating') == $star) required>
+                                    <label for="hostStar{{ $star }}">★</label>
+                                @endfor
+                            </div>
+                            @error('host_rating')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+
+                            <textarea name="host_comment" rows="3" maxlength="500" class="form-control"
+                                placeholder="Share your experience with the host (optional)">{{ old('host_comment') }}</textarea>
+                            @error('host_comment')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">Back</button>
+                            <button type="submit" class="btn btn-primary">Post review</button>
                         </div>
                     </form>
                 </div>
