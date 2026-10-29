@@ -5,14 +5,15 @@ namespace App\Providers;
 use App\Models\Comment;
 use App\Models\Community;
 use App\Models\Event;
+use App\Models\Follow;
 use App\Models\Message;
+use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
-
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -74,11 +75,36 @@ class AppServiceProvider extends ServiceProvider
                     ->whereNull('read_at')
                     ->count()
                 : 0;
+            $unreadMessagesCount = $currentUserId
+                ? Message::query()
+                    ->where('receiver_id', $currentUserId)
+                    ->whereNull('read_at')
+                    ->count()
+                : 0;
+            $followedRecipientIds = $currentUserId
+                ? Follow::query()->where('follower_id', $currentUserId)->pluck('following_id')->all()
+                : [];
+            $messageRecipients = $currentUserId
+                ? User::query()
+                    ->with('profile')
+                    ->where('id', '!=', $currentUserId)
+                    ->orderByRaw(
+                        'CASE WHEN id IN (SELECT following_id FROM follows WHERE follower_id = ?) THEN 0 ELSE 1 END',
+                        [$currentUserId]
+                    )
+                    ->inRandomOrder()
+                    ->get(['id', 'name', 'username'])
+                : collect();
+            $followedMessageRecipients = $messageRecipients->whereIn('id', $followedRecipientIds)->values();
+            $otherMessageRecipients = $messageRecipients->whereNotIn('id', $followedRecipientIds)->values();
 
             $view->with([
                 'chats' => $chats,
+                'followedMessageRecipients' => $followedMessageRecipients,
+                'otherMessageRecipients' => $otherMessageRecipients,
                 'notifications' => $notifications,
                 'unreadNotificationCount' => $unreadNotificationCount,
+                'unreadMessagesCount' => $unreadMessagesCount,
             ]);
         });
 
@@ -91,6 +117,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Choose either Bootstrap 5 or Bootstrap 4 depending on your frontend
-        Paginator::useBootstrapFour();
+        Paginator::useBootstrapFour(); 
+        // or Paginator::useBootstrapFour();
     }
 }

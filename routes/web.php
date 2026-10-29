@@ -1,15 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ReviewController;
+
+use App\Http\Controllers\Admin\ContactController as AdminContactController;
+use App\Http\Controllers\Admin\JobsController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JoinedCommunityController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\UsersController;
-use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
@@ -17,8 +18,12 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\BookmarkController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
 Auth::routes();
 
 // Data without login
@@ -28,7 +33,7 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('categorie
 Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
 Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
 Route::get('/search', [HomeController::class, 'search'])->name('search');
-
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 // Login User Middleware (Daichi)
 
@@ -45,16 +50,21 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('messages.conversation');
     Route::post('/messages/{user}', [MessageController::class, 'send'])
         ->name('messages.send');
+    Route::post('/messages/{user}/block', [MessageController::class, 'block'])
+        ->name('messages.block');
+    Route::delete('/messages/{user}/block', [MessageController::class, 'unblock'])
+        ->name('messages.unblock');
+    Route::delete('/messages/{message}', [MessageController::class, 'destroy'])
+        ->name('messages.destroy');
     Route::get('messages/{user}', [MessageController::class, 'show'])->name('show');
 
 
     // Review(Masa)
     Route::group(['prefix' => 'review', 'as' => 'review.'], function () {
-        Route::post('/{product_id}/store', [ReviewController::class, 'store'])->name('store');
+        Route::post('/{event}/store', [ReviewController::class, 'store'])->name('store');
         Route::delete('/{id}/destroy', [ReviewController::class, 'destroy'])->name('destroy');
         Route::get('/{id}/edit', [ReviewController::class, 'edit'])->name('edit');
         Route::patch('/{id}/update', [ReviewController::class, 'update'])->name('update');
-        Route::get('/{id}', [ReviewController::class, 'show'])->name('show');
     });
 
     // Profile(daichi)
@@ -85,7 +95,6 @@ Route::group(['middleware' => 'auth'], function () {
     // ====================================ADMIN ROUTES==========================================
     // =========================================================================================
 
-
     // Admin (Masa)
     Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], function () {
 
@@ -95,7 +104,18 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('/users/{id}/activate', [UsersController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{id}/role', [UsersController::class, 'changeRole'])->name('users.role');
         Route::get('/events', [EventsController::class, 'index'])->name('events');
+        Route::get('/jobs', [JobsController::class, 'index'])->name('jobs');
+        Route::post('/jobs/process-next', [JobsController::class, 'processNext'])->name('jobs.process-next');
+        Route::delete('/jobs/{jobId}', [JobsController::class, 'destroy'])->name('jobs.destroy');
+        Route::get('/events/{event}', [EventsController::class, 'show'])->name('events.show');
+        Route::get('/events/{event}/edit', [EventsController::class, 'edit'])->name('events.edit');
+        Route::patch('/events/{event}', [EventsController::class, 'update'])->name('events.update');
+        Route::delete('/events/{event}', [EventsController::class, 'destroy'])->name('events.destroy');
         Route::get('/communities', [CommunitiesController::class, 'index'])->name('communities');
+        Route::get('/communities/{community}', [CommunitiesController::class, 'show'])->name('communities.show');
+        Route::get('/communities/{community}/edit', [CommunitiesController::class, 'edit'])->name('communities.edit');
+        Route::patch('/communities/{community}', [CommunitiesController::class, 'update'])->name('communities.update');
+        Route::delete('/communities/{community}', [CommunitiesController::class, 'destroy'])->name('communities.destroy');
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications');
         Route::get('/notifications/create', [AdminNotificationController::class, 'create'])->name('notifications.create');
         Route::get('/notifications/{notification}', [AdminNotificationController::class, 'show'])->name('notifications.show');
@@ -104,8 +124,22 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('/notifications/{notification}', [AdminNotificationController::class, 'update'])->name('notifications.update');
         Route::delete('/notifications/{notification}', [AdminNotificationController::class, 'destroy'])->name('notifications.destroy');
         Route::get('/messages', [ContentController::class, 'messages'])->name('messages');
+        Route::get('/messages/{message}', [ContentController::class, 'showMessage'])->name('messages.show');
+        Route::post('/messages/users/{user}/block', [ContentController::class, 'blockMessageUser'])
+            ->name('messages.block');
+        Route::delete('/messages/users/{user}/block', [ContentController::class, 'unblockMessageUser'])
+            ->name('messages.unblock');
+        Route::delete('/messages/{message}', [ContentController::class, 'destroyMessage'])
+            ->name('messages.destroy');
         Route::get('/comments', [ContentController::class, 'comments'])->name('comments');
+        Route::get('/comments/{comment}', [ContentController::class, 'showComment'])->name('comments.show');
+        Route::get('/comments/{comment}/edit', [ContentController::class, 'editComment'])->name('comments.edit');
+        Route::patch('/comments/{comment}', [ContentController::class, 'updateComment'])->name('comments.update');
+        Route::delete('/comments/{comment}', [ContentController::class, 'destroyComment'])->name('comments.destroy');
         Route::get('/reviews', [ContentController::class, 'reviews'])->name('reviews');
+        Route::get('/contacts', [AdminContactController::class, 'index'])->name('contacts');
+        Route::get('/contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
+        Route::post('/contacts/{contact}/reply', [AdminContactController::class, 'reply'])->name('contacts.reply');
 
         // Categories Management Admin (Masa)
         Route::get('/categories', [ContentController::class, 'categories'])->name('categories.index');
@@ -115,29 +149,20 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
 
-
-        // Poduct Review Management and Review Sorting Admin(Masa)
+        // Event Review Management Admin(Masa)
         Route::group(['prefix' => 'reviews', 'as' => 'reviews.'], function () {
-            Route::post('/{product_id}/store', [ReviewController::class, 'store'])->name('store');
-            Route::delete('/{id}/destroy', [ReviewController::class, 'destroy'])->name('destroy');
-            Route::get('/{id}/edit', [ReviewController::class, 'edit'])->name('edit');
-            Route::patch('/{id}/update', [ReviewController::class, 'update'])->name('update');
-            Route::get('/search', [ReviewController::class, 'search'])->name('search');
-            Route::get('/products', [AdminReviewController::class, 'show'])->name('show');
+            Route::get('/{review}', [ContentController::class, 'showReview'])->name('show');
+            Route::get('/{review}/edit', [AdminReviewController::class, 'edit'])->name('edit');
+            Route::patch('/{review}', [AdminReviewController::class, 'update'])->name('update');
+            Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->name('destroy');
         });
 
     });
 });
 
-Auth::routes();
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
-
 // ==========================================================================
 // ============================ Event Management ============================
 // ==========================================================================
-Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
 
@@ -165,10 +190,3 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'store'])->name('bookmarks.store');
     Route::delete('/events/{event}/bookmark', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 });
-
-
-Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
-Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
-Route::post('/events/{event}/join', [EventController::class, 'requestJoin'])->name('events.join');
-Route::delete('/events/{event}/join', [EventController::class, 'cancelJoin'])->name('events.join.cancel');
-

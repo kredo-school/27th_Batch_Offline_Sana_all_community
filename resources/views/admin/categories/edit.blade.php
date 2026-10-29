@@ -23,7 +23,7 @@
                 </div>
 
                 <div class="d-flex justify-content-center gap-2">
-                    <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-warning btn-custom-outline">Cancel</a>
                     <button type="submit" class="btn btn-primary">Update Category</button>
                 </div>
             </form>

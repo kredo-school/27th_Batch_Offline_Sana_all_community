@@ -76,6 +76,10 @@
             width: min(100%, 620px);
         }
 
+        /* .dropdown-menu{
+            color: #126b6b !important;
+            background-color: rgba(192, 245, 245, 0.5) !important;
+        } */
         .message-chat-panel {
             position: fixed;
             right: 16px;
@@ -126,6 +130,7 @@
         .message-chat-close:hover,
         .message-chat-close:focus-visible {
             background: #ffffff24;
+            
         }
 
         .message-chat-status {
@@ -232,6 +237,34 @@
             height: auto;
         }
 
+        .category-nav .nav-link:hover,
+        .category-nav .nav-link:focus-visible {
+           color: #126b6b !important;
+            background-color: rgba(192, 245, 245, 0.5) !important;
+        }
+
+        .dropdown-menu .dropdown-item:hover,
+        .dropdown-menu .dropdown-item:focus-visible {
+            color: #126b6b !important;
+            background-color: rgba(192, 245, 245, 0.5) !important;
+        }
+
+        .btn-create{
+            width: 6%;
+            height: 20px;
+            text-align: center !important;
+        }
+
+        .btn-custom-outline:hover,
+        .btn-custom-outline:active {
+            color: #ffffff !important;
+        }
+
+        .user-menu-icon{
+            width: 20px;
+            height: auto;
+        }
+
         @media (max-width: 480px) {
             .message-chat-panel {
                 right: 10px;
@@ -276,7 +309,7 @@
                             <a class="nav-link text-dark" href="#">MEET UP</a>
                             <a class="nav-link text-dark" href="#">JOB</a>
                             <a class="nav-link text-dark" href="#">OTHER</a>
-                            <a class="nav-link text-dark" href="{{ route('community.index') }}">COMMUNITY</a>
+                            <a class="nav-link text-dark" href="{{ route('community.index')}}">COMMUNITY</a>
                             <a class="nav-link text-dark" href="#">VIEW ALL</a>
                         </li>
 
@@ -310,12 +343,15 @@
                                         <button id="messageDropdown" class="nav-link dropdown-toggle text-dark no-arrow" type="button"
                                             data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="fa-regular fa-envelope dropdown-icon-lg"></i>
+                                            <span id="unread-messages-badge" class="badge rounded-pill bg-danger"
+                                                @if ($unreadMessagesCount < 1) hidden @endif>{{ $unreadMessagesCount }}</span>
                                         </button>
                                         {{-- show latest messages --}}
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageDropdown"
+                                        <ul class="dropdown-menu border-primary rounded" aria-labelledby="messageDropdown"
                                             style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
+                                            <li class="bg-primary text-center"><span class="h5 text-white">Messages</span></li>
                                             @forelse ($chats as $chat)
-                                                <li>
+                                                <li class="dropdown-content">
                                                     <button type="button"
                                                         class="dropdown-item text-wrap border-bottom text-start js-open-message-chat"
                                                         data-message-chat-url="{{ route('messages.conversation', $chat['participant']->id) }}"
@@ -346,6 +382,8 @@
                                             @endforelse
                                             {{-- go to the all show messages --}}
                                             <li><a href="{{ route('messages.index') }}" class="dropdown-item text-primary">Show All</a></li>
+                                                <li><button type="button" class="dropdown-item text-primary" data-bs-toggle="modal"
+                                                    data-bs-target="#create-message-modal">Create Message</button></li>
                                         </ul>
                                     </li>
                                 </ul>
@@ -359,10 +397,11 @@
                                                 <span class="badge rounded-pill bg-danger">{{ $unreadNotificationCount }}</span>
                                             @endif
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown"
+                                        <ul class="dropdown-menu border-primary rounded" aria-labelledby="notificationDropdown"
                                             style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
+                                            <li class="text-center bg-success"><span class="h5 text-white">Notifications</span></li>
                                             @forelse ($notifications as $notification)
-                                                <li>
+                                                <li class="dropdown-content">
                                                     <a href="{{ route('notifications.show', $notification) }}"
                                                         class="dropdown-item text-wrap border-bottom text-start {{ $notification->read_at ? '' : 'fw-semibold bg-body-tertiary' }}">
                                                             <span class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
@@ -405,7 +444,9 @@
                                     </li>
                                 @endif
                             @else
-                                <a href="#" class="btn btn-success text-white" data-bs-toggle="modal" data-bs-target="#modal-post">CREATE</a>
+                                <a href="#" class="btn btn-primary text-white btn-create mt-2 d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#modal-post">
+                                    <span>CREATE</span>
+                                </a>
                                 <li class="nav-item dropdown">
 
                                     <a id="navbarDropdown" class="nav-link dropdown-toggle text-dark" href="#"
@@ -417,7 +458,7 @@
                                                 $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                     ? $avatarPath : asset('storage/'.$avatarPath);
                                             @endphp
-                                            <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                            <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username }}" class="rounded-circle navbar-avatar" width="36" height="36">
                                         @else
                                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                         @endif
@@ -434,8 +475,25 @@
                                         @endif
 
                                         <a href="{{ route('profile.show', Auth::user()->id) }}" class="dropdown-item">
-                                            <i class="fa-solid fa-circle-user"></i> Profile
+                                            <i class="fa-solid fa-circle-user user-menu-icon"></i> Profile
                                         </a>
+
+                                         <a href="#" class="dropdown-item">
+                                            <i class="fa-solid fa-book-bookmark user-menu-icon"></i> Bookmark
+                                        </a>
+
+                                         <a href="#" class="dropdown-item">
+                                            <i class="fa-solid fa-person-walking user-menu-icon"></i> Activity
+                                        </a>
+
+                                         <a href="#" class="dropdown-item">
+                                            <i class="fa-solid fa-people-group user-menu-icon"></i> Community
+                                        </a>
+
+                                         <a href="{{ route('notifications.index') }}" class="dropdown-item">
+                                            <i class="fa-regular fa-message user-menu-icon"></i>
+                                            Message
+                                         </a>
                                         <hr class="dropdown-divider">
 
                                         <a class="dropdown-item" href="{{ route('logout') }}"
@@ -458,11 +516,71 @@
         </nav>
 
         <main
-            class="{{ request()->routeIs('login', 'register') ? 'auth-main' : '' }} {{ request()->routeIs('admin.categories.create', 'admin.categories.edit') ? 'category-form-main' : '' }}">
+            class="{{ request()->routeIs('login', 'register') ? 'auth-main' : '' }} {{ request()->routeIs('admin.categories.create', 'admin.categories.edit', 'admin.events.edit', 'admin.communities.edit', 'admin.communities.show', 'admin.messages.show') ? 'category-form-main' : '' }}">
             @yield('content')
         </main>
 
+        <div class="modal fade" id="action-confirmation-modal" tabindex="-1"
+            aria-labelledby="action-confirmation-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="action-confirmation-title">Confirm action</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="action-confirmation-message"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="action-confirmation-submit">Continue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @auth
+            <div class="modal fade" id="create-message-modal" tabindex="-1"
+                aria-labelledby="create-message-title" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title fs-5" id="create-message-title">Create Message</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            @foreach ([['title' => 'Following', 'users' => $followedMessageRecipients], ['title' => 'Others', 'users' => $otherMessageRecipients]] as $recipientGroup)
+                                <section class="border-bottom last:border-bottom-0">
+                                    <h3 class="px-3 py-2 mb-0 bg-light text-uppercase small fw-bold text-secondary">{{ $recipientGroup['title'] }}</h3>
+                                    <div class="list-group list-group-flush">
+                                        @forelse ($recipientGroup['users'] as $recipient)
+                                            <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-3"
+                                                data-bs-dismiss="modal"
+                                                data-message-chat-url="{{ route('messages.conversation', $recipient->id) }}"
+                                                data-message-chat-send-url="{{ route('messages.send', $recipient->id) }}"
+                                                data-message-chat-name="{{ $recipient->username ?? $recipient->name }}">
+                                                <span class="message-chat-avatar">
+                                                    @if ($recipient->profile?->avatar)
+                                                        <img src="{{ $recipient->profile->avatar }}" alt="{{ $recipient->name }}">
+                                                    @else
+                                                        {{ strtoupper(substr($recipient->name ?? '?', 0, 1)) }}
+                                                    @endif
+                                                </span>
+                                                <span class="text-start">
+                                                    <strong class="d-block">{{ $recipient->username ?? $recipient->name }}</strong>
+                                                    @if ($recipient->username && $recipient->name !== $recipient->username)
+                                                        <small class="text-muted">{{ $recipient->name }}</small>
+                                                    @endif
+                                                </span>
+                                            </button>
+                                        @empty
+                                            <p class="text-muted text-center my-3">No users in this group.</p>
+                                        @endforelse
+                                    </div>
+                                </section>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
             <aside id="message-chat-panel" class="message-chat-panel" role="dialog" aria-labelledby="message-chat-title" hidden>
                 <header class="message-chat-header">
                     <h2 id="message-chat-title">{{ __('Conversation') }}</h2>

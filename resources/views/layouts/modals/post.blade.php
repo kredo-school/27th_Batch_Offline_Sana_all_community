@@ -20,8 +20,8 @@
                     <h3 class="text-bold">Which do you want to create?</h3>
                 </div>
                 <div class="modal-footer border-0 align-items-center d-flex mx-auto">
-                    <a href="#" class="btn btn-act text-white ps-5 pe-5">ACTIVITY</a>
-                    <a href="#" class="btn btn-com text-white ps-4 pe-4">COMMUNITY</a>
+                    <a href="{{ route('events.index')}}" class="btn btn-act text-white ps-5 pe-5">ACTIVITY</a>
+                    <a href="{{ route('community.index')}}" class="btn btn-com text-white ps-4 pe-4">COMMUNITY</a>
                 </div>
             </div>
         </div>

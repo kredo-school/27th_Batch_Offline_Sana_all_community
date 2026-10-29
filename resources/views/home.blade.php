@@ -92,8 +92,8 @@
           </div>
         </form>
         <div class="home-actions">
-          <a href="#" class="btn btn-act text-white home-action border border-radius rounded-white">ACTIVITY</a>
-          <a href="#" class="btn btn-com text-white home-action border border-radius rounded-white">COMMUNITY</a>
+          <a href="{{ route('events.index')}}" class="btn btn-act text-white home-action border border-radius rounded-white">ACTIVITY</a>
+          <a href="{{ route('community.index')}}" class="btn btn-com text-white home-action border border-radius rounded-white">COMMUNITY</a>
         </div>
       </div>
     </section>

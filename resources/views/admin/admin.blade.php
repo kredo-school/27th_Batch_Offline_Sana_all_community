@@ -268,6 +268,11 @@
             margin: 0;
         }
 
+        .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+            color: #126b6b !important;
+            background-color: rgba(192, 245, 245, 0.5) !important;
+        }
+
         @media (max-width: 760px) {
             .admin-dashboard {
                 grid-template-columns: minmax(0, 1fr);
@@ -347,7 +352,7 @@
             </form>
 
             <div class="admin-table-wrap">
-                <table class="table admin-table">
+                <table class="table admin-table table-hover">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -363,7 +368,10 @@
                     </thead>
                     <tbody>
                         @forelse ($all_users as $user)
-                            <tr>
+                            @php
+                                $profileUrl = Route::has('profile.show') ? route('profile.show', $user->id) : null;
+                            @endphp
+                            <tr @if ($profileUrl) style="cursor: pointer;" onclick="if (event.target.closest('a, button, form, input, select')) return; window.location.href = '{{ $profileUrl }}';" @endif>
                                 <td>{{ $user->id }}</td>
                                 <td>
                                     <span class="admin-avatar">
@@ -374,7 +382,14 @@
                                         @endif
                                     </span>
                                 </td>
-                                <td class="fw-semibold">{{ $user->name }}</td>
+                                <td class="fw-semibold">
+                                    @if (Route::has('profile.show'))
+                                        <a href="{{ route('profile.show', $user->id) }}"
+                                            class="text-decoration-none text-dark fw-bold">{{ $user->name }}</a>
+                                    @else
+                                        <span class="text-dark fw-bold">{{ $user->name }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->created_at?->format('M d, Y') ?? '-' }}</td>
                                 <td>{{ $user->preferred_language ?? '-' }}</td>

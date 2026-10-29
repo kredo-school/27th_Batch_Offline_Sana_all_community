@@ -14,7 +14,7 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="table-hover">
             @foreach ($all_users as $user)
                 <tr>
                     <td></td>

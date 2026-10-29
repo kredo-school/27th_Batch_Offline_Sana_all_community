@@ -22,6 +22,9 @@
             @if (session('success'))
                 <div class="alert alert-success" role="status">{{ session('success') }}</div>
             @endif
+            @if (session('status'))
+                <div class="alert alert-success" role="status">{{ session('status') }}</div>
+            @endif
             <section class="profile-card" aria-label="{{ $user->name }}'s profile">
                 <img class="profile-cover" src="{{ $cover }}" alt="Profile cover">
                 <div class="profile-details">
@@ -33,6 +36,19 @@
                     </div>
                     @if (auth()->id() === $user->id)
                         <a href="{{ route('profile.edit') }}" class="profile-edit">Edit Profile</a>
+                    @elseif (auth()->check())
+                        @if ($isBlockedByViewer)
+                            <form action="{{ route('messages.unblock', $user) }}" method="POST" class="mb-3">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-success">Unblock user</button>
+                            </form>
+                        @else
+                            <form action="{{ route('messages.block', $user) }}" method="POST" class="mb-3">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-warning">Block user</button>
+                            </form>
+                        @endif
                     @endif
                     <div class="profile-identity">
                         <h1>{{ $user->name }}</h1>
