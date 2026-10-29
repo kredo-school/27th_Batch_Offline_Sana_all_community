@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\ProfileController;
@@ -45,6 +46,24 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     });
+
+    // Community(Souuuuuu)
+    // コミュニティ一覧・発見
+    Route::get('/community', [CommunityController::class, 'index'])->name('community.index');
+
+    // コミュニティ新規作成画面・保存
+    Route::get('/community/create', [CommunityController::class, 'create'])->name('community.create');
+    Route::post('/community', [CommunityController::class, 'store'])->name('community.store');
+
+    // コミュニティ詳細ページ
+    Route::get('/community/{id}', [CommunityController::class, 'show'])->name('community.show');
+    Route::post('/community/{id}/events', [CommunityController::class, 'storeEvent'])->name('community.events.store');
+
+    // コミュニティ編集画面・更新
+    Route::get('/community/{id}/edit', [CommunityController::class, 'edit'])->name('community.edit');
+    Route::put('/community/{id}', [CommunityController::class, 'update'])->name('community.update');
+    Route::delete('/community/{id}', [CommunityController::class, 'destroy'])->name('community.destroy');
+
     
 
     // ==========================================================================================

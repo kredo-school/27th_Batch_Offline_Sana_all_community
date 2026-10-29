@@ -9,7 +9,10 @@ class Community extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['owner_id', 'name', 'description', 'image', 'visibility', 'language'];
+    protected $fillable = [
+        'owner_id', 'name', 'description', 'category', 'location', 'guidelines',
+        'image', 'icon', 'visibility', 'language',
+    ];
 
     public function owner()
     {

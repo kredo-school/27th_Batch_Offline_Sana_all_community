@@ -120,7 +120,7 @@
                             <a class="nav-link text-dark" href="#">MEET UP</a>
                             <a class="nav-link text-dark" href="#">JOB</a>
                             <a class="nav-link text-dark" href="#">OTHER</a>
-                            <a class="nav-link text-dark" href="#">COMMUNITY</a>
+                            <a class="nav-link text-dark" href="{{ route('community.index') }}">COMMUNITY</a>
                             <a class="nav-link text-dark" href="#">VIEW ALL</a>
                         </li>
 
