@@ -10,11 +10,11 @@
         $cover = $imageUrl($user->profile?->cover_image, 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85');
         $avatar = $imageUrl($user->profile?->avatar, asset('images/onlylogo.jpg'));
     @endphp
-    <div class="profile-page">
+    <div class="profile-page profile-overview">
         <nav class="profile-sidebar" aria-label="Profile navigation">
-            @foreach (['Profile', 'Review', 'History', 'Event', 'Bookmark', 'Community'] as $tab)
+            @foreach (['Profile' => 'fa-user', 'Review' => 'fa-star', 'History' => 'fa-clock-rotate-left', 'Event' => 'fa-calendar-days', 'Bookmark' => 'fa-bookmark', 'Community' => 'fa-users'] as $tab => $icon)
                 <button type="button" class="profile-nav-item {{ $loop->first ? 'is-active' : '' }}"
-                    data-profile-tab="{{ strtolower($tab) }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">{{ $tab }}</button>
+                    data-profile-tab="{{ strtolower($tab) }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}"><i class="fa-solid {{ $icon }}" aria-hidden="true"></i>{{ $tab }}</button>
             @endforeach
         </nav>
 
@@ -34,22 +34,24 @@
                             <a class="profile-camera" href="{{ route('profile.edit') }}" aria-label="Change profile photo"><i class="fa-solid fa-camera" aria-hidden="true"></i></a>
                         @endif
                     </div>
-                    @if (auth()->id() === $user->id)
-                        <a href="{{ route('profile.edit') }}" class="profile-edit">Edit Profile</a>
-                    @elseif (auth()->check())
-                        @if ($isBlockedByViewer)
-                            <form action="{{ route('messages.unblock', $user) }}" method="POST" class="mb-3">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-outline-success">Unblock user</button>
-                            </form>
-                        @else
-                            <form action="{{ route('messages.block', $user) }}" method="POST" class="mb-3">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-warning">Block user</button>
-                            </form>
+                    <div class="profile-actions">
+                        @if (auth()->id() === $user->id)
+                            <a href="{{ route('profile.edit') }}" class="profile-edit">Edit Profile</a>
+                        @elseif (auth()->check())
+                            @if ($isBlockedByViewer)
+                                <form action="{{ route('messages.unblock', $user) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-success">Unblock user</button>
+                                </form>
+                            @else
+                                <form action="{{ route('messages.block', $user) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-warning">Block user</button>
+                                </form>
+                            @endif
                         @endif
-                    @endif
+                    </div>
                     <div class="profile-identity">
                         <h1>{{ $user->name }}</h1>
                         <p class="profile-handle">{{ '@'.($user->username ?: 'user'.$user->id) }}</p>
@@ -65,21 +67,31 @@
 
             <section class="profile-feed" aria-label="Profile activity">
                 <div data-profile-panel="profile event">
+                    <div class="profile-feed-heading">
+                        <h2>Hosted events</h2>
+                        <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? 'event' : 'events' }}</span>
+                    </div>
                     @forelse ($events as $event)
                         <article class="profile-post" id="event-{{ $event->id }}">
                             <header class="profile-post-header">
                                 <img class="profile-post-avatar" src="{{ $avatar }}" alt="">
-                                <div><h2>{{ $user->name }}</h2><p>{{ '@'.($user->username ?: 'user'.$user->id) }} · <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></p></div>
+                                <div class="profile-post-author"><p class="profile-post-name">{{ $user->name }}</p><p>{{ '@'.($user->username ?: 'user'.$user->id) }} · <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></p></div>
                                 <details class="profile-post-menu"><summary aria-label="Event options"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary><div><button type="button" data-copy-event="{{ url()->current().'#event-'.$event->id }}"><i class="fa-solid fa-link" aria-hidden="true"></i> Copy link</button></div></details>
                             </header>
-                            <div class="profile-post-body"><h3>{{ $event->title }}</h3>
+                            <div class="profile-post-body"><h3><a href="{{ route('events.show', $event) }}" class="profile-event-title">{{ $event->title }}</a></h3>
                                 @if ($event->categories->isNotEmpty())
-                                    <p class="mb-2">@foreach ($event->categories as $category)<span class="badge bg-success me-1">{{ $category->name }}</span>@endforeach</p>
+                                    <p class="profile-post-categories">@foreach ($event->categories as $category)<span class="badge">{{ $category->name }}</span>@endforeach</p>
                                 @endif
                                 <p>{{ $event->description }}</p>
-                                @if ($event->image)<img class="profile-post-image" src="{{ $imageUrl($event->image, '') }}" alt="{{ $event->title }}" loading="lazy">@endif
+                                @if ($event->image)<a href="{{ route('events.show', $event) }}"><img class="profile-post-image" src="{{ $imageUrl($event->image, '') }}" alt="{{ $event->title }}" loading="lazy"></a>@endif
                             </div>
-                            <footer class="profile-post-footer"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ $event->start_at?->format('M j, Y') ?? 'Date to be announced' }}</span><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->location ?: 'Location to be announced' }}</span></footer>
+                            <footer class="profile-post-footer">
+                                <div class="profile-event-meta">
+                                    <span><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ $event->start_at?->format('M j, Y') ?? 'Date to be announced' }}</span>
+                                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->location ?: 'Location to be announced' }}</span>
+                                </div>
+                                <a href="{{ route('events.show', $event) }}" class="profile-event-details" aria-label="View details for {{ $event->title }}">View details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                            </footer>
                         </article>
                     @empty
                         <p class="profile-events-empty">No events shared yet.</p>
