@@ -36,7 +36,40 @@
                 <div class="profile-editor-fields">
                     <div><label for="name">Name *</label><input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="255" autocomplete="name"></div>
                     <div><label for="username">Username *</label><input id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="255" autocomplete="username"></div>
-                    <div><label for="country">Nation</label><input id="country" name="country" value="{{ old('country', $user->profile?->country) }}" maxlength="100" autocomplete="country-name"></div>
+                    <div><label for="country">Country</label><input id="country" name="country" value="{{ old('country', $user->profile?->country) }}" maxlength="100" autocomplete="country-name"></div>
+                    <div><label for="region">Region / City</label><input id="region" name="region" value="{{ old('region', $user->profile?->region) }}" maxlength="100" autocomplete="address-level1"></div>
+                    <div><label for="occupation">Occupation</label><input id="occupation" name="occupation" value="{{ old('occupation', $user->profile?->occupation) }}" maxlength="100" autocomplete="organization-title"></div>
+                    @php
+                        $birthdayParts = explode('-', old('birthday', $user->profile?->birthday?->format('Y-m-d')) ?? '');
+                        $birthdayYear = old('birthday_year', $birthdayParts[0] ?? '');
+                        $birthdayMonth = old('birthday_month', $birthdayParts[1] ?? '');
+                        $birthdayDay = old('birthday_day', $birthdayParts[2] ?? '');
+                    @endphp
+                    <div>
+                        <label id="birthday-label">Birthday (optional)</label>
+                        <div class="profile-birthday-fields" role="group" aria-labelledby="birthday-label">
+                            <select name="birthday_month" aria-label="Month" autocomplete="bday-month">
+                                <option value="">Month</option>
+                                @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
+                                    <option value="{{ $loop->iteration }}" @selected((int) $birthdayMonth === $loop->iteration)>{{ $month }}</option>
+                                @endforeach
+                            </select>
+                            <select name="birthday_day" aria-label="Day" autocomplete="bday-day">
+                                <option value="">Day</option>
+                                @for ($day = 1; $day <= 31; $day++)
+                                    <option value="{{ $day }}" @selected((int) $birthdayDay === $day)>{{ $day }}</option>
+                                @endfor
+                            </select>
+                            <select name="birthday_year" aria-label="Year" autocomplete="bday-year">
+                                <option value="">Year</option>
+                                @for ($year = now()->year; $year >= now()->year - 150; $year--)
+                                    <option value="{{ $year }}" @selected((int) $birthdayYear === $year)>{{ $year }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <small>Your age is calculated from your birthday.</small>
+                    </div>
+                    <div><label for="gender">Gender (optional)</label><select id="gender" name="gender">@foreach (['' => 'Prefer not to say', 'male' => 'Male', 'female' => 'Female', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('gender', $user->profile?->gender) == $value)>{{ $label }}</option>@endforeach</select></div>
                     <div><label for="preferred_language">Language *</label><select id="preferred_language" name="preferred_language" required>@foreach (['en' => 'English', 'ja' => 'Japanese'] as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
                     <div class="profile-bio-field"><label for="bio">Bio</label><div class="profile-bio-input"><textarea id="bio" name="bio" maxlength="300" rows="3">{{ old('bio', $user->profile?->bio) }}</textarea><span id="bio-count" aria-live="polite">0/300</span></div></div>
                 </div>

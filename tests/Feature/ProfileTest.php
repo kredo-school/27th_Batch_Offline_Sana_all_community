@@ -98,6 +98,66 @@ class ProfileTest extends TestCase
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists([$user->profile->avatar, $user->profile->cover_image]);
     }
 
+    public function test_profile_details_can_be_saved_and_cleared(): void
+    {
+        $user = User::factory()->create();
+        $payload = [
+            'name' => $user->name, 'username' => $user->username,
+            'preferred_language' => 'en', 'region' => 'Cebu',
+            'occupation' => 'Teacher', 'gender' => 'other',
+            'birthday' => now()->subYears(25)->toDateString(), 'age' => 99,
+        ];
+
+        $this->actingAs($user)->get(route('profile.edit'))->assertOk()
+            ->assertSee('name="region"', false)->assertSee('name="occupation"', false)
+            ->assertSee('name="birthday_month"', false)->assertSee('name="gender"', false);
+        $this->patch(route('profile.profile.update'), $payload)->assertSessionHasNoErrors();
+        $profile = $user->fresh()->profile;
+        $this->assertSame('Cebu', $profile->region);
+        $this->assertSame('Teacher', $profile->occupation);
+        $this->assertSame('other', $profile->gender);
+        $this->assertEquals(25, $profile->age);
+
+        $this->patch(route('profile.profile.update'), array_replace($payload, [
+            'region' => '', 'occupation' => '', 'gender' => '', 'birthday' => '',
+        ]))->assertSessionHasNoErrors();
+        $profile->refresh();
+        foreach (['region', 'occupation', 'gender', 'birthday', 'age'] as $field) {
+            $this->assertNull($profile->$field);
+        }
+    }
+
+    public function test_english_birthday_fields_save_and_validate_calendar_dates(): void
+    {
+        $user = User::factory()->create();
+        $payload = ['name' => $user->name, 'username' => $user->username,
+            'preferred_language' => 'en', 'birthday_year' => '2000',
+            'birthday_month' => '2', 'birthday_day' => '29'];
+        $this->actingAs($user)->patch(route('profile.profile.update'), $payload)
+            ->assertSessionHasNoErrors();
+        $this->assertSame('2000-02-29', $user->fresh()->profile->birthday->format('Y-m-d'));
+        $this->get(route('profile.edit'))->assertOk()->assertSee('February');
+        $this->patch(route('profile.profile.update'), array_replace($payload, ['birthday_day' => '30']))
+            ->assertSessionHasErrors('birthday');
+        $this->patch(route('profile.profile.update'), array_replace($payload, ['birthday_month' => '']))
+            ->assertSessionHasErrors('birthday_month');
+        $this->patch(route('profile.profile.update'), array_replace($payload, [
+            'birthday_year' => '', 'birthday_month' => '', 'birthday_day' => '',
+        ]))->assertSessionHasNoErrors();
+        $this->assertNull($user->fresh()->profile->birthday);
+    }
+
+    public function test_future_birthday_and_invalid_profile_fields_are_rejected(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->patch(route('profile.profile.update'), [
+            'name' => $user->name, 'username' => $user->username,
+            'preferred_language' => 'en', 'birthday' => now()->addDay()->toDateString(),
+            'gender' => 'invalid', 'region' => str_repeat('a', 101),
+            'occupation' => str_repeat('a', 101),
+        ])->assertSessionHasErrors(['birthday', 'gender', 'region', 'occupation']);
+    }
+
     public function test_invalid_profile_changes_are_rejected(): void
     {
         $user = User::factory()->create();

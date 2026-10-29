@@ -56,7 +56,11 @@
                                 <div><h2>{{ $user->name }}</h2><p>{{ '@'.($user->username ?: 'user'.$user->id) }} · <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></p></div>
                                 <details class="profile-post-menu"><summary aria-label="Event options"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary><div><button type="button" data-copy-event="{{ url()->current().'#event-'.$event->id }}"><i class="fa-solid fa-link" aria-hidden="true"></i> Copy link</button></div></details>
                             </header>
-                            <div class="profile-post-body"><h3>{{ $event->title }}</h3><p>{{ $event->description }}</p>
+                            <div class="profile-post-body"><h3>{{ $event->title }}</h3>
+                                @if ($event->categories->isNotEmpty())
+                                    <p class="mb-2">@foreach ($event->categories as $category)<span class="badge bg-success me-1">{{ $category->name }}</span>@endforeach</p>
+                                @endif
+                                <p>{{ $event->description }}</p>
                                 @if ($event->image)<img class="profile-post-image" src="{{ $imageUrl($event->image, '') }}" alt="{{ $event->title }}" loading="lazy">@endif
                             </div>
                             <footer class="profile-post-footer"><span><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ $event->start_at?->format('M j, Y') ?? 'Date to be announced' }}</span><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->location ?: 'Location to be announced' }}</span></footer>

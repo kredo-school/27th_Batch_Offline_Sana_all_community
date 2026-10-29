@@ -410,7 +410,7 @@
                                                 title="{{ $user->role === 'admin' ? 'Change to user' : 'Make admin' }}">
                                                 <i class="fa-solid fa-user-gear"></i>
                                             </button>
-                                            </div>
+                                        </div>
                                     @endif
                                 </td>
                             </tr>
@@ -423,9 +423,8 @@
                 </table>
             </div>
 
-            <div class="admin-pagination">
-                <span>Showing {{ $all_users->firstItem() ?? 0 }}–{{ $all_users->lastItem() ?? 0 }} of {{ $all_users->total() }}</span>
-                {{ $all_users->links() }}
+            <div class="admin-pagination d-flex justify-content-center">
+                {{ $all_users->withQueryString()->links() }}
             </div>
         </section>
     </div>

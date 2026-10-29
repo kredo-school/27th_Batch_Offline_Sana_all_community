@@ -92,6 +92,22 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-6 offset-md-4">
+                                <small class="text-muted">
+                                    By registering, you agree to our
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#modal-term">Terms and Privacy</a>
+                                    <div class="form-check mt-1">
+                                        <input type="checkbox" name="agree" id="register-agree" class="form-check-input @error('agree') is-invalid @enderror" value="1" required>
+                                        <label for="register-agree" class="form-check-label">I agree with the terms and policy</label>
+                                        @error('agree')
+                                            <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                        @enderror
+                                    </div>
+                                </small>
+                            </div>
+                        </div>
+
                         <div class="row mb-0">
                             <div class="col-md-6 offset-md-4">
                                 <button type="submit" class="btn btn-primary">
