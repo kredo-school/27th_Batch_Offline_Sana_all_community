@@ -1,44 +1,46 @@
 @extends('layouts.app')
 
 @section('title', 'Edit Review')
-    
+
 @section('content')
-    
-<div class="mt-3">
-    
-    <form action="{{ route('review.update', $review->id) }}" method="POST">
-    @csrf
-    @method('PATCH') 
+<div class="container py-4" style="max-width: 720px;">
+    <h1 class="h4 mb-1">Edit review #{{ $review->id }}</h1>
+    <p class="text-secondary small mb-4">
+        By {{ $review->user->name ?? 'Unknown user' }}
+        @if ($review->event)
+            on <a href="{{ route('admin.events.show', $review->event) }}">{{ $review->event->title }}</a>
+        @endif
+    </p>
 
-    <!-- enter review score -->
-    
-            <select class="form-select" aria-label="Default select example" name="rating">
-                <option selected>Rate the Product</option>
-                <option value="1"><i class="fa-regular fa-thumbs-up" data-rating="1" style="cursor: pointer;"></i>Very Poor </option>
-                <option value="2"><i class="fa-regular fa-thumbs-up" data-rating="2" style="cursor: pointer;">Poor</i></option>
-                <option value="3"><i class="fa-regular fa-thumbs-up" data-rating="3" style="cursor: pointer;"></i> Average</option>
-                <option value="4"><i class="fa-regular fa-thumbs-up" data-rating="4" style="cursor: pointer;"></i> Good</option>
-                <option value="5"><i class="fa-regular fa-thumbs-up" data-rating="5" style="cursor: pointer;"></i> Very Good</option>
+    <form action="{{ route('admin.reviews.update', $review) }}" method="POST">
+        @csrf
+        @method('PATCH')
+
+        <div class="mb-3">
+            <label for="rating" class="form-label">Rating</label>
+            <select name="rating" id="rating" class="form-select" required>
+                @foreach ([5 => '5 - Very good', 4 => '4 - Good', 3 => '3 - Average', 2 => '2 - Poor', 1 => '1 - Very poor'] as $value => $label)
+                    <option value="{{ $value }}" @selected((int) old('rating', $review->rating) === $value)>{{ $label }}</option>
+                @endforeach
             </select>
-           
-      
-    <input type="hidden" name="rating" id="rating-input" value="{{ old('rating', $review->rating) }}" required>
-    
-    @error('rating')
-        <div style="color: red;">{{ $message }}</div>
-    @enderror
+            @error('rating')
+                <div class="text-danger small">{{ $message }}</div>
+            @enderror
+        </div>
 
-    
-    <div style="margin-top: 15px;">
-        <label for="comment">Comment</label><br>
-        <textarea name="comment" id="comment" rows="4" required>{{ old('comment', $review->comment) }}</textarea>
-    </div>
+        <div class="mb-3">
+            <label for="comment" class="form-label">Review</label>
+            <textarea name="comment" id="comment" rows="5" class="form-control" maxlength="1000">{{ old('comment', $review->comment) }}</textarea>
+            @error('comment')
+                <div class="text-danger small">{{ $message }}</div>
+            @enderror
+        </div>
 
-    <a href="" class="btn btn-warning btn-sm">Cancel</a>
-    <button type="submit" style="margin-top: 15px;">Submit</button>
-</form>
-
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.reviews') }}" class="btn btn-outline-warning btn-custom-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+    </form>
 </div>
-
 @endsection
 

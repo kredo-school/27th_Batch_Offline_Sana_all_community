@@ -31,7 +31,7 @@
                     @enderror
             </div>
             <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm btn-custom-outline" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-warning btn-sm text-white">Change</button>
                 </form>
             </div>

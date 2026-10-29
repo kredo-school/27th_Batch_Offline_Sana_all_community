@@ -11,3 +11,8 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+
+ .btn-custom-outline:hover,
+.btn-custom-outline:active {
+    color: #ffffff !important;
+}

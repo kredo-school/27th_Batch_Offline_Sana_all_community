@@ -1,4 +1,54 @@
 import './bootstrap';
+import { Modal } from 'bootstrap';
+
+const confirmationModalElement = document.querySelector('#action-confirmation-modal');
+const confirmationMessage = document.querySelector('#action-confirmation-message');
+const confirmationSubmit = document.querySelector('#action-confirmation-submit');
+
+if (confirmationModalElement && confirmationMessage && confirmationSubmit) {
+	const confirmationModal = new Modal(confirmationModalElement);
+	let pendingForm = null;
+	let confirmedForm = null;
+
+	document.addEventListener('submit', (event) => {
+		const form = event.target.closest('form[data-confirm]');
+		if (!form) {
+			return;
+		}
+
+		if (confirmedForm === form) {
+			confirmedForm = null;
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		pendingForm = form;
+		const confirmMessage = form.dataset.confirmMessage || 'Are you sure you want to continue?';
+		const isDeleteAction = /\bdelete\b/i.test(confirmMessage);
+		confirmationMessage.textContent = confirmMessage;
+		confirmationSubmit.textContent = isDeleteAction ? 'Delete' : 'Continue';
+		confirmationSubmit.classList.toggle('btn-danger', isDeleteAction);
+		confirmationSubmit.classList.toggle('btn-primary', !isDeleteAction);
+		confirmationModal.show();
+	}, true);
+
+	confirmationSubmit.addEventListener('click', () => {
+		if (!pendingForm) {
+			return;
+		}
+
+		const form = pendingForm;
+		pendingForm = null;
+		if (!form.reportValidity()) {
+			return;
+		}
+
+		confirmedForm = form;
+		confirmationModal.hide();
+		form.requestSubmit();
+	});
+}
 
 const chatPanel = document.querySelector('#message-chat-panel');
 const chatTitle = document.querySelector('#message-chat-title');
@@ -54,6 +104,10 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 	};
 
 	document.addEventListener('click', async (event) => {
+		if (event.target.closest('form')) {
+			return;
+		}
+
 		const openButton = event.target.closest('[data-message-chat-url]');
 
 		if (openButton) {
@@ -63,6 +117,8 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 			chatStatus.textContent = 'Loading messages...';
 			chatList.replaceChildren();
 			chatForm.dataset.sendUrl = openButton.dataset.messageChatSendUrl;
+			chatInput.disabled = false;
+			chatForm.querySelector('button[type="submit"]').disabled = false;
 
 			try {
 				const response = await fetch(openButton.dataset.messageChatUrl, {
@@ -79,8 +135,19 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 					return;
 				}
 
+				const unreadBadge = document.querySelector('#unread-messages-badge');
+				if (unreadBadge && Number.isInteger(conversation.unread_count)) {
+					unreadBadge.textContent = conversation.unread_count;
+					unreadBadge.hidden = conversation.unread_count < 1;
+				}
+
 				chatTitle.textContent = conversation.participant.name || chatTitle.textContent;
 				chatStatus.textContent = conversation.messages.length ? '' : 'No messages in this conversation.';
+				chatInput.disabled = !conversation.can_send;
+				chatForm.querySelector('button[type="submit"]').disabled = !conversation.can_send;
+				if (!conversation.can_send) {
+					chatStatus.textContent = 'Messaging is unavailable because one of you blocked the other.';
+				}
 
 				for (const message of conversation.messages) {
 					appendMessage(message);
@@ -103,7 +170,7 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 	chatForm.addEventListener('submit', async (event) => {
 		event.preventDefault();
 		const message = chatInput.value.trim();
-		if (!message || !chatForm.dataset.sendUrl) {
+		if (!message || !chatForm.dataset.sendUrl || chatInput.disabled) {
 			return;
 		}
 
@@ -135,7 +202,7 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		} catch (error) {
 			chatStatus.textContent = error.message || 'Could not send message.';
 		} finally {
-			submitButton.disabled = false;
+			submitButton.disabled = chatInput.disabled;
 			chatInput.focus();
 		}
 	});

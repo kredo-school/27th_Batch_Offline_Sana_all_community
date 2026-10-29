@@ -8,21 +8,24 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    @if (session('contact_status'))
+                        <div class="alert alert-success py-2" role="status">{{ session('contact_status') }}</div>
+                    @endif
                     <div class="container">
                         <div class="row justify-content-center">
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-body">
-                                        <form method="POST" action="#">
+                                        <form method="POST" action="{{ route('contact.store') }}">
                                             @csrf
 
                                             <div class="row mb-3">
-                                                <label for="name" class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
+                                                <label for="name" class="col-md-4 col-form-label text-md-start">{{ __('Name') }}</label>
 
-                                                <div class="col-md-6">
-                                                    <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
+                                                <div class="col-md-9">
+                                                    <input id="name" type="text" class="form-control @error('name', 'contact') is-invalid @enderror" name="name" value="{{ old('name', optional(Auth::user())->name) }}" required autocomplete="name" autofocus>
 
-                                                    @error('name')
+                                                    @error('name', 'contact')
                                                         <span class="invalid-feedback" role="alert">
                                                             <strong>{{ $message }}</strong>
                                                         </span>
@@ -31,13 +34,13 @@
                                             </div>
 
                                             <div class="row mb-3">
-                                                <label for="username" class="col-md-4 col-form-label text-md-end">{{ __('Username') }}</label>
+                                                <label for="username" class="col-md-4 col-form-label text-md-start">{{ __('Username') }}</label>
 
-                                                <div class="col-md-6">
-                                                    <input id="username" type="text" class="form-control @error('username') is-invalid @enderror"
-                                                        name="username" value="{{ old('username') }}" required autocomplete="username">
+                                                <div class="col-md-9">
+                                                    <input id="username" type="text" class="form-control @error('username', 'contact') is-invalid @enderror"
+                                                        name="username" value="{{ old('username', optional(Auth::user())->username) }}" autocomplete="username">
 
-                                                    @error('username')
+                                                    @error('username', 'contact')
                                                         <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                                                     @enderror
                                                 </div>
@@ -45,12 +48,12 @@
 
 
                                             <div class="row mb-3">
-                                                <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
+                                                <label for="email" class="col-md-4 col-form-label text-md-start">{{ __('Email Address') }}</label>
 
-                                                <div class="col-md-6">
-                                                    <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
+                                                <div class="col-md-9">
+                                                    <input id="email" type="email" class="form-control @error('email', 'contact') is-invalid @enderror" name="email" value="{{ old('email', optional(Auth::user())->email) }}" required autocomplete="email">
 
-                                                    @error('email')
+                                                    @error('email', 'contact')
                                                         <span class="invalid-feedback" role="alert">
                                                             <strong>{{ $message }}</strong>
                                                         </span>
@@ -59,24 +62,13 @@
                                             </div>
 
                                             <div class="row mb-3">
-                                                <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
+                                                <label for="detail" class="col-md-4 col-form-label text-md-start">Detail</label>
 
-                                                <div class="col-md-6">
-                                                    <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
-
-                                                    @error('password')
-                                                        <span class="invalid-feedback" role="alert">
-                                                            <strong>{{ $message }}</strong>
-                                                        </span>
+                                                <div class="col-md-9">
+                                                   <textarea class="form-control @error('detail', 'contact') is-invalid @enderror" id="detail" name="detail" rows="3" required>{{ old('detail') }}</textarea>
+                                                    @error('detail', 'contact')
+                                                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                                                     @enderror
-                                                </div>
-                                            </div>
-
-                                            <div class="row mb-3">
-                                                <label for="detail" class="col-md-4 col-form-label text-md-end">Detail</label>
-
-                                                <div class="col-md-6">
-                                                   <textarea class="form-control" id="detail" name="detail" rows="3"></textarea>
                                                 </div>
                                             </div>
 
@@ -100,3 +92,14 @@
             </div>
         </div>
     </div>
+
+@if (session('contact_status') || $errors->contact->isNotEmpty())
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var contactModal = document.getElementById('modal-contact');
+            if (contactModal) {
+                bootstrap.Modal.getOrCreateInstance(contactModal).show();
+            }
+        });
+    </script>
+@endif

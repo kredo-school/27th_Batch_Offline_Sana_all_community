@@ -15,7 +15,7 @@
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="role" value="{{ $newRole }}">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm btn-custom-outline" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary btn-sm">Confirm</button>
                 </form>
             </div>

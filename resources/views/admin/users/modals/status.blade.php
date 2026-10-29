@@ -17,7 +17,7 @@
                         @csrf
                         @method('PATCH')
 
-                        <button type="button" class="btn btn-outline-success btn-sm"
+                        <button type="button" class="btn btn-outline-warning btn-sm"
                             data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-success btn-sm">Activate</button>
                     </form>
@@ -44,7 +44,7 @@
                         @csrf
                         @method('DELETE')
 
-                        <button type="button" class="btn btn-outline-danger btn-sm"
+                        <button type="button" class="btn btn-outline-warning btn-sm btn-custom-outline"
                             data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
                     </form>

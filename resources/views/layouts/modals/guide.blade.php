@@ -342,7 +342,7 @@ Share. Connect. Help. Respect.<br>
                         @method('PATCH')
                         <input type="checkbox", name="agree" id="agree">
                         <label for="checkbox">I agree with the terms and policy</label>
-                        <button type="button" class="btn btn-outline-success btn-sm"
+                        <button type="button" class="btn btn-outline-warning btn-sm"
                             data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-success btn-sm">Submit</button>
                     </form> --}}

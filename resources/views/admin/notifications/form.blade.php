@@ -3,6 +3,10 @@
     @php
         $selectedUser = (string) old('user_id', $notification->user_id ?? '');
     @endphp
+    @if ($notification?->recipient_label)
+        <input type="text" class="form-control" value="{{ $notification->recipient_label }}" disabled>
+        <input type="hidden" name="user_id" value="{{ $notification->user_id }}">
+    @else
     <select name="user_id" id="user_id" class="form-select @error('user_id') is-invalid @enderror" required>
         <option value="">Select recipient</option>
         @unless ($notification)
@@ -19,6 +23,7 @@
             @endforeach
         </optgroup>
     </select>
+    @endif
     @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 
@@ -78,6 +83,6 @@
 </div>
 
 <div class="d-flex justify-content-end gap-2">
-    <a href="{{ route('admin.notifications') }}" class="btn btn-outline-secondary">Cancel</a>
+    <a href="{{ route('admin.notifications') }}" class="btn btn-outline-warning btn-custom-outline">Cancel</a>
     <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
 </div>

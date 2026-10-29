@@ -347,7 +347,7 @@
                                 <div class="modal-footer">
 
                                     <button type="button"
-                                        class="btn btn-secondary"
+                                        class="btn btn-outline-warning"
                                         data-bs-dismiss="modal">
                                         Cancel
                                     </button>

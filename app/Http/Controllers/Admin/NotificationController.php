@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
@@ -13,12 +14,21 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $type = $request->query('type');
+        $search = trim((string) $request->query('search', ''));
 
         // A send to a whole role creates one row per user; list it once.
         $firstOfBroadcast = UserNotification::query()
             ->selectRaw('MIN(id)')
             ->whereNotNull('recipient_label')
             ->groupBy('recipient_label', 'sender_name', 'type', 'title', 'message', 'created_at');
+
+        $sortOptions = [
+            'latest' => ['created_at', 'desc'],
+            'oldest' => ['created_at', 'asc'],
+            'notification_asc' => ['title', 'asc'],
+            'notification_desc' => ['title', 'desc'],
+        ];
+        [$column, $direction] = $sortOptions[$request->query('sort')] ?? $sortOptions['latest'];
 
         $records = UserNotification::query()
             ->with('user')
@@ -29,7 +39,18 @@ class NotificationController extends Controller
                 in_array($type, ['general', 'maintenance', 'community'], true),
                 fn ($query) => $query->where('type', $type)
             )
-            ->latest()
+            ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('message', 'like', "%{$search}%")
+                    ->orWhere('type', 'like', "%{$search}%")
+                    ->orWhere('sender_name', 'like', "%{$search}%")
+                    ->orWhere('recipient_label', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$search}%");
+                    });
+            }))
+            ->orderBy($column, $direction)
             ->paginate(15)
             ->withQueryString();
 
@@ -106,7 +127,14 @@ class NotificationController extends Controller
         $validated['sender_name'] = $this->senderName($validated['from']);
         unset($validated['from']);
 
-        $notification->update($validated);
+        if ($notification->recipient_label) {
+            // Apply to every copy of this broadcast; per-user fields stay untouched.
+            UserNotification::query()
+                ->where($notification->only(['recipient_label', 'sender_name', 'type', 'title', 'message', 'created_at']))
+                ->update(Arr::except($validated, ['user_id', 'read_at']));
+        } else {
+            $notification->update($validated);
+        }
 
         return redirect()->route('admin.notifications')->with('status', 'Notification updated.');
     }

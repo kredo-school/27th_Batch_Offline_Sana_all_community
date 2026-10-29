@@ -9,7 +9,8 @@
             <div class="modal-body">
                 <p>Are you sure you want to delete this review?</p>
                 <div class="mt-3">
-                    <h6>{{ $review->title }}</h6>
+                    <h1>{{ $review->title}}</h1>
+                    <p class="fw-bold mb-1">Rating: {{ $review->rating }} / 5</p>
                     <p class="mt-1 text-muted">{{ $review->body }}</p>
                 </div>
             </div>

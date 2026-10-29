@@ -1,95 +1,37 @@
 @extends('layouts.app')
 
-@section('title', 'Admin: Review')
-    
+@section('title', 'Review Details')
+
 @section('content')
-    
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <form action="{{ route('search')}}" style="max-width: 800px" class="d-flex align-items-center gap-1">
-        <input type="search" name="search" id="search" placeholder="Search..." class="form-control form-control-sm flex-grow-1">
-        <button type="submit" name="type" value="product" class="btn btn-primary btn-sm text-nowrap">Search Product Review</button>
-    </form>
+<div class="container py-4" style="max-width: 720px;">
+    <a href="{{ route('admin.reviews') }}" class="small text-decoration-none">
+        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>Back to reviews
+    </a>
 
-    <form action="{{ route('admin.reviews.show') }}" method="get" class="d-flex align-items-center gap-1">
-        <label for="review-sort" class="small text-muted text-nowrap">Sort reviews</label>
-        <select name="sort" id="review-sort" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="rating_desc" {{ $sort === 'rating_desc' ? 'selected' : '' }}>Highest rating</option>
-            <option value="rating_asc" {{ $sort === 'rating_asc' ? 'selected' : '' }}>Lowest rating</option>
-            <option value="created_desc" {{ $sort === 'created_desc' ? 'selected' : '' }}>Newest</option>
-            <option value="created_asc" {{ $sort === 'created_asc' ? 'selected' : '' }}>Oldest</option>
-        </select>
-    </form>
-</div>
-
-
-<div class="mt-3">
-    @if ($all_reviews->isNotEmpty())
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Reviewer</th>
-                        <th>Rating</th>
-                        <th>Review</th>
-                        <th>Reviewed at</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($all_reviews as $reviews)
-                        <tr>
-                            <td>
-                                <a href="{{ route('products.show', $reviews->product->id) }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
-                                    @if ($reviews->product->image)
-                                        <img src="{{ asset('storage/' . $reviews->product->image) }}" alt="{{ $reviews->product->name }}" class="image-md" width="50">
-                                    @else
-                                        <i class="fa-solid fa-image text-muted"></i>
-                                    @endif
-                                    <span>{{ $reviews->product->name }}</span>
-                                </a>
-                            </td>
-                            <td>
-                                <a href="{{ route('profile.show', $reviews->user->id) }}" class="text-decoration-none text-dark fw-bold">
-                                    {{ $reviews->user->name }}
-                                </a>
-                            </td>
-                            <td>{{ $reviews->rating }} / 5</td>
-                            <td>
-                                <strong class="d-block">{{ $reviews->title }}</strong>
-                                <span class="text-muted">{{ $reviews->body }}</span>
-                            </td>
-                            <td>{{ $reviews->created_at->format('M d, Y') }}</td>
-                            <td class="text-end">
-                                @if (auth()->id() === $reviews->user_id)
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm" data-bs-toggle="dropdown">
-                                            <i class="fa-solid fa-ellipsis"></i>
-                                        </button>
-
-                                        <div class="dropdown-menu">
-                                            @if ($reviews->trashed())
-                                                <button class="dropdown-item text-primary" data-bs-toggle="modal" data-bs-target="#activate-post-{{ $reviews->id }}">
-                                                    <i class="fa-solid fa-user-check"></i> Visible {{ $reviews->id }}
-                                                </button>
-                                            @else
-                                                <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deactivate-post-{{ $reviews->id }}">
-                                                    <i class="fa-solid fa-user-slash"></i> Hidden {{ $reviews->id }}
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @endif
-                                @include('admin.reviews.modals.delete', ['review' => $reviews])
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mt-3 mb-4">
+        <div>
+            <h1 class="h4 mb-1">Review #{{ $review->id }}</h1>
+            <p class="text-secondary small mb-0">
+                By {{ $review->user->name ?? 'Unknown user' }}
+                @if ($review->event)
+                    on <a href="{{ route('admin.events.show', $review->event) }}">{{ $review->event->title }}</a>
+                @endif
+            </p>
         </div>
-    @else
-        <p class="text-muted">No reviews yet.</p>
-    @endif
-</div>
+        <a href="{{ route('admin.reviews.edit', $review) }}" class="btn btn-outline-primary btn-sm">
+            <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit
+        </a>
+    </div>
 
+    <dl class="row">
+        <dt class="col-sm-3">Rating</dt>
+        <dd class="col-sm-9">{{ $review->rating }} / 5</dd>
+        <dt class="col-sm-3">Review</dt>
+        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $review->comment ?: '-' }}</dd>
+        <dt class="col-sm-3">Created</dt>
+        <dd class="col-sm-9">{{ $review->created_at?->format('M j, Y g:i A') ?? '-' }}</dd>
+        <dt class="col-sm-3">Updated</dt>
+        <dd class="col-sm-9">{{ $review->updated_at?->format('M j, Y g:i A') ?? '-' }}</dd>
+    </dl>
+</div>
 @endsection

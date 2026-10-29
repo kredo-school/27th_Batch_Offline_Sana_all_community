@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserBlock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -27,8 +28,15 @@ class ProfileController extends Controller
             })
             ->latest()
             ->get();
+        $isBlockedByViewer = Auth::check()
+            && Auth::id() !== $user->id
+            && UserBlock::query()
+                ->active()
+                ->where('user_id', $user->id)
+                ->where('blocked_by', Auth::id())
+                ->exists();
 
-        return view('profile.show', compact('user', 'events'));
+        return view('profile.show', compact('user', 'events', 'isBlockedByViewer'));
     }
 
     public function edit()
