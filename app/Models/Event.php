@@ -27,6 +27,7 @@ class Event extends Model
         'visibility',
         'status',
         'image',
+        'owner_id',
     ];
 
     protected function casts(): array

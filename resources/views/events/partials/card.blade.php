@@ -42,6 +42,7 @@
         border: none;
         background: transparent;
         box-shadow: none;
+        text-decoration: none;
         backdrop-filter: none;
         display: flex;
         align-items: center;
@@ -217,12 +218,12 @@
         <img src="{{ asset('storage/' . $event->image) }}" alt="{{ $event->title }}" class="event-card-image">
 
         @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
-            {{-- 自分が作成したイベント --}}
+            {{-- My Event --}}
             @include('events.partials.event-actions', [
                 'event' => $event,
             ])
         @else
-            {{-- 他人のイベントはブックマークボタン --}}
+            {{-- Bookmark --}}
             @auth
                 @php
                     $isBookmarked = (bool) ($event->is_bookmarked ?? false);
@@ -267,18 +268,16 @@
         <h2 class="event-card-title">{{ $event->title }}</h2>
         <p class="event-card-description">{{ $event->description }}</p>
         <div class="event-card-footer">
-            <time datetime="{{ $event->held_at ?? '#' }}">
-                Held on {{ !empty($event->held_at) ? \Carbon\Carbon::parse($event->held_at)->format('M d') : '10/30' }}
+            <time datetime="{{ $event->start_at?->format('Y-m-d') ?? '' }}">
+                Held on
+                {{ $event->start_at?->format('M d, Y') ?? 'Date TBD' }}
             </time>
             <a href="{{ route('events.show', $event->id) }}">View details &gt;</a>
         </div>
     </div>
 </article>
 
-@if (
-    auth()->check()
-    && (int) $event->owner_id === (int) auth()->id()
-)
+@if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
     @include('events.partials.delete-event-modal', [
         'event' => $event,
     ])

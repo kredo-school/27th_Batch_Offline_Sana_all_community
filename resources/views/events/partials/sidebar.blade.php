@@ -6,14 +6,37 @@
     }
 
     .calendar-box {
-        margin-bottom: 42px;
+        margin-bottom: 22px;
     }
 
     .calendar-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+    }
+
+    .calendar-month-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .calendar-month-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        color: #111827;
+        font-size: 28px;
+        line-height: 1;
+        text-decoration: none;
+        border-radius: 50%;
+    }
+
+    .calendar-month-button:hover {
+        background-color: #f1f3f5;
     }
 
     .calendar-arrow {
@@ -61,12 +84,15 @@
         color: #b3b3b3;
     }
 
-    .calendar-day.is-event-date {
-        background: #d5eba1;
+    .calendar-day.is-selected {
+        background-color: #d5eba1;
+        /* color: #fff; */
+        border-radius: 50%;
+        font-weight: 700;
     }
 
-    .calendar-day.is-closed-date {
-        background: #f3949b;
+    .calendar-day.is-other-month {
+        color: #adb5bd;
     }
 
     .calendar-legend {
@@ -75,23 +101,6 @@
         gap: 8px;
         margin-top: 22px;
         font-size: 12px;
-    }
-
-    .legend-dot {
-        display: inline-block;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        margin-right: 6px;
-        vertical-align: middle;
-    }
-
-    .legend-dot.event-date {
-        background: #d5eba1;
-    }
-
-    .legend-dot.closed-date {
-        background: #f3949b;
     }
 
     .sidebar-menu {
@@ -117,16 +126,20 @@
 </style>
 <aside class="event-sidebar">
 
-    {{-- カレンダー --}}
+    {{-- Calendar --}}
     <section class="calendar-box">
         <div class="calendar-header">
-            <button type="button" class="calendar-arrow">&lt;</button>
+            <a href="{{ $previousMonthUrl }}" class="calendar-month-button" aria-label="Previous month">
+                &lt;
+            </a>
 
-            <strong>
-                {{ $displayMonth ?? now()->format('M, Y') }}
-            </strong>
+            <h2 class="calendar-month-title">
+                {{ $displayMonth }}
+            </h2>
 
-            <button type="button" class="calendar-arrow">&gt;</button>
+            <a href="{{ $nextMonthUrl }}" class="calendar-month-button" aria-label="Next month">
+                &gt;
+            </a>
         </div>
 
         <div class="calendar-week">
@@ -142,50 +155,56 @@
         <div class="calendar-days">
             @foreach ($calendarDays ?? [] as $day)
                 @php
-                    $date = $day['date'];
-                    $isEventDate = $day['is_event_date'] ?? false;
-                    $isClosedDate = $day['is_closed_date'] ?? false;
-                    $isOtherMonth = $day['is_other_month'] ?? false;
+                    $query = request()->except('page');
+                    $query['event_date'] = $day['date'];
                 @endphp
 
-                <a href="{{ route('events.index', ['date' => $date]) }}"
+                <a href="{{ route('events.index', $query) }}"
                     class="
                         calendar-day
-                        {{ $isOtherMonth ? 'is-other-month' : '' }}
-                        {{ $isEventDate ? 'is-event-date' : '' }}
-                        {{ $isClosedDate ? 'is-closed-date' : '' }}
-                    ">
-                    {{ \Carbon\Carbon::parse($date)->day }}
+                        {{ !empty($day['is_other_month']) ? 'is-other-month' : '' }}
+                        {{ !empty($day['is_selected']) ? 'is-selected' : '' }}
+                ">
+                    {{ \Carbon\Carbon::parse($day['date'])->day }}
                 </a>
             @endforeach
         </div>
-
-        <div class="calendar-legend">
-            <div>
-                <span class="legend-dot event-date"></span>
-                Event Date
-            </div>
-
-            <div>
-                <span class="legend-dot closed-date"></span>
-                Registration Closed
-            </div>
-        </div>
     </section>
 
-    {{-- サイドメニュー --}}
+    {{-- Side Menu --}}
     <nav class="sidebar-menu">
         <a href="{{ route('events.index') }}"
-            class="{{ request()->routeIs('events.index') && !request('registered') && !request('bookmark') ? 'active' : '' }}">
+            class="{{ request()->routeIs('events.index') &&
+            !request()->boolean('registered') &&
+            !request()->boolean('confirmed') &&
+            !request()->boolean('bookmark') &&
+            !request()->boolean('my_event')
+                ? 'active'
+                : '' }}">
             Top Page
         </a>
 
-        <a href="{{ route('events.index', ['registered' => 1]) }}" class="{{ request('registered') ? 'active' : '' }}">
+
+        <a href="{{ route('events.index', ['bookmark' => 1]) }}"
+            class="{{ request()->boolean('bookmark') ? 'active' : '' }}">
+            Bookmark
+        </a>
+
+        <a href="{{ route('events.index', ['registered' => 1]) }}"
+            class="{{ request()->boolean('registered') ? 'active' : '' }}">
             Already Register
         </a>
 
-        <a href="{{ route('events.index', ['bookmark' => 1]) }}" class="{{ request('bookmark') ? 'active' : '' }}">
-            Bookmark
+        <a href="{{ route('events.index', ['confirmed' => 1]) }}"
+            class="{{ request()->boolean('confirmed') ? 'active' : '' }}">
+            Confirmed Event
         </a>
+
+        @if ($hasMyEvents)
+            <a href="{{ route('events.index', ['my_event' => 1]) }}"
+                class="{{ request()->boolean('my_event') ? 'active' : '' }}">
+                My Event
+            </a>
+        @endif
     </nav>
 </aside>

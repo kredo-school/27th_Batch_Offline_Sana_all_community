@@ -82,8 +82,15 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
+        // Event Page
+        View::composer('events.partials.sidebar', function ($view) {
+            $hasMyEvents = Auth::check()
+                && Event::where('owner_id', Auth::id())->exists();
+
+            $view->with('hasMyEvents', $hasMyEvents);
+        });
+
         // Choose either Bootstrap 5 or Bootstrap 4 depending on your frontend
-        Paginator::useBootstrapFour(); 
-        // or Paginator::useBootstrapFour();
+        Paginator::useBootstrapFour();
     }
 }

@@ -49,7 +49,60 @@ class EventController extends Controller
             }
         );
 
-        // sort
+        ///////////////////   My Event   /////////////////////
+        if ($request->boolean('my_event')) {
+            if (!Auth::check()) {
+                return redirect()->route('login');
+            }
+
+            $query->where('owner_id', Auth::id());
+        }
+
+        ///////////////////   Bookmark / Registration Status   /////////////////////
+
+        if (
+            $request->boolean('bookmark') ||
+            $request->boolean('registered') ||
+            $request->boolean('confirmed')
+        ) {
+            if (!Auth::check()) {
+                return redirect()->route('login');
+            }
+        }
+
+        // Bookmark Event
+        if ($request->boolean('bookmark')) {
+            $query->whereIn(
+                'id',
+                Bookmark::query()
+                    ->where('user_id', Auth::id())
+                    ->select('event_id')
+            );
+        }
+
+        // Waiting Approval Event
+        elseif ($request->boolean('registered')) {
+            $query->whereIn(
+                'id',
+                DB::table('event_participants')
+                    ->where('user_id', Auth::id())
+                    ->where('status', 'pending')
+                    ->select('event_id')
+            );
+        }
+
+        // After Required & No need approval
+        elseif ($request->boolean('confirmed')) {
+            $query->whereIn(
+                'id',
+                EventParticipant::query()
+                    ->where('user_id', Auth::id())
+                    ->where('status', 'approved')
+                    ->select('event_id')
+            );
+        }
+
+        ///////////////////   sort   /////////////////////////
         $allowedSorts = [
             'date_asc',
             'date_desc',
@@ -74,6 +127,7 @@ class EventController extends Controller
             default => $query->orderBy('start_at'),
         };
 
+        ////////////////////   Calendar   ////////////////////
         // get month and year that be displayed
         $displayMonth = $request->input('month', now()->format('Y-m'));
         $startOfMonth = Carbon::parse($displayMonth)->startOfMonth();
@@ -82,32 +136,18 @@ class EventController extends Controller
         $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
         $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
 
-        $calendarEvents = Event::where(function ($q) use ($startDate, $endDate) {
-            $q->where('start_at', '<=', $endDate)->where('end_at', '>=', $startDate);
-        })->orWhere(function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('join_till', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
-        })->get();
+        $validated = $request->validate([
+            'event_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+        ]);
 
-        // イベント日（start_at 〜 end_at）に該当する日付をすべて抽出してフラグ用配列を作る
-        $eventDatesMap = [];
-        foreach ($calendarEvents as $event) {
-            $eventStart = Carbon::parse($event->start_at)->startOfDay();
-            $eventEnd = Carbon::parse($event->end_at)->endOfDay();
+        $selectedEventDate = $validated['event_date'] ?? null;
 
-            // イベント期間の1日ずつを生成してマップに登録
-            $eventPeriod = CarbonPeriod::create($eventStart, $eventEnd);
-            foreach ($eventPeriod as $date) {
-                $eventDatesMap[$date->format('Y-m-d')] = true;
-            }
-        }
-
-        // 予約受付終了日のマップを作る
-        $deadlinesMap = [];
-        foreach ($calendarEvents as $event) {
-            if ($event->join_till) {
-                $deadlineDate = Carbon::parse($event->join_till)->format('Y-m-d');
-                $deadlinesMap[$deadlineDate] = true;
-            }
+        // カレンダーで選択した開催日で絞り込み
+        if ($selectedEventDate) {
+            $query->whereDate('start_at', $selectedEventDate);
         }
 
         // カレンダーの全マス目（1日ずつ）に対して判定を行う
@@ -120,16 +160,14 @@ class EventController extends Controller
             $calendarDays[] = [
                 'date' => $dateString,
                 'is_other_month' => $date->month !== $startOfMonth->month,
-                'is_event_date' => isset($eventDatesMap[$dateString]),  // 期間内なら true
-                'is_closed_date' => isset($deadlinesMap[$dateString]),  // 締切日なら true
+                'is_selected' => $selectedEventDate === $dateString,
             ];
         }
 
-        ////////////// Event ////////////////////////
-        $events = $query
-            ->with(['categories'])
-            ->paginate(24)
-            ->withQueryString();
+        //////////////////////////// Event /////////////////////////////
+        $events = $query->with(['categories'])->paginate(24)->withQueryString();
+
+        $hasMyEvents = Auth::check() && Event::where('owner_id', Auth::id())->exists();
 
         // 現在表示しているイベントの中で、ログインユーザーがブックマーク済みのIDを取得
         $bookmarkedEventIds = collect();
@@ -167,7 +205,10 @@ class EventController extends Controller
             [
                 'events' => $events,
                 'categories' => $categories,
-                'sort' => $sort
+                'sort' => $sort,
+                'hasMyEvents' => $hasMyEvents,
+                'calendarDays' => $calendarDays,
+                'selectedEventDate' => $selectedEventDate,
             ],
             $this->calendarData()
         ));
@@ -177,9 +218,9 @@ class EventController extends Controller
     {
         $event->load(['owner', 'categories', 'comments.user', 'reviews.user', 'userReviews']);
         $myParticipation = null;
-        if (auth()->check()) {
+        if (Auth::check()) {
             $myParticipation = EventParticipant::where('event_id', $event->id)
-                ->where('user_id', auth()->id())
+                ->where('user_id', Auth::id())
                 ->first();
         }
         $hostEventIds = Event::where('owner_id', $event->owner_id)->pluck('id');
@@ -286,7 +327,7 @@ class EventController extends Controller
     {
         if ($event->end_at->isPast()) {
         return back()->with('error', 'Comments are closed because this event has ended.');
-        } 
+        }
         $request->validate([
             'content' => 'required|string|max:500',
         ]);
@@ -444,7 +485,7 @@ class EventController extends Controller
 
         // 参加確定した人だけ
         $joined = EventParticipant::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->where('status', 'approved')
             ->exists();
         if (! $joined) {
@@ -453,7 +494,7 @@ class EventController extends Controller
 
         // すでにレビューしていたら止める
         $alreadyReviewed = EventReview::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->exists();
         if ($alreadyReviewed) {
             return back()->with('error', 'You have already reviewed this event.');
@@ -466,7 +507,7 @@ class EventController extends Controller
 
         $review = new EventReview();
         $review->event_id = $event->id;
-        $review->user_id = auth()->id();
+        $review->user_id = Auth::id();
         $review->rating = $request->rating;
         $review->comment = $request->comment;
         $review->save();
@@ -485,13 +526,13 @@ class EventController extends Controller
         }
 
         // 主催者は自分をレビューできない
-        if ($event->owner_id === auth()->id()) {
+        if ($event->owner_id === Auth::id()) {
             abort(403);
         }
 
         // 参加確定した人だけ
         $joined = EventParticipant::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->where('status', 'approved')
             ->exists();
         if (! $joined) {
@@ -499,7 +540,7 @@ class EventController extends Controller
         }
 
         $alreadyReviewed = UserReview::where('event_id', $event->id)
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->exists();
         if ($alreadyReviewed) {
             return back()->with('error', 'You have already reviewed the host.');
@@ -512,7 +553,7 @@ class EventController extends Controller
 
         $review = new UserReview();
         $review->event_id = $event->id;
-        $review->user_id = auth()->id();
+        $review->user_id = Auth::id();
         $review->rating = $request->host_rating;
         $review->comment = $request->host_comment;
         $review->save();
@@ -522,43 +563,30 @@ class EventController extends Controller
 
     private function calendarData(): array
     {
-        // get month and year that be displayed
-        $displayMonth = request()->input('month', now()->format('Y-m'));
+        // 表示する年月
+        $displayMonth = request()->input(
+            'month',
+            now()->format('Y-m')
+        );
+
         $startOfMonth = Carbon::parse($displayMonth)->startOfMonth();
         $endOfMonth = Carbon::parse($displayMonth)->endOfMonth();
 
-        $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
-        $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
+        // カレンダーの開始日・終了日
+        $startDate = $startOfMonth
+            ->copy()
+            ->startOfWeek(Carbon::SUNDAY);
 
-        $calendarEvents = Event::where(function ($q) use ($startDate, $endDate) {
-            $q->where('start_at', '<=', $endDate)->where('end_at', '>=', $startDate);
-        })->orWhere(function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('join_till', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
-        })->get();
+        $endDate = $endOfMonth
+            ->copy()
+            ->endOfWeek(Carbon::SATURDAY);
 
-        // イベント日（start_at 〜 end_at）に該当する日付をすべて抽出してフラグ用配列を作る
-        $eventDatesMap = [];
-        foreach ($calendarEvents as $event) {
-            $eventStart = Carbon::parse($event->start_at)->startOfDay();
-            $eventEnd = Carbon::parse($event->end_at)->endOfDay();
+        // カレンダーで選択されている開催日
+        $selectedEventDate = request()->input('event_date');
 
-            $eventPeriod = CarbonPeriod::create($eventStart, $eventEnd);
-            foreach ($eventPeriod as $date) {
-                $eventDatesMap[$date->format('Y-m-d')] = true;
-            }
-        }
-
-        // 予約受付終了日のマップを作る
-        $deadlinesMap = [];
-        foreach ($calendarEvents as $event) {
-            if ($event->join_till) {
-                $deadlineDate = Carbon::parse($event->join_till)->format('Y-m-d');
-                $deadlinesMap[$deadlineDate] = true;
-            }
-        }
-
-        // カレンダーの全マス目（1日ずつ）に対して判定を行う
+        // カレンダーの全日付を作成
         $period = CarbonPeriod::create($startDate, $endDate);
+
         $calendarDays = [];
 
         foreach ($period as $date) {
@@ -567,14 +595,32 @@ class EventController extends Controller
             $calendarDays[] = [
                 'date' => $dateString,
                 'is_other_month' => $date->month !== $startOfMonth->month,
-                'is_event_date' => isset($eventDatesMap[$dateString]),
-                'is_closed_date' => isset($deadlinesMap[$dateString]),
+                'is_selected' => $selectedEventDate === $dateString,
             ];
         }
+
+        $baseQuery = request()->except(['page', 'month', 'event_date',]);
+
+        $previousMonthQuery = array_merge($baseQuery, [
+            'month' => $startOfMonth
+                ->copy()
+                ->subMonth()
+                ->format('Y-m'),
+        ]);
+
+        $nextMonthQuery = array_merge($baseQuery, [
+            'month' => $startOfMonth
+                ->copy()
+                ->addMonth()
+                ->format('Y-m'),
+        ]);
 
         return [
             'calendarDays' => $calendarDays,
             'displayMonth' => $startOfMonth->format('M, Y'),
+            'previousMonthUrl' => route('events.index', $previousMonthQuery),
+            'nextMonthUrl' => route('events.index', $nextMonthQuery),
+            'selectedEventDate' => $selectedEventDate,
         ];
     }
 
