@@ -7,7 +7,7 @@
         $imageUrl = fn ($path, $fallback) => $path
             ? (str_starts_with($path, 'https://') || str_starts_with($path, 'http://') ? $path : asset('storage/'.$path))
             : $fallback;
-        $cover = $imageUrl($user->profile?->cover_image, 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85');
+        $cover = $imageUrl($user->profile?->cover_image, 'data:image/svg+xml,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="450"></svg>'));
         $avatar = $imageUrl($user->profile?->avatar, asset('images/onlylogo.jpg'));
     @endphp
     <div class="profile-page profile-overview">
@@ -75,7 +75,10 @@
                         <article class="profile-post" id="event-{{ $event->id }}">
                             <header class="profile-post-header">
                                 <img class="profile-post-avatar" src="{{ $avatar }}" alt="">
-                                <div class="profile-post-author"><p class="profile-post-name">{{ $user->name }}</p><p>{{ '@'.($user->username ?: 'user'.$user->id) }} · <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></p></div>
+                                <div class="profile-post-author">
+                                    <p class="profile-post-name">{{ $user->name }}</p>
+                                    <p class="profile-post-byline"><span>{{ '@'.($user->username ?: 'user'.$user->id) }}</span><span>Posted <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></span></p>
+                                </div>
                                 <details class="profile-post-menu"><summary aria-label="Event options"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary><div><button type="button" data-copy-event="{{ url()->current().'#event-'.$event->id }}"><i class="fa-solid fa-link" aria-hidden="true"></i> Copy link</button></div></details>
                             </header>
                             <div class="profile-post-body"><h3><a href="{{ route('events.show', $event) }}" class="profile-event-title">{{ $event->title }}</a></h3>
@@ -87,8 +90,21 @@
                             </div>
                             <footer class="profile-post-footer">
                                 <div class="profile-event-meta">
-                                    <span><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ $event->start_at?->format('M j, Y') ?? 'Date to be announced' }}</span>
-                                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $event->location ?: 'Location to be announced' }}</span>
+                                    <div class="profile-meta-item">
+                                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                                        <div class="profile-meta-copy">
+                                            <span class="profile-meta-label">Event date</span>
+                                            @if ($event->start_at)
+                                                <time class="profile-meta-value" datetime="{{ $event->start_at->toDateString() }}">{{ $event->start_at->format('M j, Y') }}</time>
+                                            @else
+                                                <span class="profile-meta-value">Date to be announced</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="profile-meta-item">
+                                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                                        <div class="profile-meta-copy"><span class="profile-meta-label">Location</span><span class="profile-meta-value">{{ $event->location ?: 'Location to be announced' }}</span></div>
+                                    </div>
                                 </div>
                                 <a href="{{ route('events.show', $event) }}" class="profile-event-details" aria-label="View details for {{ $event->title }}">View details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
                             </footer>

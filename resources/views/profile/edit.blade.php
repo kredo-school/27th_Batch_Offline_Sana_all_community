@@ -4,7 +4,7 @@
 @php
     $imageUrl = fn ($path, $fallback) => $path
         ? (str_starts_with($path, 'https://') || str_starts_with($path, 'http://') ? $path : asset('storage/'.$path)) : $fallback;
-    $cover = $imageUrl($user->profile?->cover_image, 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85');
+    $cover = $imageUrl($user->profile?->cover_image, 'data:image/svg+xml,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="450"></svg>'));
     $avatar = $imageUrl($user->profile?->avatar, asset('images/onlylogo.jpg'));
 @endphp
 <div class="profile-page profile-editor">
@@ -28,12 +28,12 @@
                 <section class="profile-editor-section" aria-labelledby="profile-photos-heading">
                     <div class="profile-section-heading">
                         <h2 id="profile-photos-heading">Profile photos</h2>
-                        <p>Personalize your cover and profile photo.</p>
+                        <p id="profile-cover-help">Choose a wide cover photo. The image will be cropped to fit.</p>
                     </div>
                     <div class="profile-editor-cover">
                         <img src="{{ $cover }}" alt="Profile cover" data-cover-preview>
                         <label class="profile-cover-button" for="cover_image"><i class="fa-solid fa-camera" aria-hidden="true"></i> Change Cover</label>
-                        <input class="visually-hidden" type="file" id="cover_image" name="cover_image" accept="image/jpeg,image/png,image/gif" aria-describedby="profile-image-help">
+                        <input class="visually-hidden" type="file" id="cover_image" name="cover_image" accept="image/jpeg,image/png,image/gif" aria-describedby="profile-cover-help profile-image-help">
                     </div>
                     <div class="profile-photo-field">
                         <div class="profile-photo-control">
@@ -49,11 +49,11 @@
                 <section class="profile-editor-section" aria-labelledby="profile-info-heading">
                     <div class="profile-section-heading">
                         <h2 id="profile-info-heading">Profile information</h2>
-                        <p>Fields marked with * are required.</p>
+                        <p>Fields marked with <span class="profile-required">*</span> are required.</p>
                     </div>
                     <div class="profile-editor-fields">
-                        <div><label for="name">Name *</label><input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="255" autocomplete="name"></div>
-                        <div><label for="username">Username *</label><input id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="255" autocomplete="username"></div>
+                        <div><label for="name">Name <span class="profile-required">*</span></label><input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="255" autocomplete="name"></div>
+                        <div><label for="username">Username <span class="profile-required">*</span></label><input id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="255" autocomplete="username"></div>
                         <div><label for="country">Country</label><input id="country" name="country" value="{{ old('country', $user->profile?->country) }}" maxlength="100" autocomplete="country-name"></div>
                         <div><label for="region">Region / City</label><input id="region" name="region" value="{{ old('region', $user->profile?->region) }}" maxlength="100" autocomplete="address-level1"></div>
                         <div><label for="occupation">Occupation</label><input id="occupation" name="occupation" value="{{ old('occupation', $user->profile?->occupation) }}" maxlength="100" autocomplete="organization-title"></div>
@@ -88,7 +88,7 @@
                             <small id="birthday-help">Your age is calculated from your birthday.</small>
                         </div>
                         <div><label for="gender">Gender (optional)</label><select id="gender" name="gender">@foreach (['' => 'Prefer not to say', 'male' => 'Male', 'female' => 'Female', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('gender', $user->profile?->gender) == $value)>{{ $label }}</option>@endforeach</select></div>
-                        <div><label for="preferred_language">Language *</label><select id="preferred_language" name="preferred_language" required>@foreach (['en' => 'English', 'ja' => 'Japanese'] as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
+                        <div><label for="preferred_language">Language <span class="profile-required">*</span></label><select id="preferred_language" name="preferred_language" required>@foreach (['en' => 'English', 'ja' => 'Japanese'] as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
                         <div class="profile-bio-field"><label for="bio">Bio</label><div class="profile-bio-input"><textarea id="bio" name="bio" maxlength="300" rows="3" aria-describedby="bio-count">{{ old('bio', $user->profile?->bio) }}</textarea><span id="bio-count" aria-live="polite">0/300</span></div></div>
                     </div>
                 </section>
