@@ -220,16 +220,21 @@
         }
 
         .no-arrow::after {
-        display: none !important;
+            display: none !important;
         }
 
         .dropdown-icon-lg {
             font-size: 20px;
         }
 
-        .nav-icons{
+        .nav-icons {
             width: 100px;
             height: auto;
+        }
+
+        #site-navbar {
+            z-index: 1030;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         @media (max-width: 480px) {
@@ -246,7 +251,7 @@
 
 <body>
     <div id="app">
-        <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
+        <nav class="navbar navbar-expand-md navbar-light bg-white text-dark sticky-top">
             <div class="container-fluid px-2">
                 <a class="navbar-brand" href="{{ url('/') }}">
                     <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;"
@@ -292,157 +297,178 @@
                             </li>
                         </ul>
 
-                            <li class="nav-item dropdown">
-                                <button id="languageDropdown" class="nav-link dropdown-toggle text-dark" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-language me-1" aria-hidden="true"></i>
-                                    {{ app()->getLocale() === 'ja' ? '日本語' : 'English' }}
+                        <li class="nav-item dropdown">
+                            <button id="languageDropdown" class="nav-link dropdown-toggle text-dark" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-language me-1" aria-hidden="true"></i>
+                                {{ app()->getLocale() === 'ja' ? '日本語' : 'English' }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                                <li><a class="dropdown-item" href="#">English</a></li>
+                                <li><a class="dropdown-item" href="#">日本語</a></li>
+                            </ul>
+                        </li>
+
+                        <ul>
+                            {{-- show messages --}}
+                            <li class="nav-item dropdown d-flex align-items-center category-nav">
+                                <button id="messageDropdown" class="nav-link dropdown-toggle text-dark no-arrow"
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-regular fa-envelope dropdown-icon-lg"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                                    <li><a class="dropdown-item" href="#">English</a></li>
-                                    <li><a class="dropdown-item" href="#">日本語</a></li>
+                                {{-- show latest messages --}}
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageDropdown"
+                                    style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
+                                    @forelse ($chats as $chat)
+                                        <li>
+                                            <button type="button"
+                                                class="dropdown-item text-wrap border-bottom text-start js-open-message-chat"
+                                                data-message-chat-url="{{ route('messages.conversation', $chat['participant']->id) }}"
+                                                data-message-chat-send-url="{{ route('messages.send', $chat['participant']->id) }}"
+                                                data-message-chat-name="{{ $chat['participant']->username ?? ($chat['participant']->name ?? __('Unknown user')) }}">
+                                                <div class="d-flex justify-content-between align-items-baseline gap-2">
+                                                    <span class="admin-avatar">
+                                                        @if ($chat['participant']->profile?->avatar)
+                                                            <img src="{{ $chat['participant']->profile->avatar }}"
+                                                                alt="{{ $chat['participant']->name }}">
+                                                        @else
+                                                            {{ strtoupper(substr($chat['participant']->name ?? '?', 0, 1)) }}
+                                                        @endif
+                                                    </span>
+                                                    <strong>{{ $chat['participant']->username ?? ($chat['participant']->name ?? __('Unknown user')) }}</strong>
+                                                    @if ($chat['last_message']->created_at)
+                                                        <time class="small text-muted text-nowrap"
+                                                            datetime="{{ $chat['last_message']->created_at->toIso8601String() }}">
+                                                            {{ $chat['last_message']->created_at->format('M j, Y g:i A') }}
+                                                        </time>
+                                                    @else
+                                                        <span
+                                                            class="small text-muted text-nowrap">{{ __('Time unavailable') }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="text-break">{{ $chat['last_message']->message }}</div>
+                                            </button>
+                                        </li>
+                                    @empty
+                                        <li><span class="dropdown-item-text text-muted">{{ __('No messages') }}</span>
+                                        </li>
+                                    @endforelse
+                                    {{-- go to the all show messages --}}
+                                    <li><a href="{{ route('messages.index') }}"
+                                            class="dropdown-item text-primary">Show All</a></li>
                                 </ul>
                             </li>
-
-                                <ul>
-                                    {{-- show messages --}}
-                                    <li class="nav-item dropdown d-flex align-items-center category-nav">
-                                        <button id="messageDropdown" class="nav-link dropdown-toggle text-dark no-arrow" type="button"
-                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fa-regular fa-envelope dropdown-icon-lg"></i>
-                                        </button>
-                                        {{-- show latest messages --}}
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageDropdown"
-                                            style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
-                                            @forelse ($chats as $chat)
-                                                <li>
-                                                    <button type="button"
-                                                        class="dropdown-item text-wrap border-bottom text-start js-open-message-chat"
-                                                        data-message-chat-url="{{ route('messages.conversation', $chat['participant']->id) }}"
-                                                        data-message-chat-send-url="{{ route('messages.send', $chat['participant']->id) }}"
-                                                        data-message-chat-name="{{ $chat['participant']->username ?? $chat['participant']->name ?? __('Unknown user') }}">
-                                                        <div class="d-flex justify-content-between align-items-baseline gap-2">
-                                                            <span class="admin-avatar">
-                                                                @if ($chat['participant']->profile?->avatar)
-                                                                    <img src="{{ $chat['participant']->profile->avatar }}" alt="{{ $chat['participant']->name }}">
-                                                                @else
-                                                                    {{ strtoupper(substr($chat['participant']->name ?? '?', 0, 1)) }}
-                                                                @endif
-                                                            </span>
-                                                            <strong>{{ $chat['participant']->username ?? $chat['participant']->name ?? __('Unknown user') }}</strong>
-                                                            @if ($chat['last_message']->created_at)
-                                                                <time class="small text-muted text-nowrap" datetime="{{ $chat['last_message']->created_at->toIso8601String() }}">
-                                                                    {{ $chat['last_message']->created_at->format('M j, Y g:i A') }}
-                                                                </time>
-                                                            @else
-                                                                <span class="small text-muted text-nowrap">{{ __('Time unavailable') }}</span>
-                                                            @endif
-                                                        </div>
-                                                        <div class="text-break">{{ $chat['last_message']->message }}</div>
-                                                    </button>
-                                                </li>
-                                            @empty
-                                                <li><span class="dropdown-item-text text-muted">{{ __('No messages') }}</span></li>
-                                            @endforelse
-                                            {{-- go to the all show messages --}}
-                                            <li><a href="{{ route('messages.index') }}" class="dropdown-item text-primary">Show All</a></li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                                {{-- show the latest notifications --}}
-                                <ul>
-                                    <li class="nav-item dropdown d-flex align-items-center category-nav">
-                                        <button id="notificationDropdown" class="nav-link dropdown-toggle text-dark no-arrow" type="button"
-                                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Notifications') }}">
-                                            <i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i>
-                                            @if ($unreadNotificationCount > 0)
-                                                <span class="badge rounded-pill bg-danger">{{ $unreadNotificationCount }}</span>
-                                            @endif
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown"
-                                            style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
-                                            @forelse ($notifications as $notification)
-                                                <li>
-                                                    <a href="{{ route('notifications.show', $notification) }}"
-                                                        class="dropdown-item text-wrap border-bottom text-start {{ $notification->read_at ? '' : 'fw-semibold bg-body-tertiary' }}">
-                                                            <span class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
-                                                            @if ($notification->sender_name)
-                                                                <span class="d-block small text-muted">{{ __('From') }}: {{ $notification->sender_name }}</span>
-                                                            @endif
-                                                            @if ($notification->message)
-                                                                <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->message, 100) }}</span>
-                                                            @endif
-                                                            @if ($notification->created_at)
-                                                                <time class="d-block small text-muted" datetime="{{ $notification->created_at->toIso8601String() }}">
-                                                                    {{ $notification->created_at->format('M j, Y g:i A') }}
-                                                                </time>
-                                                            @endif
-                                                    </a>
-                                                </li>
-                                            @empty
-                                                <li><span class="dropdown-item-text text-muted">{{ __('No notifications') }}</span></li>
-                                            @endforelse
-                                            <li><a href="{{ route('notifications.index') }}" class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                                <ul>
-                                    <li class="nav-item dropdown d-flex align-items-center category-nav">
-                                        <a class="nav-link text-dark link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-calendar" href="#"> <i class="fa-regular fa-calendar dropdown-icon-lg"></i></a>
-                                    </li>
-                                </ul>
-                            <!-- Authentication Links -->
-                            @guest
-                                @if (Route::has('login'))
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-                                    </li>
-                                @endif
-
-                                @if (Route::has('register'))
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="{{ route('register') }}">{{ __('Create Account') }}</a>
-                                    </li>
-                                @endif
-                            @else
-                                <a href="#" class="btn btn-success text-white" data-bs-toggle="modal" data-bs-target="#modal-post">CREATE</a>
-                                <li class="nav-item dropdown">
-
-                                    <a id="navbarDropdown" class="nav-link dropdown-toggle text-dark" href="#"
-                                        role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                                        v-pre>
-                                         @if (Auth::user()->profile?->avatar)
-                                            @php
-                                                $avatarPath = Auth::user()->profile->avatar;
-                                                $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
-                                                    ? $avatarPath : asset('storage/'.$avatarPath);
-                                            @endphp
-                                            <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
-                                        @else
-                                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                                        @endif
-                                        Hello, {{ Auth::user()->username }}
-                                        <i class="fa-solid fa-list"></i>
-                                    </a>
-
-                                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                        @if (Auth::user()->role === 'admin')
-                                            <a href="{{ Route::has('admin.users') ? route('admin.users') : '#' }}"
-                                                class="dropdown-item">
-                                                <i class="fa-solid fa-user-gear"></i> Admin
+                        </ul>
+                        {{-- show the latest notifications --}}
+                        <ul>
+                            <li class="nav-item dropdown d-flex align-items-center category-nav">
+                                <button id="notificationDropdown" class="nav-link dropdown-toggle text-dark no-arrow"
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                    aria-label="{{ __('Notifications') }}">
+                                    <i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i>
+                                    @if ($unreadNotificationCount > 0)
+                                        <span
+                                            class="badge rounded-pill bg-danger">{{ $unreadNotificationCount }}</span>
+                                    @endif
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown"
+                                    style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
+                                    @forelse ($notifications as $notification)
+                                        <li>
+                                            <a href="{{ route('notifications.show', $notification) }}"
+                                                class="dropdown-item text-wrap border-bottom text-start {{ $notification->read_at ? '' : 'fw-semibold bg-body-tertiary' }}">
+                                                <span
+                                                    class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
+                                                @if ($notification->sender_name)
+                                                    <span class="d-block small text-muted">{{ __('From') }}:
+                                                        {{ $notification->sender_name }}</span>
+                                                @endif
+                                                @if ($notification->message)
+                                                    <span
+                                                        class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->message, 100) }}</span>
+                                                @endif
+                                                @if ($notification->created_at)
+                                                    <time class="d-block small text-muted"
+                                                        datetime="{{ $notification->created_at->toIso8601String() }}">
+                                                        {{ $notification->created_at->format('M j, Y g:i A') }}
+                                                    </time>
+                                                @endif
                                             </a>
-                                        @endif
+                                        </li>
+                                    @empty
+                                        <li><span
+                                                class="dropdown-item-text text-muted">{{ __('No notifications') }}</span>
+                                        </li>
+                                    @endforelse
+                                    <li><a href="{{ route('notifications.index') }}"
+                                            class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <ul>
+                            <li class="nav-item dropdown d-flex align-items-center category-nav">
+                                <a class="nav-link text-dark link-secondary text-decoration-none"
+                                    data-bs-toggle="modal" data-bs-target="#modal-calendar" href="#"> <i
+                                        class="fa-regular fa-calendar dropdown-icon-lg"></i></a>
+                            </li>
+                        </ul>
+                        <!-- Authentication Links -->
+                        @guest
+                            @if (Route::has('login'))
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
+                                </li>
+                            @endif
 
-                                        <a href="{{ route('profile.show', Auth::user()->id) }}" class="dropdown-item">
-                                            <i class="fa-solid fa-circle-user"></i> Profile
+                            @if (Route::has('register'))
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Create Account') }}</a>
+                                </li>
+                            @endif
+                        @else
+                            <a href="#" class="btn btn-success text-white" data-bs-toggle="modal"
+                                data-bs-target="#modal-post">CREATE</a>
+                            <li class="nav-item dropdown">
+
+                                <a id="navbarDropdown" class="nav-link dropdown-toggle text-dark" href="#"
+                                    role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                    v-pre>
+                                    @if (Auth::user()->profile?->avatar)
+                                        @php
+                                            $avatarPath = Auth::user()->profile->avatar;
+                                            $avatarUrl =
+                                                str_starts_with($avatarPath, 'https://') ||
+                                                str_starts_with($avatarPath, 'http://')
+                                                    ? $avatarPath
+                                                    : asset('storage/' . $avatarPath);
+                                        @endphp
+                                        <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}"
+                                            class="rounded-circle navbar-avatar" width="36" height="36">
+                                    @else
+                                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                    @endif
+                                    Hello, {{ Auth::user()->username }}
+                                    <i class="fa-solid fa-list"></i>
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    @if (Auth::user()->role === 'admin')
+                                        <a href="{{ Route::has('admin.users') ? route('admin.users') : '#' }}"
+                                            class="dropdown-item">
+                                            <i class="fa-solid fa-user-gear"></i> Admin
                                         </a>
-                                        <hr class="dropdown-divider">
+                                    @endif
 
-                                        <a class="dropdown-item" href="{{ route('logout') }}"
-                                            onclick="event.preventDefault();
+                                    <a href="{{ route('profile.show', Auth::user()->id) }}" class="dropdown-item">
+                                        <i class="fa-solid fa-circle-user"></i> Profile
+                                    </a>
+                                    <hr class="dropdown-divider">
+
+                                    <a class="dropdown-item" href="{{ route('logout') }}"
+                                        onclick="event.preventDefault();
                                                                  document.getElementById('logout-form').submit();">
-                                            <i class="fa-solid fa-right-from-bracket"></i>
-                                            {{ __('Logout') }}
+                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                        {{ __('Logout') }}
                                     </a>
 
                                     <form id="logout-form" action="{{ route('logout') }}" method="POST"
@@ -463,10 +489,12 @@
         </main>
 
         @auth
-            <aside id="message-chat-panel" class="message-chat-panel" role="dialog" aria-labelledby="message-chat-title" hidden>
+            <aside id="message-chat-panel" class="message-chat-panel" role="dialog"
+                aria-labelledby="message-chat-title" hidden>
                 <header class="message-chat-header">
                     <h2 id="message-chat-title">{{ __('Conversation') }}</h2>
-                    <button type="button" class="message-chat-close" data-close-message-chat aria-label="{{ __('Close conversation') }}">
+                    <button type="button" class="message-chat-close" data-close-message-chat
+                        aria-label="{{ __('Close conversation') }}">
                         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     </button>
                 </header>
@@ -484,35 +512,46 @@
     </div>
 </body>
 <footer class="bg-body-tertiary border-top mt-auto py-4 position-relative">
-  <a href="#top" class="btn btn-primary position-absolute top-0 start-50 translate-middle rounded-circle shadow" style="width:44px;height:44px" aria-label="Back to top">
-    <i class="fa-solid fa-angles-up text-white mt-2"></i>
-  </a>
-  <div class="container text-center pt-2">
-    <ul class="list-inline small mb-2">
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" href="#">Home</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-term" href="#">Terms and Privacy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-guide" href="#">Community Guidelines</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-report" href="#">Report & Content Removal Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-event" href="#">Event organizer term</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-job" href="#">Job posting policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-adv" href="#">Business Advertising Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-ptop" href="#">Peer-to-Peer Transaction Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-contact" href="#">Contact Us</a></li>
+    <a href="#top" class="btn btn-primary position-absolute top-0 start-50 translate-middle rounded-circle shadow"
+        style="width:44px;height:44px" aria-label="Back to top">
+        <i class="fa-solid fa-angles-up text-white mt-2"></i>
+    </a>
+    <div class="container text-center pt-2">
+        <ul class="list-inline small mb-2">
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" href="#">Home</a>
+            </li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-term" href="#">Terms and Privacy</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-guide" href="#">Community Guidelines</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-report" href="#">Report & Content Removal Policy</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-event" href="#">Event organizer term</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-job" href="#">Job posting policy</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-adv" href="#">Business Advertising Policy</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-ptop" href="#">Peer-to-Peer Transaction Policy</a></li>
+            <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal"
+                    data-bs-target="#modal-contact" href="#">Contact Us</a></li>
 
 
 
-    </ul>
-    <span class="small text-body-secondary">&copy; 2026 Sana All Community</span>
-    @include('layouts.modals.contact')
-    @include('layouts.modals.guide')
-    @include('layouts.modals.terms')
-    @include('layouts.modals.post')
-    @include('layouts.modals.report')
-    @include('layouts.modals.event')
-    @include('layouts.modals.job')
-    @include('layouts.modals.adv')
-    @include('layouts.modals.p2p')
-    @include('layouts.modals.calendar')
-  </div>
+        </ul>
+        <span class="small text-body-secondary">&copy; 2026 Sana All Community</span>
+        @include('layouts.modals.contact')
+        @include('layouts.modals.guide')
+        @include('layouts.modals.terms')
+        @include('layouts.modals.post')
+        @include('layouts.modals.report')
+        @include('layouts.modals.event')
+        @include('layouts.modals.job')
+        @include('layouts.modals.adv')
+        @include('layouts.modals.p2p')
+        @include('layouts.modals.calendar')
+    </div>
 </footer>
+
 </html>

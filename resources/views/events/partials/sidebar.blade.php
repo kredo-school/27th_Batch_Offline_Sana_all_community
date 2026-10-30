@@ -1,33 +1,41 @@
 <style>
     .event-sidebar {
-        background: #fff;
-        padding: 16px 12px;
+        width: 100%;
         min-height: 700px;
+        background: #fff;
+        box-sizing: border-box;
+        position: sticky;
+        top: 70px;
+        align-self: flex-start;
     }
 
     .calendar-box {
+        width: 100%;
         margin-bottom: 22px;
     }
 
+    /* 月移動部分 */
     .calendar-header {
-        display: flex;
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) 32px;
         align-items: center;
-        justify-content: space-between;
+        width: 100%;
         margin-bottom: 16px;
     }
 
     .calendar-month-title {
         margin: 0;
+        text-align: center;
         font-size: 15px;
         font-weight: 700;
+        white-space: nowrap;
     }
 
     .calendar-month-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
         color: #111827;
         font-size: 28px;
         line-height: 1;
@@ -39,24 +47,27 @@
         background-color: #f1f3f5;
     }
 
-    .calendar-arrow {
-        background: transparent;
-        border: 0;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
+    /* 曜日と日付で同じ7列を使用 */
     .calendar-week,
     .calendar-days {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        width: 100%;
         text-align: center;
     }
 
     .calendar-week {
+        margin-bottom: 10px;
         font-size: 13px;
         font-weight: 700;
-        margin-bottom: 10px;
+    }
+
+    .calendar-week span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        height: 30px;
     }
 
     .calendar-days {
@@ -64,16 +75,16 @@
     }
 
     .calendar-day {
+        display: grid;
         width: 30px;
         height: 30px;
-        margin: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
+        margin: 0 auto;
+        place-items: center;
         color: #111;
-        text-decoration: none;
         font-size: 14px;
+        line-height: 1;
+        text-decoration: none;
+        border-radius: 50%;
     }
 
     .calendar-day:hover {
@@ -81,18 +92,12 @@
     }
 
     .calendar-day.is-other-month {
-        color: #b3b3b3;
+        color: #adb5bd;
     }
 
     .calendar-day.is-selected {
         background-color: #d5eba1;
-        /* color: #fff; */
-        border-radius: 50%;
         font-weight: 700;
-    }
-
-    .calendar-day.is-other-month {
-        color: #adb5bd;
     }
 
     .calendar-legend {
