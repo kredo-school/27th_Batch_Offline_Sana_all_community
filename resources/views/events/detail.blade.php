@@ -525,9 +525,21 @@
                 <div class="event-card">
                     <div class="event-help mb-2">Hosted by</div>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
+                        @if ($event->owner)
+                            <a href="{{ route('profile.show', $event->owner->id) }}" class="text-decoration-none text-reset">
+                                <div class="event-avatar">{{ strtoupper(substr($event->owner->name, 0, 1)) }}</div>
+                            </a>
+                        @else
+                            <div class="event-avatar">?</div>
+                        @endif
                         <div>
-                            <div>{{ $event->owner->name ?? 'Unknown' }}</div>
+                            @if ($event->owner)
+                                <a href="{{ route('profile.show', $event->owner->id) }}" class="text-decoration-none text-reset fw-semibold">
+                                    {{ $event->owner->name }}
+                                </a>
+                            @else
+                                <div>Unknown</div>
+                            @endif
                             <div class="event-help">
                                 host
                                 @if ($hostReviewCount)
