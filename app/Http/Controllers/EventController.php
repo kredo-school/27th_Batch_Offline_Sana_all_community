@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
 use App\Models\UserReview;
+use App\Models\UserNotification;
 
 class EventController extends Controller
 {
@@ -381,11 +382,32 @@ class EventController extends Controller
         return redirect()->route('events.show', $event)->with('success', $message);
     }
 
-    public function cancelJoin(Event $event)
+        public function cancelJoin(Event $event)
     {
-        EventParticipant::where('event_id', $event->id)
+        $participant = EventParticipant::where('event_id', $event->id)
             ->where('user_id', Auth::id())
-            ->delete();
+            ->first();
+
+        if (! $participant) {
+            return redirect()->route('events.show', $event);
+        }
+
+        $wasApproved = $participant->status === 'approved';
+        $participant->delete();
+
+        // 承認済みの参加者がキャンセルしたときだけホストに通知
+        if ($wasApproved && $event->owner_id !== Auth::id()) {
+            $userName = Auth::user()->username ?? Auth::user()->name;
+
+            UserNotification::create([
+                'user_id' => $event->owner_id,
+                'type' => 'participant_cancelled',
+                'title' => 'Participant cancelled',
+                'message' => "{$userName} cancelled their participation in '{$event->title}'.",
+                'related_type' => Event::class,
+                'related_id' => $event->id,
+            ]);
+        }
 
         return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
     }
