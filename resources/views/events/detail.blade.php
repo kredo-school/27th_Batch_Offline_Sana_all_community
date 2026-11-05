@@ -205,7 +205,7 @@
             ($event->start_at->isSameDay($event->end_at)
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
-        $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP';
+        $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP / person';
         $isCancelled = $event->status === 'cancelled';
         $hasEnded = $event->end_at->isPast();
         $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;

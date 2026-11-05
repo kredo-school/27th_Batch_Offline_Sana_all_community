@@ -112,7 +112,7 @@
                 {{-- Participation fee → price --}}
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between">
-                        <label for="price" class="event-form-label">Participation fee</label>
+                        <label for="price" class="event-form-label">Participation fee (per person)</label>
                         <span class="event-form-required">REQUIRED</span>
                     </div>
                     <input type="number" name="price" id="price" class="form-control @error('price') is-invalid @enderror"
