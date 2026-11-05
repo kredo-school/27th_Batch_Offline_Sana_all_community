@@ -38,6 +38,13 @@
                         @if (auth()->id() === $user->id)
                             <a href="{{ route('profile.edit') }}" class="profile-edit">Edit Profile</a>
                         @elseif (auth()->check())
+                            @if ($isFollowing || !$followBlocked)
+                                <form action="{{ route($isFollowing ? 'profile.unfollow' : 'profile.follow', $user) }}" method="POST">
+                                    @csrf
+                                    @if ($isFollowing) @method('DELETE') @endif
+                                    <button type="submit" class="btn {{ $isFollowing ? 'btn-outline-primary' : 'btn-primary' }}">{{ $isFollowing ? 'Unfollow' : 'Follow' }}</button>
+                                </form>
+                            @endif
                             @if ($isBlockedByViewer)
                                 <form action="{{ route('messages.unblock', $user) }}" method="POST">
                                     @csrf
@@ -59,11 +66,31 @@
                     </div>
                     <dl class="profile-stats">
                         @foreach (['Events Joined' => $user->attending_events_count, 'Events Hosted' => $user->events_owned_count, 'Followers' => $user->followers_count, 'Following' => $user->following_count] as $label => $count)
-                            <div><dt>{{ $label }}</dt><dd>{{ $count }}</dd></div>
+                            <div><dt>@if (in_array($label, ['Followers', 'Following']))<a href="{{ route('profile.show', ['id' => $user->id, 'connections' => strtolower($label)]) }}">{{ $label }}</a>@else{{ $label }}@endif</dt><dd>{{ $count }}</dd></div>
                         @endforeach
                     </dl>
                 </div>
             </section>
+
+            @if ($connections !== null)
+                <dialog class="profile-connections" id="profile-connections-dialog" aria-labelledby="profile-connections-title">
+                    <div class="profile-feed-heading">
+                        <h2 id="profile-connections-title">{{ ucfirst($connectionType) }} ({{ $connections->total() }})</h2>
+                        <form method="dialog"><button type="submit" class="btn-close" aria-label="Close list"></button></form>
+                    </div>
+                    <ul class="profile-connection-list">
+                        @forelse ($connections as $connection)
+                            <li><a href="{{ route('profile.show', $connection->id) }}">
+                                <img src="{{ $imageUrl($connection->profile?->avatar, asset('images/onlylogo.jpg')) }}" alt="" width="44" height="44">
+                                <span><strong>{{ $connection->name }}</strong><span>{{ '@'.($connection->username ?: 'user'.$connection->id) }}</span></span>
+                            </a></li>
+                        @empty
+                            <li>No {{ $connectionType }} yet.</li>
+                        @endforelse
+                    </ul>
+                    {{ $connections->links() }}
+                </dialog>
+            @endif
 
             <section class="profile-feed" aria-label="Profile activity">
                 <div data-profile-panel="profile event">
@@ -113,7 +140,23 @@
                         <p class="profile-events-empty">No events shared yet.</p>
                     @endforelse
                 </div>
-                @foreach (['review' => 'No reviews to display.', 'history' => 'No activity history to display.', 'bookmark' => 'Bookmarks are private.', 'community' => 'No communities to display.'] as $panel => $message)
+                <div data-profile-panel="bookmark" hidden>
+                    <div class="profile-feed-heading"><h2>Bookmarks</h2></div>
+                    @if ($bookmarkedEvents !== null)
+                        <div class="event-grid profile-bookmark-grid">
+                            @forelse ($bookmarkedEvents as $event)
+                                @php $event->is_bookmarked = true; @endphp
+                                @include('events.partials.card', ['event' => $event])
+                            @empty
+                                <p class="profile-events-empty">No bookmarked events yet. Tap the heart on an event to save it here.</p>
+                            @endforelse
+                        </div>
+                        {{ $bookmarkedEvents->links() }}
+                    @else
+                        <p class="profile-events-empty">Bookmarks are private.</p>
+                    @endif
+                </div>
+                @foreach (['review' => 'No reviews to display.', 'history' => 'No activity history to display.', 'community' => 'No communities to display.'] as $panel => $message)
                     <div class="profile-tab-placeholder" data-profile-panel="{{ $panel }}" hidden><h2>{{ ucfirst($panel) }}</h2><p>{{ $message }}</p></div>
                 @endforeach
                 <p class="profile-feedback" role="status" aria-live="polite"></p>
@@ -121,6 +164,24 @@
         </div>
     </div>
     <script>
+        const connectionsDialog = document.getElementById('profile-connections-dialog');
+        if (connectionsDialog) {
+            connectionsDialog.showModal();
+            connectionsDialog.addEventListener('click', event => {
+                const bounds = connectionsDialog.getBoundingClientRect();
+                if (event.target === connectionsDialog &&
+                    (event.clientX < bounds.left || event.clientX > bounds.right ||
+                     event.clientY < bounds.top || event.clientY > bounds.bottom)) {
+                    connectionsDialog.close();
+                }
+            });
+            connectionsDialog.addEventListener('close', () => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('connections');
+                url.searchParams.delete('connections_page');
+                window.history.replaceState(null, '', url);
+            });
+        }
         document.querySelectorAll('[data-profile-tab]').forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('[data-profile-tab]').forEach(item => {
@@ -133,6 +194,10 @@
                 });
             });
         });
+        const initialTab = new URLSearchParams(window.location.search).get('tab');
+        if (initialTab === 'bookmark') {
+            document.querySelector('[data-profile-tab="bookmark"]').click();
+        }
         document.querySelectorAll('[data-copy-event]').forEach(button => {
             button.addEventListener('click', async () => {
                 const feedback = document.querySelector('.profile-feedback');

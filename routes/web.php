@@ -69,6 +69,8 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Profile(daichi)
     Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
+        Route::post('/{user}/follow', [ProfileController::class, 'follow'])->name('follow');
+        Route::delete('/{user}/follow', [ProfileController::class, 'unfollow'])->name('unfollow');
         Route::get('/profile/{id}/show', [ProfileController::class, 'show'])->name('show');
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');

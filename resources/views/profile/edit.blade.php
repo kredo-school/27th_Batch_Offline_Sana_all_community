@@ -10,7 +10,7 @@
 <div class="profile-page profile-editor">
     <nav class="profile-sidebar" aria-label="Profile navigation">
         @foreach (['Profile' => 'fa-user', 'Review' => 'fa-star', 'History' => 'fa-clock-rotate-left', 'Event' => 'fa-calendar-days', 'Bookmark' => 'fa-bookmark', 'Community' => 'fa-users'] as $tab => $icon)
-            <a class="profile-nav-item {{ $loop->first ? 'is-active' : '' }}" href="{{ route('profile.show', $user->id) }}" @if($loop->first) aria-current="page" @endif><i class="fa-solid {{ $icon }}" aria-hidden="true"></i>{{ $tab }}</a>
+            <a class="profile-nav-item {{ $loop->first ? 'is-active' : '' }}" href="{{ route('profile.show', ['id' => $user->id, 'tab' => strtolower($tab)]) }}" @if($loop->first) aria-current="page" @endif><i class="fa-solid {{ $icon }}" aria-hidden="true"></i>{{ $tab }}</a>
         @endforeach
     </nav>
     <div class="profile-editor-content">

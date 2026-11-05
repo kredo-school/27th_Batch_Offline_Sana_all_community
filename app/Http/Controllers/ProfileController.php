@@ -16,7 +16,7 @@ class ProfileController extends Controller
         $this->user = $user;
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $user = $this->user->with('profile')->withCount([
             'attendingEvents', 'eventsOwned', 'followers', 'following',
@@ -36,7 +36,47 @@ class ProfileController extends Controller
                 ->where('blocked_by', Auth::id())
                 ->exists();
 
-        return view('profile.show', compact('user', 'events', 'isBlockedByViewer'));
+        $bookmarkedEvents = Auth::id() === $user->id
+            ? $user->bookmarkedEvents()
+                ->with('categories')
+                ->orderByPivot('created_at', 'desc')
+                ->paginate(12, ['events.*'], 'bookmarks_page')
+                ->appends(['tab' => 'bookmark'])
+            : null;
+
+        $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
+        $followBlocked = Auth::id() !== $user->id
+            && UserBlock::blocksEitherWay(Auth::id(), $user->id);
+        $connectionType = $request->query('connections');
+        $connections = in_array($connectionType, ['followers', 'following'], true)
+            ? $user->{$connectionType}()->with('profile')->orderBy('users.name')->orderBy('users.id')
+                ->paginate(20, ['users.*'], 'connections_page')->appends(['connections' => $connectionType])
+            : null;
+
+        return view('profile.show', compact('user', 'events', 'isBlockedByViewer', 'bookmarkedEvents',
+            'isFollowing', 'followBlocked', 'connectionType', 'connections'));
+
+    }
+
+    public function follow(Request $request, User $user)
+    {
+        abort_if($request->user()->id === $user->id, 403, 'You cannot follow yourself.');
+        abort_if(UserBlock::blocksEitherWay($request->user()->id, $user->id), 403,
+            'You cannot follow a blocked user.');
+
+        \App\Models\Follow::firstOrCreate([
+            'follower_id' => $request->user()->id,
+            'following_id' => $user->id,
+        ], ['created_at' => now()]);
+
+        return redirect()->route('profile.show', $user->id)->with('success', 'You are now following this user.');
+    }
+
+    public function unfollow(Request $request, User $user)
+    {
+        $request->user()->following()->detach($user->id);
+
+        return redirect()->route('profile.show', $user->id)->with('success', 'You unfollowed this user.');
     }
 
     public function edit()
