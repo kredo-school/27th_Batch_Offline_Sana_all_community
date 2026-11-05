@@ -206,4 +206,99 @@ class ProfileTest extends TestCase
             ->assertSee('src="'.asset('storage/avatars/navbar.jpg').'" alt="'.$user->name.'"', false);
     }
 
+    public function test_saved_hearts_appear_only_in_the_owners_profile_bookmarks(): void
+    {
+        $viewer = User::factory()->create();
+        $host = User::factory()->create();
+        $event = Event::create([
+            'owner_id' => $host->id, 'title' => 'Saved heart event',
+            'start_at' => now()->addDay(), 'join_till' => now(),
+            'end_at' => now()->addDays(2),
+        ]);
+
+        $this->actingAs($viewer)->post(route('bookmarks.store', $event))->assertRedirect();
+        $this->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'bookmark']))
+            ->assertOk()->assertSee('Saved heart event')
+            ->assertViewHas('bookmarkedEvents', fn ($events) => $events->total() === 1);
+
+        $this->actingAs($host)->get(route('profile.show', $viewer->id))
+            ->assertOk()->assertDontSee('Saved heart event')
+            ->assertSee('Bookmarks are private.')
+            ->assertViewHas('bookmarkedEvents', null);
+
+        $this->actingAs($viewer)->delete(route('bookmarks.destroy', $event))->assertRedirect();
+        $this->get(route('profile.show', $viewer->id))
+            ->assertOk()->assertDontSee('Saved heart event')
+            ->assertSee('No bookmarked events yet.');
+    }
+
+    public function test_profile_bookmark_pagination_keeps_the_bookmark_tab(): void
+    {
+        $viewer = User::factory()->create();
+        $host = User::factory()->create();
+        for ($i = 0; $i < 13; $i++) {
+            $event = Event::create([
+                'owner_id' => $host->id, 'title' => 'Bookmark '.$i,
+                'start_at' => now()->addDay(), 'join_till' => now(),
+                'end_at' => now()->addDays(2),
+            ]);
+            $viewer->bookmarkedEvents()->attach($event->id, ['created_at' => now()->addSeconds($i)]);
+        }
+        $this->actingAs($viewer)->get(route('profile.show', $viewer->id))
+            ->assertOk()->assertSee('tab=bookmark', false)
+            ->assertViewHas('bookmarkedEvents', fn ($events) => $events->total() === 13 && $events->count() === 12);
+        $this->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'bookmark', 'bookmarks_page' => 2]))
+            ->assertOk()->assertSee('Bookmark 0')
+            ->assertViewHas('bookmarkedEvents', fn ($events) => $events->count() === 1);
+    }
+
+    public function test_follow_unfollow_and_connection_lists(): void
+    {
+        $viewer = User::factory()->create();
+        $owner = User::factory()->create();
+        $this->actingAs($viewer)->get(route('profile.show', $owner))
+            ->assertOk()->assertSee('Follow</button>', false);
+        $this->post(route('profile.follow', $owner))->assertRedirect(route('profile.show', $owner));
+        $this->post(route('profile.follow', $owner))->assertRedirect();
+        $this->assertDatabaseCount('follows', 1);
+        $this->get(route('profile.show', ['id' => $owner->id, 'connections' => 'followers']))
+            ->assertOk()->assertSee('Unfollow')->assertSee($viewer->name)
+            ->assertViewHas('connections', fn ($users) => $users->total() === 1 && $users->first()->id === $viewer->id)
+            ->assertViewHas('user', fn ($user) => $user->followers_count === 1);
+        $this->get(route('profile.show', ['id' => $viewer->id, 'connections' => 'following']))
+            ->assertOk()->assertViewHas('connections', fn ($users) => $users->first()->id === $owner->id);
+        $this->delete(route('profile.unfollow', $owner))->assertRedirect();
+        $this->delete(route('profile.unfollow', $owner))->assertRedirect();
+        $this->assertDatabaseCount('follows', 0);
+        $this->get(route('profile.show', ['id' => $owner->id, 'connections' => 'followers']))
+            ->assertOk()->assertSee('No followers yet.');
+    }
+
+    public function test_follow_rejects_self_and_blocks_in_either_direction(): void
+    {
+        $viewer = User::factory()->create();
+        $owner = User::factory()->create();
+        $this->actingAs($viewer)->post(route('profile.follow', $viewer))->assertForbidden();
+        foreach ([[$owner->id, $viewer->id], [$viewer->id, $owner->id]] as [$target, $blocker]) {
+            \App\Models\UserBlock::block($target, $blocker);
+            $this->post(route('profile.follow', $owner))->assertForbidden();
+            $this->get(route('profile.show', $owner))->assertOk()->assertDontSee('Follow</button>', false);
+            \App\Models\UserBlock::unblock($target, $blocker);
+        }
+        $this->assertDatabaseCount('follows', 0);
+    }
+
+    public function test_guests_cannot_follow_and_unfollow_only_changes_the_current_users_relationship(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+        $owner = User::factory()->create();
+        $this->post(route('profile.follow', $owner))->assertRedirect(route('login'));
+        $this->delete(route('profile.unfollow', $owner))->assertRedirect(route('login'));
+        \App\Models\Follow::create(['follower_id' => $other->id, 'following_id' => $owner->id]);
+        $this->actingAs($viewer)->delete(route('profile.unfollow', $owner))->assertRedirect();
+        $this->assertDatabaseHas('follows', ['follower_id' => $other->id, 'following_id' => $owner->id]);
+        $this->post(route('profile.follow', 999999))->assertNotFound();
+    }
+
 }
