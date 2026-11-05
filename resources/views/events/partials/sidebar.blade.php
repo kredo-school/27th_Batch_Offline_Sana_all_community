@@ -126,7 +126,8 @@
 </style>
 <aside class="event-sidebar">
 
-    {{-- Calendar --}}
+    {{-- Calendar（カレンダーのデータを渡したページだけ表示。コミュニティ一覧では出さない） --}}
+    @isset($calendarDays)
     <section class="calendar-box">
         <div class="calendar-header">
             <a href="{{ $previousMonthUrl }}" class="calendar-month-button" aria-label="Previous month">
@@ -170,6 +171,7 @@
             @endforeach
         </div>
     </section>
+    @endisset
 
     {{-- Side Menu --}}
     <nav class="sidebar-menu">

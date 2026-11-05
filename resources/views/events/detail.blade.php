@@ -180,11 +180,13 @@
 
     <div class="container py-4" style="max-width: 1000px;">
 
-        {{-- back --}}
-        <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
-            events</a>
-        @if (session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+        {{-- back（コミュニティ内のイベントはそのコミュニティへ戻る） --}}
+        @if ($event->community)
+            <a href="{{ route('community.show', $event->community) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
+                {{ $event->community->name }}</a>
+        @else
+            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
+                events</a>
         @endif
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
@@ -512,6 +514,14 @@
                     @endif
                 </div>
 
+                {{-- コミュニティ内のイベントはオーナーだけここから削除できる（中止済み・終了後も可） --}}
+                @if ($isOwner && $event->community_id)
+                    <button type="button" class="btn btn-outline-danger w-100 mb-3" data-bs-toggle="modal"
+                        data-bs-target="#deleteEventModal{{ $event->id }}">
+                        <i class="fa-regular fa-trash-can me-1"></i> Delete event
+                    </button>
+                @endif
+
                 {{-- map --}}
                 <div class="event-card">
                     <iframe class="event-map" loading="lazy"
@@ -592,6 +602,9 @@
             </div>
         </div>
     @endauth
+    @if ($isOwner && $event->community_id)
+        @include('events.partials.delete-event-modal')
+    @endif
     @if ($isOwner && !$isCancelled)
         <div class="modal fade" id="cancelEventModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
