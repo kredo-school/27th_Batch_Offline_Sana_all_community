@@ -47,9 +47,6 @@
 
     <a href="{{ route('events.show', $event) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to event</a>
 
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
     @if (session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif

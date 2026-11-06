@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
             'event' => Event::class,
         ]);
 
-        View::composer('layouts.app', function ($view): void {
+        View::composer(['layouts.app', 'layouts.app-with-event-sidebar'], function ($view): void {
             $currentUserId = Auth::id();
             $chats = $currentUserId
                 ? Message::with(['sender:id,username,name', 'sender.profile', 'receiver:id,username,name', 'receiver.profile'])
@@ -111,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
         // Event Page
         View::composer('events.partials.sidebar', function ($view) {
             $hasMyEvents = Auth::check()
-                && Event::where('owner_id', Auth::id())->exists();
+                && Event::where('owner_id', Auth::id())->whereNull('community_id')->exists();
 
             $view->with('hasMyEvents', $hasMyEvents);
         });

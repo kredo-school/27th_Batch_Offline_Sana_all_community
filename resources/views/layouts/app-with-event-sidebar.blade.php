@@ -34,6 +34,8 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('images/onlylogo.jpg') }}">
     <link rel="icon" type="image/jpeg" href="{{ asset('images/mainimage.jpg') }}">
 
+    @include('layouts.partials.header-styles')
+
     <style>
         .auth-main {
             display: grid;
@@ -93,6 +95,15 @@
             background-color: #fff;
         }
 
+        /* モーダルは固定ヘッダーより手前に出す */
+        .modal-backdrop {
+            z-index: 1105;
+        }
+
+        .modal {
+            z-index: 1110;
+        }
+
         /* イベント一覧ページのレイアウト */
         .events-layout {
             display: flex;
@@ -121,133 +132,24 @@
 </head>
 
 <body>
+    @php
+        $inCommunity = request()->routeIs('community.*')
+            || (isset($event) && $event instanceof \App\Models\Event && $event->community_id);
+    @endphp
     <div id="app">
-        <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
-            <div class="container-fluid px-2">
-                <a class="navbar-brand" href="{{ url('/') }}">
-                    <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;"
-                        class="">
-                </a>
-                <p class="h5"><strong class="text-bold">Sana ALL</strong><br>Community</p>
-
-                {{-- <div class="d-flex align-items-center flex-shrink-0">
-                        <i class="fa-solid fa-map-pin text-white"></i>
-                        <p class="text-white ms-1 location text-center mb-0">Deliver to <br>Philippines</p>
-                    </div> --}}
-
-                <!-- search Navbar -->
-
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <!-- Right Side Of Navbar -->
-                    <ul class="navbar-nav ms-auto">
-
-                        <!-- CATEGORIES -->
-                        <li class="nav-item d-flex align-items-center category-nav">
-                            <a class="nav-link text-dark" href="{{ route('events.index') }}">EVENTS</a>
-                            <a class="nav-link text-dark" href="#">EXCHANGE</a>
-                            <a class="nav-link text-dark" href="#">MEET UP</a>
-                            <a class="nav-link text-dark" href="#">JOB</a>
-                            <a class="nav-link text-dark" href="#">OTHER</a>
-                            <a class="nav-link text-dark" href="#">COMMUNITY</a>
-                            <a class="nav-link text-dark" href="#">VIEW ALL</a>
-                        </li>
-
-                        <ul class="dropdown-menu" aria-labelledby="categoryDropdown">
-
-                            <li>
-                                <a class="dropdown-item"href="#">
-                                    japanese
-                                </a>
-                                <a class="dropdown-item"href="#">
-                                    english
-                                </a>
-                            </li>
-                        </ul>
-
-                        <ul>
-                            <li class="nav-item d-flex align-items-center category-nav">
-                                <a class="nav-link text-dark" href="#"> <i class="fa-regular fa-envelope"></i></a>
-                                <a class="nav-link text-dark" href="#"><i class="fa-regular fa-clipboard"></i></a>
-                                <a class="nav-link text-dark" href="#"> <i class="fa-regular fa-calendar"></i></a>
-                            </li>
-                        </ul>
-                        <!-- Authentication Links -->
-                        @guest
-                            @if (Route::has('login'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-                                </li>
-                            @endif
-
-                            @if (Route::has('register'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Create Account') }}</a>
-                                </li>
-                            @endif
-                        @else
-                            <a href="#" class="btn btn-success text-white">POST</a>
-                            <li class="nav-item dropdown">
-
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle text-dark" href="#"
-                                    role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                                    v-pre>
-                                    @if (Auth::user()->profile?->avatar)
-                                        <img src="{{ Auth::user()->profile->avatar }}" alt="{{ Auth::user()->name }}"
-                                            class="rounded-circle">
-                                    @else
-                                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                                    @endif
-                                    Hello, {{ Auth::user()->username }}
-                                    <i class="fa-solid fa-list"></i>
-                                </a>
-
-                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                    @if (Auth::user()->role === 'admin')
-                                        <a href="{{ Route::has('admin.users') ? route('admin.users') : '#' }}"
-                                            class="dropdown-item">
-                                            <i class="fa-solid fa-user-gear"></i> Admin
-                                        </a>
-                                    @endif
-
-                                    {{-- profile --}}
-                                    <a href="#" class="dropdown-item">
-                                        {{-- {{ route('profile.show', Auth::user()->id) }} --}}
-                                        <i class="fa-solid fa-circle-user"></i> Profile
-                                    </a>
-                                    <hr class="dropdown-divider">
-
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                        onclick="event.preventDefault();
-                                                             document.getElementById('logout-form').submit();">
-                                        <i class="fa-solid fa-right-from-bracket"></i>
-                                        {{ __('Logout') }}
-                                    </a>
-
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                        class="d-none">
-                                        @csrf
-                                    </form>
-                                </div>
-                            </li>
-                        @endguest
-                    </ul>
-                </div>
-            </div>
-        </nav>
+        @include('layouts.partials.header')
 
         <div
             class="{{ request()->routeIs('login', 'register') ? 'auth-main' : '' }} {{ request()->routeIs('admin.categories.create', 'admin.categories.edit') ? 'category-form-main' : '' }}">
             <div class="container-fluid px-0">
                 <div class="row g-0 events-layout">
                     <aside class="col-md-3 col-lg-2 mb-4 mb-md-0 event-sidebar-col">
-                        @include('events.partials.sidebar')
+                        {{-- コミュニティのページとコミュニティ内のイベントではコミュニティ用のサイドバーを出す --}}
+                        @if ($inCommunity)
+                            @include('community.partials.sidebar')
+                        @else
+                            @include('events.partials.sidebar')
+                        @endif
                     </aside>
                     <section class="col-md-9 col-lg-10 px-0 event-content-col">
                         @yield('content')
@@ -255,6 +157,10 @@
                 </div>
             </div>
         </div>
+
+        @include('layouts.partials.header-modals')
+        @include('layouts.modals.post')
+        @include('layouts.modals.calendar')
     </div>
 </body>
 <footer class="bg-body-tertiary border-top mt-auto py-4 position-relative">
