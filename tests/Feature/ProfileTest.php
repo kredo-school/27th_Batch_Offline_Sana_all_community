@@ -11,6 +11,77 @@ class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_community_tab_lists_approved_memberships_and_hides_private_communities_from_others(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        foreach (['public', 'private', 'pending'] as $type) {
+            $community = \App\Models\Community::create([
+                'owner_id' => $viewer->id, 'name' => 'Joined community '.$type,
+                'visibility' => $type === 'private' ? 'private' : 'public',
+            ]);
+            $owner->communities()->attach($community, [
+                'status' => $type === 'pending' ? 'pending' : 'approved', 'joined_at' => now(),
+            ]);
+        }
+        $this->actingAs($owner)->get(route('profile.show', ['id' => $owner->id, 'tab' => 'community']))
+            ->assertOk()->assertSee('Joined community public')->assertSee('Joined community private')
+            ->assertDontSee('Joined community pending')
+            ->assertViewHas('joinedCommunities', fn ($communities) => $communities->total() === 2);
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $owner->id, 'tab' => 'community']))
+            ->assertOk()->assertSee('Joined community public')->assertDontSee('Joined community private')
+            ->assertViewHas('joinedCommunities', fn ($communities) => $communities->total() === 1);
+        $this->get(route('profile.show', $viewer->id))->assertOk()->assertSee('No joined communities yet.');
+    }
+
+    public function test_history_lists_the_owners_joined_and_pending_events(): void
+    {
+        $viewer = User::factory()->create();
+        $host = User::factory()->create();
+        foreach (['approved', 'pending', 'rejected'] as $status) {
+            $event = Event::create([
+                'owner_id' => $host->id, 'title' => 'History '.$status,
+                'start_at' => now()->subDay(), 'end_at' => now(), 'join_till' => now()->subDays(2),
+            ]);
+            $viewer->attendingEvents()->attach($event, ['status' => $status]);
+            if ($status === 'approved') {
+                $viewer->bookmarkedEvents()->attach($event);
+            }
+        }
+
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
+            ->assertOk()->assertSee('History approved')->assertSee('History pending')->assertSee('Pending approval')
+            ->assertDontSee('History rejected')
+            ->assertViewHas('historyEvents', fn ($events) => $events->total() === 2
+                && (bool) $events->firstWhere('title', 'History approved')->is_bookmarked);
+        $this->actingAs($host)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
+            ->assertOk()->assertDontSee('History approved')->assertSee('Event history is private.')
+            ->assertViewHas('historyEvents', null);
+        $this->get(route('profile.show', ['id' => $host->id, 'tab' => 'history']))
+            ->assertOk()->assertSee('No joined events yet.');
+    }
+
+    public function test_history_pagination_preserves_the_history_tab_and_date_order(): void
+    {
+        $viewer = User::factory()->create();
+        $host = User::factory()->create();
+        for ($i = 0; $i < 13; $i++) {
+            $event = Event::create([
+                'owner_id' => $host->id, 'title' => 'Joined event '.$i,
+                'start_at' => now()->subDays($i + 1), 'end_at' => now()->subDays($i),
+                'join_till' => now()->subDays(20),
+            ]);
+            $viewer->attendingEvents()->attach($event, ['status' => 'approved']);
+        }
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
+            ->assertOk()->assertSee('tab=history', false)
+            ->assertViewHas('historyEvents', fn ($events) => $events->total() === 13
+                && $events->count() === 12 && $events->first()->title === 'Joined event 0');
+        $this->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_page' => 2]))
+            ->assertOk()->assertSee('Joined event 12')
+            ->assertViewHas('historyEvents', fn ($events) => $events->count() === 1);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -71,6 +142,20 @@ class ProfileTest extends TestCase
             ->assertDontSee('Another user event')
             ->assertDontSee('No events shared yet.')
             ->assertDontSee('Surfing by the ocean');
+    }
+
+    public function test_hosted_event_cards_preserve_external_image_urls(): void
+    {
+        $owner = User::factory()->create();
+        Event::create([
+            'owner_id' => $owner->id, 'title' => 'External image event',
+            'image' => 'https://example.com/event.jpg',
+            'start_at' => now()->addDay(), 'join_till' => now(), 'end_at' => now()->addDays(2),
+        ]);
+
+        $this->actingAs($owner)->get(route('profile.show', $owner->id))
+            ->assertOk()->assertSee('src="https://example.com/event.jpg"', false)
+            ->assertDontSee('storage/https://example.com/event.jpg');
     }
 
     public function test_edit_form_and_profile_updates_preserve_unedited_details(): void
@@ -187,13 +272,17 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee('Public published event')
             ->assertDontSee('Private published event')
-            ->assertDontSee('Public draft event');
+            ->assertDontSee('Public draft event')
+            ->assertViewHas('user', fn ($user) => $user->events_owned_count === 1)
+            ->assertViewHas('events', fn ($events) => $events->count() === 1);
 
         $this->actingAs($owner)->get(route('profile.show', $owner->id))
             ->assertOk()
             ->assertSee('Public published event')
             ->assertSee('Private published event')
-            ->assertSee('Public draft event');
+            ->assertSee('Public draft event')
+            ->assertViewHas('user', fn ($user) => $user->events_owned_count === 3)
+            ->assertViewHas('events', fn ($events) => $events->count() === 3);
     }
 
     public function test_navbar_uses_storage_url_for_uploaded_avatar(): void

@@ -98,47 +98,15 @@
                         <h2>Hosted events</h2>
                         <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? 'event' : 'events' }}</span>
                     </div>
-                    @forelse ($events as $event)
-                        <article class="profile-post" id="event-{{ $event->id }}">
-                            <header class="profile-post-header">
-                                <img class="profile-post-avatar" src="{{ $avatar }}" alt="">
-                                <div class="profile-post-author">
-                                    <p class="profile-post-name">{{ $user->name }}</p>
-                                    <p class="profile-post-byline"><span>{{ '@'.($user->username ?: 'user'.$user->id) }}</span><span>Posted <time datetime="{{ $event->created_at->toDateString() }}">{{ $event->created_at->format('M j, Y') }}</time></span></p>
-                                </div>
-                                <details class="profile-post-menu"><summary aria-label="Event options"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary><div><button type="button" data-copy-event="{{ url()->current().'#event-'.$event->id }}"><i class="fa-solid fa-link" aria-hidden="true"></i> Copy link</button></div></details>
-                            </header>
-                            <div class="profile-post-body"><h3><a href="{{ route('events.show', $event) }}" class="profile-event-title">{{ $event->title }}</a></h3>
-                                @if ($event->categories->isNotEmpty())
-                                    <p class="profile-post-categories">@foreach ($event->categories as $category)<span class="badge">{{ $category->name }}</span>@endforeach</p>
-                                @endif
-                                <p>{{ $event->description }}</p>
-                                @if ($event->image)<a href="{{ route('events.show', $event) }}"><img class="profile-post-image" src="{{ $imageUrl($event->image, '') }}" alt="{{ $event->title }}" loading="lazy"></a>@endif
+                    <div class="event-grid profile-bookmark-grid">
+                        @forelse ($events as $event)
+                            <div id="event-{{ $event->id }}">
+                                @include('events.partials.card', ['event' => $event])
                             </div>
-                            <footer class="profile-post-footer">
-                                <div class="profile-event-meta">
-                                    <div class="profile-meta-item">
-                                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-                                        <div class="profile-meta-copy">
-                                            <span class="profile-meta-label">Event date</span>
-                                            @if ($event->start_at)
-                                                <time class="profile-meta-value" datetime="{{ $event->start_at->toDateString() }}">{{ $event->start_at->format('M j, Y') }}</time>
-                                            @else
-                                                <span class="profile-meta-value">Date to be announced</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="profile-meta-item">
-                                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                                        <div class="profile-meta-copy"><span class="profile-meta-label">Location</span><span class="profile-meta-value">{{ $event->location ?: 'Location to be announced' }}</span></div>
-                                    </div>
-                                </div>
-                                <a href="{{ route('events.show', $event) }}" class="profile-event-details" aria-label="View details for {{ $event->title }}">View details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-                            </footer>
-                        </article>
-                    @empty
-                        <p class="profile-events-empty">No events shared yet.</p>
-                    @endforelse
+                        @empty
+                            <p class="profile-events-empty">No events shared yet.</p>
+                        @endforelse
+                    </div>
                 </div>
                 <div data-profile-panel="bookmark" hidden>
                     <div class="profile-feed-heading"><h2>Bookmarks</h2></div>
@@ -156,7 +124,45 @@
                         <p class="profile-events-empty">Bookmarks are private.</p>
                     @endif
                 </div>
-                @foreach (['review' => 'No reviews to display.', 'history' => 'No activity history to display.', 'community' => 'No communities to display.'] as $panel => $message)
+                <div data-profile-panel="history" hidden>
+                    <div class="profile-feed-heading"><h2>Joined events</h2></div>
+                    @if ($historyEvents !== null)
+                        <div class="event-grid profile-bookmark-grid">
+                            @forelse ($historyEvents as $event)
+                                <div>
+                                    <p class="mb-2"><span class="badge {{ $event->pivot->status === 'pending' ? 'bg-warning text-dark' : 'bg-success' }}">{{ $event->pivot->status === 'pending' ? 'Pending approval' : 'Joined' }}</span></p>
+                                    @include('events.partials.card', ['event' => $event])
+                                </div>
+                            @empty
+                                <p class="profile-events-empty">No joined events yet.</p>
+                            @endforelse
+                        </div>
+                        {{ $historyEvents->links() }}
+                    @else
+                        <p class="profile-events-empty">Event history is private.</p>
+                    @endif
+                </div>
+                <div data-profile-panel="community" hidden>
+                    <div class="profile-feed-heading"><h2>Joined communities</h2><span>{{ $joinedCommunities->total() }}</span></div>
+                    <div class="event-grid profile-bookmark-grid">
+                        @forelse ($joinedCommunities as $community)
+                            <article class="card h-100 overflow-hidden">
+                                <a href="{{ route('community.show', $community->id) }}">
+                                    <img src="{{ $imageUrl($community->image, asset('images/onlylogo.jpg')) }}" alt="{{ $community->name }}" class="w-100" style="height: 160px; object-fit: cover;" loading="lazy">
+                                </a>
+                                <div class="card-body">
+                                    <h3 class="h5"><a href="{{ route('community.show', $community->id) }}">{{ $community->name }}</a></h3>
+                                    <p>{{ \Illuminate\Support\Str::limit($community->description, 150) }}</p>
+                                    <a href="{{ route('community.show', $community->id) }}">View community &gt;</a>
+                                </div>
+                            </article>
+                        @empty
+                            <p class="profile-events-empty">No joined communities yet.</p>
+                        @endforelse
+                    </div>
+                    {{ $joinedCommunities->links() }}
+                </div>
+                @foreach (['review' => 'No reviews to display.'] as $panel => $message)
                     <div class="profile-tab-placeholder" data-profile-panel="{{ $panel }}" hidden><h2>{{ ucfirst($panel) }}</h2><p>{{ $message }}</p></div>
                 @endforeach
                 <p class="profile-feedback" role="status" aria-live="polite"></p>
@@ -195,8 +201,10 @@
             });
         });
         const initialTab = new URLSearchParams(window.location.search).get('tab');
-        if (initialTab === 'bookmark') {
-            document.querySelector('[data-profile-tab="bookmark"]').click();
+        const initialTabButton = Array.from(document.querySelectorAll('[data-profile-tab]'))
+            .find(button => button.dataset.profileTab === initialTab);
+        if (initialTabButton) {
+            initialTabButton.click();
         }
         document.querySelectorAll('[data-copy-event]').forEach(button => {
             button.addEventListener('click', async () => {

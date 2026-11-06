@@ -19,10 +19,17 @@ class ProfileController extends Controller
     public function show(Request $request, $id)
     {
         $user = $this->user->with('profile')->withCount([
-            'attendingEvents', 'eventsOwned', 'followers', 'following',
+            'attendingEvents',
+            'eventsOwned' => function ($query) use ($id) {
+                if ((int) Auth::id() !== (int) $id) {
+                    $query->where('visibility', 'public')->where('status', 'published');
+                }
+            },
+            'followers', 'following',
         ])->findOrFail($id);
         $events = $user->eventsOwned()
             ->with('categories')
+            ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
             ->when(Auth::id() !== $user->id, function ($query) {
                 $query->where('visibility', 'public')->where('status', 'published');
             })
@@ -44,6 +51,25 @@ class ProfileController extends Controller
                 ->appends(['tab' => 'bookmark'])
             : null;
 
+        $historyEvents = Auth::id() === $user->id
+            ? $user->attendingEvents()
+                ->wherePivotIn('status', ['approved', 'pending'])
+                ->with('categories')
+                ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
+                ->orderByDesc('events.start_at')
+                ->orderByDesc('events.id')
+                ->paginate(12, ['events.*'], 'history_page')
+                ->appends(['tab' => 'history'])
+            : null;
+
+        $joinedCommunities = $user->communities()
+            ->wherePivot('status', 'approved')
+            ->when(Auth::id() !== $user->id, fn ($query) => $query->where('communities.visibility', 'public'))
+            ->orderByPivot('joined_at', 'desc')
+            ->orderByDesc('communities.id')
+            ->paginate(12, ['communities.*'], 'communities_page')
+            ->appends(['tab' => 'community']);
+
         $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
         $followBlocked = Auth::id() !== $user->id
             && UserBlock::blocksEitherWay(Auth::id(), $user->id);
@@ -53,8 +79,8 @@ class ProfileController extends Controller
                 ->paginate(20, ['users.*'], 'connections_page')->appends(['connections' => $connectionType])
             : null;
 
-        return view('profile.show', compact('user', 'events', 'isBlockedByViewer', 'bookmarkedEvents',
-            'isFollowing', 'followBlocked', 'connectionType', 'connections'));
+        return view('profile.show', compact('user', 'events', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+            'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities'));
 
     }
 
