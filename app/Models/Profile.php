@@ -15,7 +15,11 @@ class Profile extends Model
 
     protected function casts(): array
     {
-        return ['birthday' => 'date'];
+        return [
+            'birthday' => 'date',
+            'avatar_crop' => 'array',
+            'cover_image_crop' => 'array',
+        ];
     }
 
     public function user()

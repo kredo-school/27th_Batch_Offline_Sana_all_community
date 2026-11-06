@@ -80,7 +80,7 @@
 
 </head>
 
-<body>
+<body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
     <div id="app">
         @include('layouts.partials.header')
 
