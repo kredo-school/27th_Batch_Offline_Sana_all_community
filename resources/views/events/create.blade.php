@@ -44,23 +44,60 @@
         background: #e6f1fb;
         border-color: #3d8fd6;
     }
+    @if ($community)
+    /* コミュニティから開いたときはボタン以外をオレンジにする */
+    .community-accent {
+        color: #F58634;
+    }
+    .event-form-step {
+        background: #fdebdc;
+        color: #F58634;
+    }
+    .event-form-required {
+        color: #F58634;
+    }
+    .event-option:has(input:checked) {
+        background: #fdebdc;
+        border-color: #F58634;
+    }
+    .event-form-section .form-check-input:checked {
+        background-color: #F58634;
+        border-color: #F58634;
+    }
+    .event-form-section .form-control:focus,
+    .event-form-section .form-select:focus,
+    .event-form-section .form-check-input:focus {
+        border-color: #F58634;
+        box-shadow: 0 0 0 0.25rem rgba(245, 134, 52, 0.25);
+    }
+    @endif
 </style>
 
 <div class="container py-4" style="max-width: 860px;">
 
     {{-- list --}}
     <nav class="mb-4 small">
-        <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">Events</a>
-        <span class="mx-2">&gt;</span>
-        <span class="text-muted">Create an event</span>
+        @if ($community)
+            <a href="{{ route('community.index') }}" class="text-decoration-none fw-semibold text-dark">Communities</a>
+            <span class="mx-2">&gt;</span>
+            <a href="{{ route('community.show', $community->id) }}" class="text-decoration-none fw-semibold text-dark">{{ $community->name }}</a>
+            <span class="mx-2">&gt;</span>
+            <span class="community-accent fw-semibold" aria-current="page">Create an event</span>
+        @else
+            <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">Events</a>
+            <span class="mx-2">&gt;</span>
+            <span class="text-muted">Create an event</span>
+        @endif
     </nav>
 
     {{-- title --}}
-    <p class="text-primary fw-semibold small mb-1">New event</p>
+    <p class="{{ $community ? 'community-accent' : 'text-primary' }} fw-semibold small mb-1">New event</p>
     <h1 class="fw-normal mb-1">Make your event.</h1>
-    <p class="event-form-help mb-4">Fill in the details below to publish your event.</p>
+    <p class="event-form-help mb-4">
+        {{ $community ? "Fill in the details below to publish your event in {$community->name}." : 'Fill in the details below to publish your event.' }}
+    </p>
 
-    <form action="{{ route('events.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ $community ? route('community.events.store', $community->id) : route('events.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         {{-- 01 Event basics --}}
@@ -211,6 +248,8 @@
             @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
 
+        {{-- 言語・公開範囲・承認はイベントページの作成だけで選ぶ（コミュニティ内は既定値で作る） --}}
+        @unless ($community)
         {{-- 04 Language --}}
         <div class="event-form-section">
             <div class="d-flex gap-3 mb-4">
@@ -288,10 +327,11 @@
             </div>
             @error('approval_required') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+        @endunless
 
         {{-- button --}}
         <div class="d-flex justify-content-end gap-2">
-            <a href="{{ route('events.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            <a href="{{ $community ? route('community.show', $community->id) : route('events.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
             <button type="submit" class="btn btn-primary px-4">Create event</button>
         </div>
     </form>

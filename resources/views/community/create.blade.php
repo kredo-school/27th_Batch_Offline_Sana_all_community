@@ -1,224 +1,281 @@
-@extends('layouts.app')
+@extends('layouts.app-with-event-sidebar')
 
 @section('title', $title ?? 'Create Community')
 
 @section('content')
-<div class="container py-4">
-    <div class="create-page">
-        
-        <!-- Breadcrumb -->
-        <div class="create-breadcrumb mb-3">
-            <a href="{{ route('community.index') }}" class="text-decoration-none">Communities</a>
-            <i class="fa-solid fa-chevron-right mx-1 small text-muted"></i>
-            <span class="fw-bold text-dark">{{ $title ?? 'Create Community' }}</span>
-        </div>
+@php
+    $editing = $editing ?? false;
+@endphp
+<style>
+    /* イベント作成ページ (events/create.blade.php) と同じ見た目に揃える。ボタン以外の青はコミュニティのオレンジにする */
+    .community-accent {
+        color: #F58634;
+    }
+    .event-form-section {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 20px;
+    }
+    .event-form-step {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #fdebdc;
+        color: #F58634;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .event-form-label {
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .event-form-required {
+        color: #F58634;
+        font-size: 11px;
+    }
+    .event-form-help {
+        color: #888780;
+        font-size: 12px;
+    }
+    .event-option {
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 14px 16px;
+        cursor: pointer;
+        display: block;
+    }
+    .event-option:has(input:checked) {
+        background: #fdebdc;
+        border-color: #F58634;
+    }
+    /* ラジオ・チェックボックスの選択色と入力欄のフォーカス色もオレンジ */
+    .event-form-section .form-check-input:checked,
+    .form-check-input#terms:checked {
+        background-color: #F58634;
+        border-color: #F58634;
+    }
+    .event-form-section .form-control:focus,
+    .event-form-section .form-select:focus,
+    .form-check-input:focus {
+        border-color: #f9b27c;
+        box-shadow: 0 0 0 0.25rem rgba(245, 134, 52, 0.25);
+    }
+</style>
 
-        <!-- Heading -->
-        <div class="create-heading mb-4">
-            <p class="eyebrow accent text-primary fw-bold small mb-1">
-                {{ ($editing ?? false) ? 'COMMUNITY SETTINGS' : 'NEW COMMUNITY' }}
-            </p>
-            <h1 class="fw-bold display-6 text-dark">
-                {{ ($editing ?? false) ? 'Edit your community.' : 'Bring your people together.' }}
-            </h1>
-            <p class="text-muted">
-                {{ ($editing ?? false) ? 'Keep your community information accurate and make it easy for new members to understand what you are about.' : 'Start a space where members can connect, chat, and organize events around a shared interest.' }}
-            </p>
-        </div>
+<div class="container py-4" style="max-width: 860px;">
 
-        <!-- Validation Errors -->
-        @if ($errors->any())
-            <div class="validation-errors alert alert-danger shadow-sm" role="alert">
-                <strong>Please check the form.</strong>
-                <ul class="mb-0 mt-1">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
+    {{-- list --}}
+    <nav class="mb-4 small">
+        <a href="{{ route('community.index') }}" class="text-decoration-none fw-semibold text-dark">Communities</a>
+        <span class="mx-2">&gt;</span>
+        {{-- 今開いているページはオレンジ --}}
+        <span class="community-accent fw-semibold" aria-current="page">{{ $editing ? 'Edit community' : 'Create a community' }}</span>
+    </nav>
+
+    {{-- title --}}
+    <p class="community-accent fw-semibold small mb-1">{{ $editing ? 'Community settings' : 'New community' }}</p>
+    <h1 class="fw-normal mb-1">{{ $editing ? 'Edit your community.' : 'Make your community.' }}</h1>
+    <p class="event-form-help mb-4">
+        {{ $editing ? 'Update the details below. Changes are visible to all members immediately.' : 'Fill in the details below to start your community. You will become the organizer.' }}
+    </p>
+
+    <form action="{{ $editing ? route('community.update', $community->id) : route('community.store') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        @if ($editing)
+            @method('PUT')
         @endif
 
-        <!-- Form -->
-        <form class="create-form" action="{{ ($editing ?? false) ? route('community.update', $community->id) : route('community.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            @if ($editing ?? false) 
-                @method('PUT') 
-            @endif
-
-            <div class="form-content">
-                
-                <!-- Section 01: Community Basics -->
-                <section class="form-section card bg-white mb-4 p-4 border shadow-sm rounded-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-primary text-white rounded-circle p-2 me-2 fw-bold" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">01</span>
-                        <h2 class="h5 fw-bold mb-0 text-dark">Community basics</h2>
-                    </div>
-                    <p class="text-muted small mb-4">Give your community a clear name and description.</p>
-
-                    <div class="field-grid row g-3">
-                        <!-- Community Name -->
-                        <div class="field full-field col-12">
-                            <label class="form-label fw-bold small text-dark">Community name <span class="text-danger">*</span></label>
-                            <input class="form-control border-secondary-subtle" required name="name" maxlength="60" placeholder="e.g. Tokyo Creators" value="{{ old('name', ($editing ?? false) ? ($community->name ?? 'Tokyo Creators') : '') }}">
-                            <small class="text-muted">Choose a name that is easy to recognize. Maximum 60 characters.</small>
-                        </div>
-
-                        <!-- Category -->
-                        <div class="field col-md-6">
-                            <label class="form-label fw-bold small text-dark">Category <span class="text-danger">*</span></label>
-                            <select class="form-select border-secondary-subtle" required name="category">
-                                <option value="" disabled @selected(!old('category') && !($editing ?? false))>Select a category</option>
-                                @foreach (['Creative', 'Technology', 'Outdoors', 'Learning', 'Wellness', 'Other'] as $category)
-                                    <option value="{{ $category }}" @selected(old('category', ($editing ?? false) ? ($community->category ?? 'Creative') : '') === $category)>
-                                        {{ $category }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <!-- Location -->
-                        <div class="field col-md-6">
-                            <label class="form-label fw-bold small text-dark">Location</label>
-                            <input class="form-control border-secondary-subtle" name="location" placeholder="e.g. Tokyo or Online" value="{{ old('location', ($editing ?? false) ? ($community->location ?? '') : '') }}">
-                        </div>
-
-                        <!-- Description -->
-                        <div class="field full-field col-12">
-                            <label class="form-label fw-bold small text-dark">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control border-secondary-subtle" required name="description" rows="5" maxlength="500" placeholder="What is this community about? Who should join?">{{ old('description', ($editing ?? false) ? ($community->description ?? '') : '') }}</textarea>
-                            <small class="text-muted">Help people understand what to expect. Maximum 500 characters.</small>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Section 02: Community Identity (Icon & Cover Image) -->
-                <section class="form-section card bg-white mb-4 p-4 border shadow-sm rounded-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-primary text-white rounded-circle p-2 me-2 fw-bold" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">02</span>
-                        <h2 class="h5 fw-bold mb-0 text-dark">Community identity</h2>
-                    </div>
-                    <p class="text-muted small mb-4">Add a visual that helps your community stand out.</p>
-
-                    <div class="row g-3">
-                        <!-- Community Icon -->
-                        <div class="col-md-4">
-                            <label for="community-icon" class="form-label fw-bold small text-dark">Community icon</label>
-                            <!-- アイコンのプレビュー枠（写真全体を枠内に収める） -->
-                            <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2" style="width: 120px; height: 120px;">
-                                <img data-preview="community-icon" src="{{ ($editing ?? false) && ($community->icon ?? null) ? asset('storage/' . $community->icon) : '' }}" alt="Community icon preview" class="w-100 h-100 object-fit-contain @if (! (($editing ?? false) && ($community->icon ?? null))) d-none @endif">
-                                <i data-preview-empty="community-icon" class="fa-regular fa-image fs-2 text-secondary @if (($editing ?? false) && ($community->icon ?? null)) d-none @endif"></i>
-                            </div>
-                            <input id="community-icon" name="icon" type="file" accept="image/png,image/jpeg" class="form-control">
-                            <small class="form-text text-muted">Square JPG/PNG, up to 5 MB</small>
-                        </div>
-
-                        <!-- Cover Image -->
-                        <div class="col-md-8">
-                            <label for="community-cover-image" class="form-label fw-bold small text-dark">Cover image</label>
-                            <!-- カバー画像のプレビュー枠（写真の縦横比に合わせて高さが変わる） -->
-                            <div class="border rounded-3 bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2">
-                                <img data-preview="community-cover-image" src="{{ ($editing ?? false) && ($community->image ?? null) ? asset('storage/' . $community->image) : '' }}" alt="Cover image preview" class="d-block w-100 object-fit-contain @if (! (($editing ?? false) && ($community->image ?? null))) d-none @endif" style="max-height: 320px;">
-                                <i data-preview-empty="community-cover-image" class="fa-regular fa-image fs-2 text-secondary my-5 @if (($editing ?? false) && ($community->image ?? null)) d-none @endif"></i>
-                            </div>
-                            <input id="community-cover-image" name="cover_image" type="file" accept="image/png,image/jpeg" class="form-control">
-                            <small class="form-text text-muted">JPG/PNG, up to 5 MB. Recommended size: 1600 × 600 px.</small>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Section 03: Privacy and Access -->
-                <section class="form-section card bg-white mb-4 p-4 border shadow-sm rounded-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-primary text-white rounded-circle p-2 me-2 fw-bold" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">03</span>
-                        <h2 class="h5 fw-bold mb-0 text-dark">Privacy and access</h2>
-                    </div>
-                    <p class="text-muted small mb-4">Choose who can find and join your community.</p>
-
-                    <div class="privacy-options d-flex flex-column gap-2">
-                        @foreach ([['public', 'Public community', 'Anyone can find, view, and join this community.'], ['approval', 'Approval required', 'Anyone can find the community, but you approve new members.'], ['private', 'Private community', 'Only invited people can find and join this community.']] as [$value, $label, $help])
-                            <label class="radio-card border border-secondary-subtle p-3 rounded bg-light bg-opacity-50 d-flex align-items-start gap-3" style="cursor: pointer;">
-                                <input type="radio" name="visibility" value="{{ $value }}" @checked(old('visibility', $community->visibility ?? 'public') === $value) class="form-check-input mt-1">
-                                <span>
-                                    <strong class="d-block text-dark">{{ $label }}</strong>
-                                    <small class="text-muted">{{ $help }}</small>
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                </section>
-
-                <!-- Section 04: Community Guidelines -->
-                <section class="form-section card bg-white mb-4 p-4 border shadow-sm rounded-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-primary text-white rounded-circle p-2 me-2 fw-bold" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">04</span>
-                        <h2 class="h5 fw-bold mb-0 text-dark">Community guidelines</h2>
-                    </div>
-                    <p class="text-muted small mb-4">Set expectations for positive and respectful participation.</p>
-
-                    <div class="field w-100">
-                        <label class="form-label fw-bold small text-dark">Welcome message and guidelines</label>
-                        <textarea class="form-control border-secondary-subtle mt-1" name="guidelines" rows="5" placeholder="Share a welcome note, community values, or important rules...">{{ old('guidelines', ($editing ?? false) ? ($community->guidelines ?? '') : '') }}</textarea>
-                    </div>
-                </section>
+        {{-- 01 Community basics --}}
+        <div class="event-form-section">
+            <div class="d-flex gap-3 mb-4">
+                <div class="event-form-step">01</div>
+                <div>
+                    <h5 class="mb-0">Community basics</h5>
+                    <p class="event-form-help mb-0">Please give a clear name and description.</p>
+                </div>
             </div>
 
-            <!-- Sidebar / Actions -->
-            <aside class="create-summary card bg-white text-dark p-4 border shadow-sm rounded-3 mb-4">
-                <div class="summary-card mb-3">
-                    <p class="eyebrow text-primary small fw-bold mb-1">
-                        {{ ($editing ?? false) ? 'BEFORE YOU SAVE' : 'BEFORE YOU CREATE' }}
-                    </p>
-                    <h3 class="h5 fw-bold text-dark mb-3">
-                        {{ ($editing ?? false) ? 'Review your changes' : 'A few things to know' }}
-                    </h3>
-                    <ul class="list-unstyled small mb-3 text-secondary">
-                        <li class="mb-2">
-                            <span class="badge bg-primary text-white me-1">1</span> 
-                            {{ ($editing ?? false) ? 'Updates are visible to all members immediately.' : 'You will become the community organizer.' }}
-                        </li>
-                        <li class="mb-2">
-                            <span class="badge bg-primary text-white me-1">2</span> 
-                            {{ ($editing ?? false) ? 'Existing events and conversations are not affected.' : 'You can invite co-organizers later.' }}
-                        </li>
-                        <li>
-                            <span class="badge bg-primary text-white me-1">3</span> 
-                            Community settings can be changed anytime.
-                        </li>
-                    </ul>
+            {{-- Name --}}
+            <div class="mb-4">
+                <div class="d-flex justify-content-between">
+                    <label for="name" class="event-form-label">Community name</label>
+                    <span class="event-form-required">REQUIRED</span>
+                </div>
+                <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror"
+                       value="{{ old('name', $community->name ?? '') }}" maxlength="60" placeholder="e.g. Tokyo Creators" required>
+                <small class="event-form-help">Maximum 60 characters.</small>
+                @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
+            </div>
 
-                    @unless ($editing ?? false)
-                        <div class="form-check border-top pt-3 mt-3">
-                            <input class="form-check-input" required type="checkbox" id="terms">
-                            <label class="form-check-label small text-secondary" for="terms">
-                                I agree to the 
-                                <button type="button" class="btn btn-link text-primary p-0 text-decoration-underline align-baseline shadow-none">Community Guidelines</button> and 
-                                <button type="button" class="btn btn-link text-primary p-0 text-decoration-underline align-baseline shadow-none">Terms of Service</button>.
-                            </label>
-                        </div>
-                    @endunless
+            <div class="row g-4">
+                {{-- Category --}}
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between">
+                        <label for="category" class="event-form-label">Category</label>
+                        <span class="event-form-required">REQUIRED</span>
+                    </div>
+                    <select name="category" id="category" class="form-select @error('category') is-invalid @enderror" required>
+                        <option value="" hidden>Select category</option>
+                        @foreach (\App\Models\Community::CATEGORIES as $category)
+                            <option value="{{ $category }}" @selected(old('category', $community->category ?? '') === $category)>
+                                {{ $category }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('category') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="create-actions d-flex justify-content-end gap-2 pt-3 border-top mt-3">
-                    <a class="btn btn-outline-secondary px-4" href="{{ route('community.index') }}">Cancel</a>
-                    <button type="submit" class="btn btn-primary px-4 text-white fw-bold">
-                        {{ ($editing ?? false) ? 'Save changes' : 'Create community' }}
-                    </button>
+                {{-- Location --}}
+                <div class="col-md-6">
+                    <label for="location" class="event-form-label">Location</label>
+                    <input type="text" name="location" id="location" class="form-control @error('location') is-invalid @enderror"
+                           value="{{ old('location', $community->location ?? '') }}" maxlength="255" placeholder="e.g. Cebu City or Online">
+                    @error('location') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
-            </aside>
-        </form>
+            </div>
 
-        @if ($editing ?? false)
-            <form action="{{ route('community.destroy', $community->id) }}" method="POST" class="mt-3"
+            {{-- Description --}}
+            <div class="mt-4">
+                <div class="d-flex justify-content-between">
+                    <label for="description" class="event-form-label">Description</label>
+                    <span class="event-form-required">REQUIRED</span>
+                </div>
+                <textarea name="description" id="description" rows="4" maxlength="500"
+                          class="form-control @error('description') is-invalid @enderror"
+                          placeholder="What is this community about? Who should join?" required>{{ old('description', $community->description ?? '') }}</textarea>
+                <small class="event-form-help">Help people understand what to expect. Maximum 500 characters.</small>
+                @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+            </div>
+        </div>
+
+        {{-- 02 Community identity --}}
+        <div class="event-form-section">
+            <div class="d-flex gap-3 mb-4">
+                <div class="event-form-step">02</div>
+                <div>
+                    <h5 class="mb-0">Community identity</h5>
+                    <p class="event-form-help mb-0">Please add visuals that help this community stand out.</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                {{-- Icon --}}
+                <div class="col-md-4">
+                    <label for="community-icon" class="event-form-label">Community icon</label>
+                    {{-- アイコンのプレビュー枠（写真全体を枠内に収める） --}}
+                    <div class="border rounded-3 bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2" style="width: 120px; height: 120px;">
+                        <img data-preview="community-icon" src="{{ $editing && ($community->icon ?? null) ? asset('storage/' . $community->icon) : '' }}" alt="Community icon preview" class="w-100 h-100 object-fit-contain @if (! ($editing && ($community->icon ?? null))) d-none @endif">
+                        <i data-preview-empty="community-icon" class="fa-regular fa-image fs-2 text-secondary @if ($editing && ($community->icon ?? null)) d-none @endif"></i>
+                    </div>
+                    <input id="community-icon" name="icon" type="file" accept="image/png,image/jpeg" class="form-control @error('icon') is-invalid @enderror">
+                    <small class="event-form-help">Square JPG or PNG, up to 5MB.</small>
+                    @error('icon') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+
+                {{-- Cover image --}}
+                <div class="col-md-8">
+                    <label for="community-cover-image" class="event-form-label">Cover image</label>
+                    {{-- カバー画像のプレビュー枠（写真の縦横比に合わせて高さが変わる） --}}
+                    <div class="border rounded-3 bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2">
+                        <img data-preview="community-cover-image" src="{{ $editing && ($community->image ?? null) ? asset('storage/' . $community->image) : '' }}" alt="Cover image preview" class="d-block w-100 object-fit-contain @if (! ($editing && ($community->image ?? null))) d-none @endif" style="max-height: 320px;">
+                        <i data-preview-empty="community-cover-image" class="fa-regular fa-image fs-2 text-secondary my-5 @if ($editing && ($community->image ?? null)) d-none @endif"></i>
+                    </div>
+                    <input id="community-cover-image" name="cover_image" type="file" accept="image/png,image/jpeg" class="form-control @error('cover_image') is-invalid @enderror">
+                    <small class="event-form-help">JPG or PNG, up to 5MB. Recommended size: 1600 × 600 px.</small>
+                    @error('cover_image') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- 03 Visibility --}}
+        <div class="event-form-section">
+            <div class="d-flex gap-3 mb-4">
+                <div class="event-form-step">03</div>
+                <div>
+                    <h5 class="mb-0">Visibility</h5>
+                    <p class="event-form-help mb-0">Please select who can find and join this community.</p>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                @foreach ([
+                    'public' => ['Public community', 'Anyone can find, view and join this community.'],
+                    'approval' => ['Approval required', 'Anyone can find this community, but you approve new members.'],
+                    'private' => ['Private community', 'Only invited people can find and join this community.'],
+                ] as $value => [$label, $help])
+                    <label class="event-option">
+                        <input type="radio" name="visibility" value="{{ $value }}" class="form-check-input me-2" @checked(old('visibility', $community->visibility ?? 'public') === $value)>
+                        <strong>{{ $label }}</strong>
+                        <div class="event-form-help ms-4">{{ $help }}</div>
+                    </label>
+                @endforeach
+            </div>
+            @error('visibility') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        {{-- 04 Guidelines --}}
+        <div class="event-form-section">
+            <div class="d-flex gap-3 mb-4">
+                <div class="event-form-step">04</div>
+                <div>
+                    <h5 class="mb-0">Guidelines</h5>
+                    <p class="event-form-help mb-0">Please set expectations for positive and respectful participation.</p>
+                </div>
+            </div>
+
+            <label for="guidelines" class="event-form-label">Welcome message and guidelines</label>
+            <textarea name="guidelines" id="guidelines" rows="5" maxlength="5000"
+                      class="form-control @error('guidelines') is-invalid @enderror"
+                      placeholder="Share a welcome note, community values, or important rules...">{{ old('guidelines', $community->guidelines ?? '') }}</textarea>
+            @error('guidelines') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        @unless ($editing)
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="terms" required>
+                <label class="form-check-label event-form-help" for="terms">
+                    I agree to the
+                    <a href="#" class="community-accent" data-bs-toggle="modal" data-bs-target="#modal-guide">Community Guidelines</a>
+                    and
+                    <a href="#" class="community-accent" data-bs-toggle="modal" data-bs-target="#modal-term">Terms of Service</a>.
+                </label>
+            </div>
+        @endunless
+
+        {{-- button --}}
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{{ $editing ? route('community.show', $community->id) : route('community.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4">{{ $editing ? 'Save changes' : 'Create community' }}</button>
+        </div>
+    </form>
+
+    @if ($editing)
+        {{-- 削除（フォームの外に置く） --}}
+        <div class="event-form-section mt-4 d-flex justify-content-between align-items-center gap-3">
+            <div>
+                <h5 class="mb-0 text-danger">Delete community</h5>
+                <p class="event-form-help mb-0">This action cannot be undone.</p>
+            </div>
+            <form action="{{ route('community.destroy', $community->id) }}" method="POST"
                 onsubmit="return confirm('このコミュニティを削除しますか？この操作は取り消せません。');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger">
-                    <i class="fa-solid fa-trash me-1"></i> Delete community
-                </button>
+                <button type="submit" class="btn btn-outline-danger px-4">Delete community</button>
             </form>
-        @endif
-    </div>
+        </div>
+    @endif
 </div>
+
+{{-- 同意欄のリンクから開くモーダル（中に form があるので作成フォームの外に置く） --}}
+@unless ($editing)
+    @include('layouts.modals.guide')
+    @include('layouts.modals.terms')
+@endunless
 
 <script>
     // 選択した画像をプレビュー枠に表示する
