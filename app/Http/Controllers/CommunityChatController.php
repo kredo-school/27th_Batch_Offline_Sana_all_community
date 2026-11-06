@@ -97,12 +97,12 @@ class CommunityChatController extends Controller
         return [
             'id' => $message->id,
             'body' => $message->message,
-            'sent_at' => $message->created_at?->format('M j, g:i A'),
             'datetime' => $message->created_at?->toIso8601String(),
             'is_mine' => (int) $message->user_id === $currentUserId,
             'can_delete' => (int) $message->user_id === $currentUserId || $ownerId === $currentUserId,
             'delete_url' => route('community.chat.destroy', [$message->community_id, $message->id]),
             'sender' => [
+                'id' => (int) $message->user_id,
                 'name' => $user?->username ?: $user?->name ?: 'Unknown user',
                 'initial' => strtoupper(substr($user?->name ?? '?', 0, 1)),
                 'avatar' => $avatar,

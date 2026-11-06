@@ -33,6 +33,7 @@ class CommunityChatTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('message.body', 'Hello everyone')
             ->assertJsonPath('message.is_mine', true)
+            ->assertJsonPath('message.sender.id', $member->id)
             ->assertJsonPath('message.sender.name', 'chat_member');
 
         $this->actingAs($owner)

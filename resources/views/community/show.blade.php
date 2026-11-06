@@ -200,16 +200,20 @@
         @if ($canChat)
             <div class="card bg-white border shadow-sm rounded-3 overflow-hidden community-chat"
                 data-chat-url="{{ route('community.chat.index', $community->id) }}">
-                <div class="community-chat-status small text-muted px-3 pt-3" role="status" aria-live="polite">Loading messages...</div>
-                <ol class="community-chat-list" aria-live="polite"></ol>
+                <div class="community-chat-body">
+                    <ol class="community-chat-list" aria-live="polite"></ol>
+                    <div class="community-chat-empty">Loading messages...</div>
+                </div>
+                <div class="community-chat-status" role="status" aria-live="polite"></div>
                 <form action="{{ route('community.chat.store', $community->id) }}" method="POST" class="community-chat-form">
                     @csrf
                     <textarea name="message" class="form-control" rows="1" maxlength="2000" required
-                        placeholder="Write a message to {{ $community->name }}" aria-label="Write a message"></textarea>
-                    <button type="submit" class="btn btn-primary" aria-label="Send message">
+                        placeholder="Write a message..." aria-label="Write a message"></textarea>
+                    <button type="submit" class="btn community-chat-send" aria-label="Send message">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
+                <div class="community-chat-hint">Enter to send &middot; Shift + Enter for a new line</div>
             </div>
         @else
             <div class="card bg-white border shadow-sm rounded-3 p-4 text-center">
@@ -281,41 +285,90 @@
 </div>
 
 <style>
+    .community-chat {
+        scroll-margin: 90px 0 16px;
+    }
+
+    .community-chat-body {
+        position: relative;
+        background: #f8f9fa;
+    }
+
     .community-chat-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        height: 420px;
+        height: clamp(360px, 60vh, 560px);
         overflow-y: auto;
         margin: 0;
-        padding: 16px;
+        padding: 16px 20px;
         list-style: none;
+    }
+
+    /* メッセージがないとき・読み込み中の案内（リストの中央に出す） */
+    .community-chat-empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
+
+    .community-chat-empty[hidden] {
+        display: none;
+    }
+
+    /* 日付の区切り */
+    .community-chat-day {
+        align-self: center;
+        margin: 16px 0 6px;
+        padding: 2px 12px;
+        border-radius: 999px;
+        background: #e9ecef;
+        color: #495057;
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+
+    .community-chat-day:first-child {
+        margin-top: 0;
     }
 
     .community-chat-item {
         display: flex;
-        gap: 8px;
-        max-width: 80%;
+        gap: 10px;
+        max-width: 72%;
+        margin-top: 14px;
         align-self: flex-start;
     }
 
+    /* 同じ人の続けての発言は詰めて表示する */
+    .community-chat-item--grouped {
+        margin-top: 3px;
+    }
+
     .community-chat-item--mine {
-        flex-direction: row-reverse;
         align-self: flex-end;
     }
 
     .community-chat-avatar {
         display: grid;
-        width: 32px;
-        height: 32px;
-        flex: 0 0 32px;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
         place-items: center;
         overflow: hidden;
         border-radius: 50%;
         background: #F58634;
         color: #fff;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         font-weight: 700;
+    }
+
+    .community-chat-item--grouped .community-chat-avatar {
+        height: 0;
+        visibility: hidden;
     }
 
     .community-chat-avatar img {
@@ -324,27 +377,43 @@
         object-fit: cover;
     }
 
+    .community-chat-content {
+        min-width: 0;
+    }
+
+    .community-chat-name {
+        margin-bottom: 3px;
+        color: #212529;
+        font-size: 0.8rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .community-chat-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .community-chat-item--mine .community-chat-row {
+        flex-direction: row-reverse;
+    }
+
     .community-chat-bubble {
-        padding: 8px 12px;
-        border-radius: 12px 12px 12px 2px;
-        background: #f1f3f5;
+        min-width: 0;
+        padding: 9px 14px;
+        border: 1px solid #e9ecef;
+        border-radius: 16px;
+        background: #fff;
+        color: #212529;
+        font-size: 0.92rem;
+        line-height: 1.5;
         overflow-wrap: anywhere;
     }
 
     .community-chat-item--mine .community-chat-bubble {
-        border-radius: 12px 12px 2px 12px;
+        border-color: #fbd3b4;
         background: #fdebdc;
-    }
-
-    .community-chat-meta {
-        margin-bottom: 2px;
-        color: #6c757d;
-        font-size: 0.72rem;
-    }
-
-    .community-chat-meta strong {
-        color: #212529;
-        margin-right: 6px;
     }
 
     .community-chat-bubble p {
@@ -352,18 +421,69 @@
         white-space: pre-wrap;
     }
 
+    /* 発言の横の時刻と削除ボタン */
+    .community-chat-side {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 6px;
+        padding-bottom: 2px;
+        color: #6c757d;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+
+    .community-chat-item--mine .community-chat-side {
+        flex-direction: row-reverse;
+    }
+
+    /* 削除ボタンはマウスを乗せたときだけ出す（タッチ端末では常に表示） */
+    .community-chat-delete {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+        font-size: 0.78rem;
+        opacity: 0;
+    }
+
+    .community-chat-item:hover .community-chat-delete,
+    .community-chat-delete:focus-visible {
+        opacity: 1;
+    }
+
+    .community-chat-delete:hover {
+        color: #dc3545;
+    }
+
+    .community-chat-status {
+        padding: 8px 16px 0;
+        color: #dc3545;
+        font-size: 0.82rem;
+    }
+
+    .community-chat-status:empty {
+        display: none;
+    }
+
     .community-chat-form {
         display: flex;
         align-items: flex-end;
         gap: 8px;
-        padding: 12px;
+        padding: 12px 16px 4px;
         border-top: 1px solid #e9ecef;
+    }
+
+    .community-chat-status:not(:empty) + .community-chat-form {
+        border-top: 0;
     }
 
     .community-chat-form textarea {
         min-height: 40px;
         max-height: 120px;
-        resize: vertical;
+        padding: 8px 16px;
+        border-radius: 20px;
+        resize: none;
     }
 
     .community-chat-form textarea:focus {
@@ -371,17 +491,51 @@
         box-shadow: 0 0 0 0.25rem rgba(245, 134, 52, 0.25);
     }
 
-    .community-chat-delete {
-        margin-left: 6px;
+    .community-chat-send {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        place-items: center;
         padding: 0;
         border: 0;
-        background: transparent;
-        color: #adb5bd;
-        font-size: 0.72rem;
+        border-radius: 50%;
+        background: #F58634;
+        color: #fff;
     }
 
-    .community-chat-delete:hover {
-        color: #dc3545;
+    .community-chat-send:hover,
+    .community-chat-send:focus-visible,
+    .community-chat-send:disabled {
+        background: #e0741f;
+        color: #fff;
+    }
+
+    .community-chat-hint {
+        padding: 0 16px 10px 32px;
+        color: #6c757d;
+        font-size: 0.7rem;
+    }
+
+    @media (hover: none) {
+        .community-chat-delete {
+            opacity: 1;
+        }
+
+        .community-chat-hint {
+            padding-bottom: 6px;
+            visibility: hidden;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .community-chat-list {
+            padding: 12px;
+        }
+
+        .community-chat-item {
+            max-width: 90%;
+        }
     }
 
     /* 参加中バッジと参加申請の数 */
@@ -398,44 +552,89 @@
         const chat = document.querySelector('.community-chat');
         const pane = document.querySelector('#chat');
         const list = chat.querySelector('.community-chat-list');
+        const empty = chat.querySelector('.community-chat-empty');
         const status = chat.querySelector('.community-chat-status');
         const form = chat.querySelector('.community-chat-form');
         const input = form.querySelector('textarea');
         const button = form.querySelector('button[type="submit"]');
+        const groupWindow = 5 * 60 * 1000; // 同じ人の発言を1つにまとめる間隔
+        const messages = [];
         let lastId = 0;
         let syncedAt = '';
         let loading = false;
+        let loaded = false;
 
-        const appendMessage = (message) => {
-            if (message.id <= lastId) {
-                return;
+        const dayLabel = (date) => {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (date.toDateString() === new Date().toDateString()) {
+                return 'Today';
             }
-            lastId = message.id;
+            if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            }
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        };
+
+        // 1件分の要素を作る（日が変わるときは日付の区切りも一緒に返す）
+        const renderMessage = (message, previous) => {
+            const sentAt = new Date(message.datetime);
+            const previousAt = previous ? new Date(previous.datetime) : null;
+            const newDay = !previousAt || previousAt.toDateString() !== sentAt.toDateString();
+            const grouped = !newDay && previous.sender.id === message.sender.id && sentAt - previousAt < groupWindow;
+            const nodes = [];
+
+            if (newDay) {
+                const day = document.createElement('li');
+                day.className = 'community-chat-day';
+                day.textContent = dayLabel(sentAt);
+                nodes.push(day);
+            }
 
             const item = document.createElement('li');
-            item.className = message.is_mine ? 'community-chat-item community-chat-item--mine' : 'community-chat-item';
+            item.className = 'community-chat-item';
+            item.classList.toggle('community-chat-item--mine', message.is_mine);
+            item.classList.toggle('community-chat-item--grouped', grouped);
+            item.dataset.messageId = message.id;
 
-            const avatar = document.createElement('span');
-            avatar.className = 'community-chat-avatar';
-            if (message.sender.avatar) {
-                const image = document.createElement('img');
-                image.src = message.sender.avatar;
-                image.alt = '';
-                avatar.append(image);
-            } else {
-                avatar.textContent = message.sender.initial;
+            // 自分の発言にはアイコンと名前を出さない
+            if (!message.is_mine) {
+                const avatar = document.createElement('span');
+                avatar.className = 'community-chat-avatar';
+                if (message.sender.avatar) {
+                    const image = document.createElement('img');
+                    image.src = message.sender.avatar;
+                    image.alt = '';
+                    avatar.append(image);
+                } else {
+                    avatar.textContent = message.sender.initial;
+                }
+                item.append(avatar);
             }
 
+            const content = document.createElement('div');
+            content.className = 'community-chat-content';
+            if (!message.is_mine && !grouped) {
+                const name = document.createElement('div');
+                name.className = 'community-chat-name';
+                name.textContent = message.sender.name;
+                content.append(name);
+            }
+
+            const row = document.createElement('div');
+            row.className = 'community-chat-row';
             const bubble = document.createElement('div');
             bubble.className = 'community-chat-bubble';
-            const meta = document.createElement('div');
-            meta.className = 'community-chat-meta';
-            const name = document.createElement('strong');
-            name.textContent = message.sender.name;
+            const body = document.createElement('p');
+            body.textContent = message.body;
+            bubble.append(body);
+
+            const side = document.createElement('div');
+            side.className = 'community-chat-side';
             const time = document.createElement('time');
-            time.textContent = message.sent_at;
+            time.textContent = sentAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             time.dateTime = message.datetime;
-            meta.append(name, time);
+            side.append(time);
             if (message.can_delete) {
                 const remove = document.createElement('button');
                 remove.type = 'button';
@@ -443,19 +642,45 @@
                 remove.dataset.deleteUrl = message.delete_url;
                 remove.setAttribute('aria-label', 'Delete message');
                 remove.innerHTML = '<i class="fa-regular fa-trash-can"></i>';
-                meta.append(remove);
+                side.append(remove);
             }
-            const body = document.createElement('p');
-            body.textContent = message.body;
-            bubble.append(meta, body);
 
-            item.dataset.messageId = message.id;
-            item.append(avatar, bubble);
-            list.append(item);
+            row.append(bubble, side);
+            content.append(row);
+            item.append(content);
+            nodes.push(item);
+
+            return nodes;
         };
 
+        const updateEmptyState = () => {
+            empty.textContent = 'No messages yet. Say hello!';
+            empty.hidden = messages.length > 0;
+        };
+
+        const appendMessage = (message) => {
+            if (message.id <= lastId) {
+                return;
+            }
+            lastId = message.id;
+            list.append(...renderMessage(message, messages.at(-1)));
+            messages.push(message);
+        };
+
+        // 消すと前後のまとまりや日付の区切りが変わるので、一覧を作り直す
         const removeMessage = (id) => {
-            list.querySelector(`[data-message-id="${id}"]`)?.remove();
+            const index = messages.findIndex((message) => message.id === id);
+            if (index === -1) {
+                return;
+            }
+            messages.splice(index, 1);
+            list.replaceChildren(...messages.flatMap((message, i) => renderMessage(message, messages[i - 1])));
+        };
+
+        // 入力に合わせて入力欄を広げる（上限は CSS の max-height）
+        const resizeInput = () => {
+            input.style.height = 'auto';
+            input.style.height = `${input.scrollHeight + 2}px`;
         };
 
         const loadMessages = async () => {
@@ -478,11 +703,15 @@
                 // 前回の取得以降に（自分や他の人が）消したメッセージを画面からも消す
                 data.deleted_ids.forEach(removeMessage);
                 syncedAt = data.synced_at;
-                if (data.messages.length && (atBottom || lastId === data.messages.at(-1).id)) {
+                // 過去の発言を読み返しているときは勝手にスクロールしない
+                if (data.messages.length && (atBottom || !loaded)) {
                     list.scrollTop = list.scrollHeight;
                 }
-                status.textContent = list.children.length ? '' : 'No messages yet. Say hello!';
+                loaded = true;
+                updateEmptyState();
+                status.textContent = '';
             } catch {
+                empty.hidden = true;
                 status.textContent = 'Could not load messages.';
             } finally {
                 loading = false;
@@ -516,6 +745,8 @@
                 appendMessage(data.message);
                 list.scrollTop = list.scrollHeight;
                 input.value = '';
+                resizeInput();
+                updateEmptyState();
                 status.textContent = '';
             } catch (error) {
                 status.textContent = error.message || 'Could not send message.';
@@ -545,7 +776,8 @@
                     throw new Error();
                 }
                 removeMessage((await response.json()).deleted);
-                status.textContent = list.children.length ? '' : 'No messages yet. Say hello!';
+                updateEmptyState();
+                status.textContent = '';
             } catch {
                 remove.disabled = false;
                 status.textContent = 'Could not delete the message.';
@@ -560,7 +792,13 @@
             }
         });
 
-        document.querySelector('#chat-tab').addEventListener('shown.bs.tab', loadMessages);
+        input.addEventListener('input', resizeInput);
+
+        document.querySelector('#chat-tab').addEventListener('shown.bs.tab', () => {
+            // カバー画像の下でも入力欄まで画面に入るようにする
+            chat.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            loadMessages();
+        });
         setInterval(() => {
             if (pane.classList.contains('active') && document.visibilityState === 'visible') {
                 loadMessages();
@@ -574,7 +812,9 @@
     // #chat や #members 付きで開いたら（承認・送信後のリダイレクトなど）そのタブを表示する
     document.addEventListener('DOMContentLoaded', () => {
         const tab = /^#[a-z]+$/.test(location.hash) && document.querySelector(`#communityTab [data-bs-target="${location.hash}"]`);
-        tab?.click();
+        if (tab) {
+            tab.click();
+        }
     });
 </script>
 @endsection
