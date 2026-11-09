@@ -21,4 +21,10 @@ class CommunityMessage extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    // チャットに表示する送信者の名前
+    public function senderName(): string
+    {
+        return $this->user?->username ?: $this->user?->name ?: 'Unknown user';
+    }
 }

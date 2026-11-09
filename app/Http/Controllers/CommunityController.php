@@ -124,6 +124,8 @@ class CommunityController extends Controller
         }
 
         $canChat = $community->hasMember($request->user());
+        $unreadCount = $canChat ? $community->unreadMessagesCountFor($request->user()) : 0;
+        $unreadSenders = $canChat ? $community->unreadSenderNamesFor($request->user()) : [];
         // 自分の参加状況（null: 未参加 / pending: 申請中 / approved: 参加中）
         $membershipStatus = $community->memberships()->where('user_id', $request->user()->id)->value('status');
         // オーナーだけに見せる参加申請の一覧
@@ -132,7 +134,7 @@ class CommunityController extends Controller
             : collect();
 
         return view('community.show', compact(
-            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'membershipStatus', 'pendingMembers'
+            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'unreadCount', 'unreadSenders', 'membershipStatus', 'pendingMembers'
         ));
     }
 

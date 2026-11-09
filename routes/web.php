@@ -106,6 +106,9 @@ Route::group(['middleware' => 'auth'], function () {
     // コミュニティ内チャット
     Route::get('/community/{id}/chat', [CommunityChatController::class, 'index'])->name('community.chat.index');
     Route::post('/community/{id}/chat', [CommunityChatController::class, 'store'])->name('community.chat.store');
+    Route::get('/community/{id}/chat/unread', [CommunityChatController::class, 'unread'])->name('community.chat.unread');
+    Route::post('/community/{id}/chat/read', [CommunityChatController::class, 'markRead'])->name('community.chat.read');
+    Route::patch('/community/{id}/chat/{message}', [CommunityChatController::class, 'update'])->name('community.chat.update');
     Route::delete('/community/{id}/chat/{message}', [CommunityChatController::class, 'destroy'])->name('community.chat.destroy');
 
     // コミュニティへの参加・退会・参加申請の承認

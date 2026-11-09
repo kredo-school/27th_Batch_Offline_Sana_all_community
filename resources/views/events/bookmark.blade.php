@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('sidebar', 'events')
+
 @section('title', 'Event Bookmark')
 
 @section('content')

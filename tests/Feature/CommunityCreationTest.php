@@ -390,8 +390,8 @@ class CommunityCreationTest extends TestCase
             'end_at' => now()->addWeek()->addHour(),
             'join_till' => now()->addWeek(),
         ];
-        $communityEvent = $community->events()->create(['title' => 'Club Picnic', ...$dates]);
-        $openEvent = Event::create(['title' => 'Open Marathon', ...$dates]);
+        $communityEvent = $this->withCategory($community->events()->create(['title' => 'Club Picnic', ...$dates]));
+        $openEvent = $this->withCategory(Event::create(['title' => 'Open Marathon', ...$dates]));
 
         foreach (['events.show', 'events.edit', 'events.participants'] as $routeName) {
             $this->actingAs($owner)
@@ -502,13 +502,13 @@ class CommunityCreationTest extends TestCase
     {
         $owner = User::factory()->create();
         $community = $owner->communitiesOwned()->create(['name' => 'Linked Club', 'description' => 'Has events.']);
-        $event = $community->events()->create([
+        $event = $this->withCategory($community->events()->create([
             'title' => 'Linked Picnic',
             'owner_id' => $owner->id,
             'start_at' => now()->addWeek(),
             'end_at' => now()->addWeek()->addHour(),
             'join_till' => now()->addWeek(),
-        ]);
+        ]));
 
         // 他のメンバーや未参加の人からも開ける
         $visitor = User::factory()->create();
@@ -529,13 +529,13 @@ class CommunityCreationTest extends TestCase
         $communityOwner = User::factory()->create();
         $eventOwner = User::factory()->create();
         $community = $communityOwner->communitiesOwned()->create(['name' => 'Delete Club', 'description' => 'Has events.']);
-        $event = $community->events()->create([
+        $event = $this->withCategory($community->events()->create([
             'title' => 'Deletable Picnic',
             'owner_id' => $eventOwner->id,
             'start_at' => now()->addWeek(),
             'end_at' => now()->addWeek()->addHour(),
             'join_till' => now()->addWeek(),
-        ]);
+        ]));
         $deleteUrl = route('events.destroy', $event->id);
 
         $this->actingAs($eventOwner)
@@ -568,13 +568,13 @@ class CommunityCreationTest extends TestCase
     public function test_events_outside_communities_have_no_delete_button_on_detail_page(): void
     {
         $owner = User::factory()->create();
-        $event = Event::create([
+        $event = $this->withCategory(Event::create([
             'title' => 'Open Picnic',
             'owner_id' => $owner->id,
             'start_at' => now()->addWeek(),
             'end_at' => now()->addWeek()->addHour(),
             'join_till' => now()->addWeek(),
-        ]);
+        ]));
 
         $this->actingAs($owner)
             ->get(route('events.show', $event->id))
@@ -589,6 +589,14 @@ class CommunityCreationTest extends TestCase
             ->assertRedirect();
 
         $this->assertNull(Event::where('title', 'Open Festival')->firstOrFail()->community_id);
+    }
+
+    // 作成フォームではカテゴリーが必須なので、直接作るテスト用のイベントにも付けておく
+    private function withCategory(Event $event): Event
+    {
+        $event->categories()->attach(Category::create(['name' => 'Sample ' . Str::random(6)])->id);
+
+        return $event;
     }
 
     private function eventFormData(array $overrides = []): array

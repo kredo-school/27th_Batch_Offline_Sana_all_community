@@ -44,6 +44,40 @@ class Community extends Model
         return $this->hasMany(CommunityMessage::class);
     }
 
+    public function chatReads()
+    {
+        return $this->hasMany(CommunityChatRead::class);
+    }
+
+    // まだ読んでいない他の人のメッセージの数
+    public function unreadMessagesCountFor(User $user): int
+    {
+        return $this->unreadMessages($user)->count();
+    }
+
+    // 未読メッセージを送った人の名前（最近送った人から順に）
+    public function unreadSenderNamesFor(User $user): array
+    {
+        return $this->unreadMessages($user)
+            ->with('user:id,name,username')
+            ->select('user_id')
+            ->selectRaw('MAX(id) as latest_id')
+            ->groupBy('user_id')
+            ->orderByDesc('latest_id')
+            ->get()
+            ->map(fn (CommunityMessage $message) => $message->senderName())
+            ->all();
+    }
+
+    private function unreadMessages(User $user)
+    {
+        $lastReadId = $this->chatReads()->where('user_id', $user->id)->value('last_read_message_id') ?? 0;
+
+        return $this->messages()
+            ->where('id', '>', $lastReadId)
+            ->where('user_id', '!=', $user->id);
+    }
+
     // オーナーか承認済みメンバーならチャットに参加できる
     public function hasMember(?User $user): bool
     {
