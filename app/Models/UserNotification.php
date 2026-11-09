@@ -20,6 +20,11 @@ class UserNotification extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function related()
+    {
+        return $this->morphTo();
+    }
+
     public function getRecipientNameAttribute(): ?string
     {
         return $this->recipient_label ?: $this->user?->name;

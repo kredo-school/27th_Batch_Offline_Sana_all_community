@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
+use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\CommunityMembershipController;
@@ -52,6 +53,8 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('messages.conversation');
     Route::post('/messages/{user}', [MessageController::class, 'send'])
         ->name('messages.send');
+    Route::patch('/messages/{message}', [MessageController::class, 'update'])
+        ->name('messages.update');
     Route::post('/messages/{user}/block', [MessageController::class, 'block'])
         ->name('messages.block');
     Route::delete('/messages/{user}/block', [MessageController::class, 'unblock'])
@@ -71,6 +74,8 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Profile(daichi)
     Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
+        Route::post('/{user}/follow', [ProfileController::class, 'follow'])->name('follow');
+        Route::delete('/{user}/follow', [ProfileController::class, 'unfollow'])->name('unfollow');
         Route::get('/profile/{id}/show', [ProfileController::class, 'show'])->name('show');
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
@@ -90,6 +95,8 @@ Route::group(['middleware' => 'auth'], function () {
     // コミュニティ内のイベント作成（フォームはイベントの作成ページと同じ）
     Route::get('/community/{community}/events/create', [EventController::class, 'create'])->name('community.events.create');
     Route::post('/community/{community}/events', [EventController::class, 'store'])->name('community.events.store');
+
+    Route::get('/community-chats', [CommunityChatController::class, 'communities'])->name('community.chats');
 
     // コミュニティ編集画面・更新
     Route::get('/community/{id}/edit', [CommunityController::class, 'edit'])->name('community.edit');
@@ -118,7 +125,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], function () {
 
         // Manegement(Masa)
+        Route::get('/users/{user}', [UsersController::class, 'show'])->name('users.show');
+
         Route::get('/users', [UsersController::class, 'index'])->name('users');
+        Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics');
         Route::delete('/users/{id}/deactivate', [UsersController::class, 'deactivate'])->name('users.deactivate');
         Route::patch('/users/{id}/activate', [UsersController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{id}/role', [UsersController::class, 'changeRole'])->name('users.role');

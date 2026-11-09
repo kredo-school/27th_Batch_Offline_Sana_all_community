@@ -2,14 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SidebarLayoutTest extends TestCase
 {
     use RefreshDatabase;
+
+    // 作成フォームではカテゴリーが必須なので、直接作るテスト用のイベントにも付けておく
+    private function withCategory(Event $event): Event
+    {
+        $event->categories()->attach(Category::create(['name' => 'Sample ' . Str::random(6)])->id);
+
+        return $event;
+    }
 
     private function eventDates(): array
     {
@@ -41,7 +51,7 @@ class SidebarLayoutTest extends TestCase
     public function test_events_pages_show_the_events_sidebar(): void
     {
         $owner = User::factory()->create();
-        $event = Event::create(['title' => 'Open Marathon', 'owner_id' => $owner->id, ...$this->eventDates()]);
+        $event = $this->withCategory(Event::create(['title' => 'Open Marathon', 'owner_id' => $owner->id, ...$this->eventDates()]));
 
         foreach ([
             route('events.index'),
@@ -60,7 +70,7 @@ class SidebarLayoutTest extends TestCase
     {
         $owner = User::factory()->create();
         $community = $owner->communitiesOwned()->create(['name' => 'Club', 'description' => 'Talks.']);
-        $event = $community->events()->create(['title' => 'Picnic', 'owner_id' => $owner->id, ...$this->eventDates()]);
+        $event = $this->withCategory($community->events()->create(['title' => 'Picnic', 'owner_id' => $owner->id, ...$this->eventDates()]));
 
         foreach ([route('events.show', $event->id), route('events.edit', $event->id)] as $url) {
             $this->actingAs($owner)->get($url)

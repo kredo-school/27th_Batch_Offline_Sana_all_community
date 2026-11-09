@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Community;
 use App\Models\Event;
@@ -105,7 +106,7 @@ class CommunityController extends Controller
     /**
      * 4. コミュニティ詳細ページ
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $community = Community::with([
             'owner.profile',
@@ -122,13 +123,13 @@ class CommunityController extends Controller
             $memberCount++;
         }
 
-        $canChat = $community->hasMember(auth()->user());
-        $unreadCount = $canChat ? $community->unreadMessagesCountFor(auth()->user()) : 0;
-        $unreadSenders = $canChat ? $community->unreadSenderNamesFor(auth()->user()) : [];
+        $canChat = $community->hasMember($request->user());
+        $unreadCount = $canChat ? $community->unreadMessagesCountFor($request->user()) : 0;
+        $unreadSenders = $canChat ? $community->unreadSenderNamesFor($request->user()) : [];
         // 自分の参加状況（null: 未参加 / pending: 申請中 / approved: 参加中）
-        $membershipStatus = $community->memberships()->where('user_id', auth()->id())->value('status');
+        $membershipStatus = $community->memberships()->where('user_id', $request->user()->id)->value('status');
         // オーナーだけに見せる参加申請の一覧
-        $pendingMembers = auth()->id() === $community->owner_id
+        $pendingMembers = $request->user()->id === $community->owner_id
             ? $community->members()->wherePivot('status', 'pending')->with('profile')->get()
             : collect();
 
@@ -145,7 +146,7 @@ class CommunityController extends Controller
         $editing = true;
         $title = 'Edit Community';
         $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === auth()->id(), 403);
+        abort_unless($community->owner_id === Auth::id(), 403);
 
         return view('community.create', compact('editing', 'title', 'community'));
     }
@@ -156,7 +157,7 @@ class CommunityController extends Controller
     public function update(Request $request, $id)
     {
         $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === auth()->id(), 403);
+        abort_unless($community->owner_id === Auth::id(), 403);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -194,7 +195,7 @@ class CommunityController extends Controller
     public function destroy($id)
     {
         $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === auth()->id(), 403);
+        abort_unless($community->owner_id === Auth::id(), 403);
 
         $community->delete();
 

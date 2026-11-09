@@ -28,7 +28,7 @@ class HomeController extends Controller
      * @return \Illuminate\Contracts\Support\Renderable
      */
     // app/Http/Controllers/HomeController.php
-    public function index()
+    public function index(Request $request)
     {
         $categories = \App\Models\Category::with('events')->get();
 

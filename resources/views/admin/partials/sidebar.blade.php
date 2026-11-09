@@ -39,7 +39,11 @@
         </a>
         <a class="admin-nav-link {{ request()->routeIs('admin.contacts') || request()->routeIs('contacts.*') ? 'active' : '' }}"
             href="{{ route('admin.contacts') }}" @if (request()->routeIs('admin.contacts') || request()->routeIs('contacts.*')) aria-current="page" @endif>
-            <i class="fa-solid fa-inbox"></i><span>Contacts</span>
+            <i class="fa-solid fa-inbox"></i><span>Contact Us</span>
+        </a>
+        <a class="admin-nav-link {{ request()->routeIs('admin.statistics') || request()->routeIs('statistics.*') ? 'active' : '' }}"
+            href="{{ route('admin.statistics') }}" @if (request()->routeIs('admin.statistics') || request()->routeIs('statistics.*')) aria-current="page" @endif>
+            <i class="fa-solid fa-chart-line"></i><span>Statistics</span>
         </a>
     </nav>
 </aside>

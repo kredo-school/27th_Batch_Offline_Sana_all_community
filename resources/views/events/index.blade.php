@@ -190,11 +190,11 @@
     </style>
 
 
-    <div class="show-section-layout">
-        @include('partials.sidebar')
+    {{-- <div class="show-section-layout">
+        @include('events.partials.sidebar')
 
         
-    </div>
+    </div> --}}
     <div class="events-main-wrapper px-3 py-3 mx-0">
         {{-- 検索・フィルター部分 --}}
         @include('events.partials.filter')

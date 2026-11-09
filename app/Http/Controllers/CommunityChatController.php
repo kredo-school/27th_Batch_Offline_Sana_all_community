@@ -4,12 +4,47 @@ namespace App\Http\Controllers;
 
 use App\Models\Community;
 use App\Models\CommunityMessage;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 // コミュニティ内チャット（オーナーと承認済みメンバーだけが読める・送れる）
 class CommunityChatController extends Controller
 {
+    public function communities(Request $request)
+    {
+        $userId = (int) $request->user()->id;
+        $unreadMessageCounts = UserNotification::query()
+            ->where('user_id', $userId)
+            ->where('type', 'community_message')
+            ->whereNull('read_at')
+            ->get(['related_id'])
+            ->countBy('related_id');
+        $ownedCommunities = Community::query()
+            ->where('owner_id', $userId)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Community $community) => $this->withChatData(
+                $community,
+                $userId,
+                (int) $unreadMessageCounts->get($community->id, 0),
+            ));
+        $joinedCommunities = Community::query()
+            ->where('owner_id', '!=', $userId)
+            ->whereHas('memberships', fn ($query) => $query
+                ->where('user_id', $userId)
+                ->where('status', 'approved'))
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Community $community) => $this->withChatData(
+                $community,
+                $userId,
+                (int) $unreadMessageCounts->get($community->id, 0),
+            ));
+
+        return view('community.chats', compact('ownedCommunities', 'joinedCommunities'));
+    }
+
     /**
      * メッセージ一覧（after を付けると、その ID より新しいものだけ返す）
      * since を付けると、その時刻以降に削除されたメッセージの ID と、編集されたメッセージも返す
@@ -67,6 +102,25 @@ class CommunityChatController extends Controller
             'user_id' => $request->user()->id,
             'message' => trim($validated['message']),
         ]);
+
+        $recipientIds = $community->memberships()
+            ->where('status', 'approved')
+            ->pluck('user_id')
+            ->push($community->owner_id)
+            ->unique()
+            ->reject(fn ($userId) => (int) $userId === (int) $request->user()->id);
+
+        foreach ($recipientIds as $recipientId) {
+            UserNotification::create([
+                'user_id' => $recipientId,
+                'sender_name' => $request->user()->username ?: $request->user()->name,
+                'type' => 'community_message',
+                'title' => 'New community message',
+                'message' => "There is a new message in '{$community->name}'.",
+                'related_type' => Community::class,
+                'related_id' => $community->id,
+            ]);
+        }
 
         if ($request->expectsJson()) {
             $message->load(['user:id,name,username', 'user.profile']);
@@ -185,5 +239,28 @@ class CommunityChatController extends Controller
                 'avatar' => $avatar,
             ],
         ];
+    }
+
+    private function withChatData(Community $community, int $userId, int $unreadCount): Community
+    {
+        $community->setRelation('latestMessages', $community->messages()
+            ->with(['user:id,name,username'])
+            ->latest('id')
+            ->limit(5)
+            ->get()
+            ->reverse()
+            ->values());
+        $community->setRelation('unreadMessages', $unreadCount > 0
+            ? $community->messages()
+                ->where('user_id', '!=', $userId)
+                ->with(['user:id,name,username'])
+                ->latest('id')
+                ->limit($unreadCount)
+                ->get()
+                ->reverse()
+                ->values()
+            : collect());
+
+        return $community;
     }
 }
