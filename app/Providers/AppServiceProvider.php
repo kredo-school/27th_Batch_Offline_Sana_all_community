@@ -203,9 +203,11 @@ class AppServiceProvider extends ServiceProvider
 
         // 2. 該当カテゴリーのモデルを取得（データがない場合はデフォルトのカテゴリーを入れる）
         if ($frequentCategoryIds->isNotEmpty()) {
+            // よく見る順に並べる（MySQL 専用の FIELD() を使わず、テスト用の SQLite でも動くようにする）
             $personalizedCategories = Category::whereIn('id', $frequentCategoryIds)
-                ->orderByRaw('FIELD(id, ' . $frequentCategoryIds->implode(',') . ')')
-                ->get();
+                ->get()
+                ->sortBy(fn (Category $category) => $frequentCategoryIds->search($category->id))
+                ->values();
         } else {
             // 閲覧履歴がない場合は、全体の「人気カテゴリー」をデフォルト表示
             $popularIds = DB::table('category_views')
