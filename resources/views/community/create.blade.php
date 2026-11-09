@@ -1,4 +1,4 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
 
 @section('title', $title ?? 'Create Community')
 
@@ -67,7 +67,12 @@
     }
 </style>
 
-<div class="container py-4" style="max-width: 860px;">
+<div class="row g-0">
+    <div class="col-md-3 col-lg-2">
+        @include('community.partials.sidebar')
+    </div>
+    <div class="col-md-9 col-lg-10">
+        <div class="container py-4" style="max-width: 860px;">
 
     {{-- list --}}
     <nav class="mb-4 small">
@@ -269,6 +274,8 @@
             </form>
         </div>
     @endif
+</div>
+</div>
 </div>
 
 {{-- 同意欄のリンクから開くモーダル（中に form があるので作成フォームの外に置く） --}}

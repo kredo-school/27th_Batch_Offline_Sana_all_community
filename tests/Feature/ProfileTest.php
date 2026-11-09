@@ -180,7 +180,8 @@ class ProfileTest extends TestCase
         $this->assertSame('Hello Cebu!', $user->profile->bio);
         $this->assertSame('Teacher', $user->profile->occupation);
         $this->assertSame('Cebu', $user->profile->region);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists([$user->profile->avatar, $user->profile->cover_image]);
+        $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile->avatar));
+        $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile->cover_image));
     }
 
     public function test_profile_details_can_be_saved_and_cleared(): void

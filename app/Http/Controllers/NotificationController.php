@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Community;
 use App\Models\UserNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,12 +17,53 @@ class NotificationController extends Controller
         $records = UserNotification::query()
             ->where('user_id', Auth::id())
             ->when(
-                in_array($type, ['general', 'maintenance', 'community'], true),
+                $type === 'community',
+                fn ($query) => $query->whereIn('type', ['community_message', 'community_join_request'])
+            )
+            ->when(
+                in_array($type, ['general', 'maintenance'], true),
                 fn ($query) => $query->where('type', $type)
             )
             ->latest()
             ->paginate(15)
             ->withQueryString();
+
+        $ownedCommunities = collect();
+        $joinedCommunities = collect();
+        if ($request->user() && $type === 'community') {
+            $userId = $request->user()->id;
+            $unreadCounts = UserNotification::query()
+                ->where('user_id', $userId)
+                ->where('type', 'community_message')
+                ->whereNull('read_at')
+                ->selectRaw('related_id, count(*) as unread_chat_messages')
+                ->groupBy('related_id')
+                ->pluck('unread_chat_messages', 'related_id');
+
+            $addUnreadCounts = static function ($communities) use ($unreadCounts) {
+                return $communities->each(function (Community $community) use ($unreadCounts): void {
+                    $community->setAttribute(
+                        'unread_chat_messages',
+                        (int) $unreadCounts->get($community->id, 0),
+                    );
+                });
+            };
+
+            $ownedCommunities = $addUnreadCounts(Community::query()
+                ->where('owner_id', $userId)
+                ->withCount(['messages as total_chat_messages'])
+                ->orderBy('name')
+                ->get());
+
+            $joinedCommunities = $addUnreadCounts(Community::query()
+                ->where('owner_id', '!=', $userId)
+                ->whereHas('memberships', fn ($query) => $query
+                    ->where('user_id', $userId)
+                    ->where('status', 'approved'))
+                ->withCount(['messages as total_chat_messages'])
+                ->orderBy('name')
+                ->get());
+        }
 
         $title = 'Notifications';
         $columns = [
@@ -33,7 +75,9 @@ class NotificationController extends Controller
             'Created' => 'created_at',
         ];
 
-        return view('show', compact('title', 'columns', 'records'));
+        return view('layouts.home.show', compact(
+            'title', 'columns', 'records', 'ownedCommunities', 'joinedCommunities'
+        ));
     }
 
     public function show(UserNotification $notification)
@@ -42,6 +86,14 @@ class NotificationController extends Controller
 
         if ($notification->read_at === null) {
             $notification->update(['read_at' => now()]);
+        }
+
+        if (in_array($notification->type, ['community_message', 'community_join_request'], true)
+            && $notification->related_id !== null) {
+            return redirect()->route('notifications.index', [
+                'type' => 'community',
+                'community' => $notification->related_id,
+            ]);
         }
 
         return view('notifications.show', compact('notification'));

@@ -19,6 +19,12 @@ class MessageController extends Controller
             ->where('blocked_by', $currentUserId)
             ->pluck('user_id')
             ->all();
+        $unreadMessageSenderIds = Message::query()
+            ->where('receiver_id', $currentUserId)
+            ->whereNull('read_at')
+            ->pluck('sender_id')
+            ->map(fn ($senderId): int => (int) $senderId)
+            ->all();
         $latestMessageIds = Message::query()
             ->where(function ($query) use ($currentUserId): void {
                 $query->where('sender_id', $currentUserId)
@@ -28,7 +34,7 @@ class MessageController extends Controller
             ->groupByRaw('CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END', [$currentUserId]);
 
         $records = Message::query()
-            ->with(['sender', 'receiver'])
+            ->with(['sender.profile', 'receiver.profile'])
             ->whereIn('id', $latestMessageIds)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -43,7 +49,7 @@ class MessageController extends Controller
             'Sent' => 'created_at',
         ];
 
-        return view('show', compact('title', 'columns', 'records', 'blockedUserIds'));
+        return view('layouts.home.show', compact('title', 'columns', 'records', 'blockedUserIds', 'unreadMessageSenderIds'));
     }
 
     public function conversation(User $user)
@@ -71,6 +77,7 @@ class MessageController extends Controller
             'unread_count' => $unreadCount,
             'participant' => [
                 'name' => $user->username ?: $user->name,
+                'avatar' => $this->avatarUrl($user->profile?->avatar),
             ],
             'can_send' => $canSend,
             'messages' => $messages
@@ -128,7 +135,27 @@ class MessageController extends Controller
 
         $message->delete();
 
+        if (request()->expectsJson()) {
+            return response()->json(['deleted' => $message->id]);
+        }
+
         return back()->with('status', 'Message deleted.');
+    }
+
+    public function update(Request $request, Message $message)
+    {
+        abort_unless((int) $message->sender_id === (int) Auth::id(), 403);
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $message->update(['message' => trim($validated['message'])]);
+        $message->load(['sender:id,username,name', 'sender.profile']);
+
+        return response()->json([
+            'message' => $this->serializeMessage($message, (int) Auth::id()),
+        ]);
     }
 
     private function serializeMessage(Message $message, int $currentUserId): array
@@ -136,16 +163,30 @@ class MessageController extends Controller
         $sender = $message->sender;
 
         return [
+            'id' => $message->id,
             'body' => $message->message,
             'sent_at' => $message->created_at?->format('M j, Y g:i A'),
             'datetime' => $message->created_at?->toIso8601String(),
             'is_mine' => (int) $message->sender_id === $currentUserId,
+            'update_url' => route('messages.update', $message),
+            'delete_url' => route('messages.destroy', $message),
             'sender' => [
                 'name' => $sender?->name,
                 'username' => $sender?->username ?: $sender?->name,
-                'avatar' => $sender?->profile?->avatar,
+                'avatar' => $this->avatarUrl($sender?->profile?->avatar),
             ],
         ];
+    }
+
+    private function avatarUrl(?string $avatar): ?string
+    {
+        if (! $avatar) {
+            return null;
+        }
+
+        return str_starts_with($avatar, 'https://') || str_starts_with($avatar, 'http://')
+            ? $avatar
+            : asset('storage/' . ltrim($avatar, '/'));
     }
 
     private function conversationMessages(int $currentUserId, User $user): Builder

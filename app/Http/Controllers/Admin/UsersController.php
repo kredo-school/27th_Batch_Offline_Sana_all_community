@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class UsersController extends Controller
 {
@@ -38,8 +39,29 @@ class UsersController extends Controller
         [$column, $direction] = $sorts[$sort] ?? $sorts['latest'];
 
         $all_users = $users->orderBy($column, $direction)->paginate(10)->withQueryString();
+        $userIds = $all_users->getCollection()->modelKeys();
 
-        return view('admin.admin', compact('all_users'));
+        $pageViewStats = DB::table('page_views')
+            ->select('user_id', DB::raw('COUNT(*) as page_view_count'))
+            ->whereIn('user_id', $userIds)
+            ->groupBy('user_id')
+            ->get()
+            ->keyBy('user_id');
+
+        $categoryAnalytics = DB::table('category_views')
+            ->join('categories', 'category_views.category_id', '=', 'categories.id')
+            ->select('category_views.user_id', 'categories.name', DB::raw('COUNT(*) as view_count'))
+            ->whereIn('category_views.user_id', $userIds)
+            ->groupBy('category_views.user_id', 'categories.id', 'categories.name')
+            ->orderByDesc('view_count')
+            ->get()
+            ->groupBy('user_id');
+
+        return view('admin.admin', compact(
+            'all_users',
+            'pageViewStats',
+            'categoryAnalytics'
+        ));
     }
 
     //this function will deactivate the user
@@ -65,5 +87,26 @@ class UsersController extends Controller
         $this->user->withTrashed()->findOrFail($id)->update($validated);
 
         return redirect()->back();
+    }
+
+     // ユーザー詳細画面：その人のアクティブ状況や好みのカテゴリを表示
+    public function show(User $user)
+    {
+        // このユーザーのカテゴリー閲覧統計（累計）
+        $userCategoryStats = DB::table('category_views')
+            ->join('categories', 'category_views.category_id', '=', 'categories.id')
+            ->select('categories.name', DB::raw('COUNT(*) as view_count'))
+            ->where('category_views.user_id', $user->id)
+            ->groupBy('categories.id', 'categories.name')
+            ->orderBy('view_count', 'desc')
+            ->get();
+
+        // このユーザーの直近のアクティビティログ（ページビュー履歴など）
+        $recentPageViews = DB::table('page_views')
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('admin.users.show', compact('user', 'userCategoryStats', 'recentPageViews'));
     }
 }

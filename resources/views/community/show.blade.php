@@ -1,8 +1,13 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
 
 @section('title', $community->name ?? 'Community Detail')
 
 @section('content')
+<div class="row g-0">
+    <div class="col-md-3 col-lg-2">
+        @include('community.partials.sidebar')
+    </div>
+    <div class="col-md-9 col-lg-10">
 <div class="container py-4">
     @if ($errors->any())
         <div class="alert alert-danger" role="alert">
@@ -817,4 +822,7 @@
         }
     });
 </script>
+</div>
+</div>
+</div>
 @endsection

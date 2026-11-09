@@ -10,7 +10,10 @@
                 <th>NAME</th>
                 <th>EMAIL</th>
                 <th>CREATED AT</th>
-                <th>SATATUS</th>
+                <th>PAGE VIEWS</th>
+                <th>CATEGORY VIEWS</th>
+                <th>TOP CATEGORY</th>
+                <th>STATUS</th>
                 <th></th>
             </tr>
         </thead>
@@ -28,6 +31,12 @@
                     </td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->created_at }}</td>
+                    @php
+                        $topCategory = $categoryAnalytics->get($user->id, collect())->first();
+                    @endphp
+                    <td>{{ $pageViewStats->get($user->id)->page_view_count ?? 0 }}</td>
+                    <td>{{ $categoryAnalytics->get($user->id, collect())->sum('view_count') }}</td>
+                    <td>{{ $topCategory->name ?? '—' }}</td>
                     <td>
                         @if ($user->trashed())
                             <i class="fa-solid fa-circle text-secondary"></i>&nbsp; Inactive
@@ -65,4 +74,39 @@
         </tbody>
     </table>
     {{ $all_users->links() }}
+
+    @isset($recentPageViews)
+        <div class="row mt-4">
+            <div class="col-md-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">直近のアクセス履歴</div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>閲覧URL</th>
+                                    <th>IPアドレス</th>
+                                    <th>日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($recentPageViews as $view)
+                                    <tr>
+                                        <td class="text-truncate" style="max-width: 300px;">{{ $view->url }}</td>
+                                        <td><code>{{ $view->ip_address }}</code></td>
+                                        <td>{{ \Carbon\Carbon::parse($view->created_at)->format('m/d H:i') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center">アクセス履歴はありません。</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        {{ $recentPageViews->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endisset
 @endsection

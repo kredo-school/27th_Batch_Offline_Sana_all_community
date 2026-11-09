@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Community;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
 // コミュニティへの参加・退会と、オーナーによる参加申請の承認
@@ -29,6 +30,18 @@ class CommunityMembershipController extends Controller
             'status' => $approved ? 'approved' : 'pending',
             'joined_at' => $approved ? now() : null,
         ])->save();
+
+        if (! $approved) {
+            UserNotification::create([
+                'user_id' => $community->owner_id,
+                'sender_name' => $user->username ?: $user->name,
+                'type' => 'community_join_request',
+                'title' => 'Community join request',
+                'message' => "{$user->name} requested to join '{$community->name}'.",
+                'related_type' => Community::class,
+                'related_id' => $community->id,
+            ]);
+        }
 
         return redirect()->route('community.show', $community->id);
     }
