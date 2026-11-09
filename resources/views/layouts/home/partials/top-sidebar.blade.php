@@ -87,6 +87,12 @@
             <i class="fa-solid fa-envelope" aria-hidden="true"></i>
             <span>Messages</span>
         </a>
+        <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') && request('type') === 'community' ? 'active' : '' }}"
+            href="{{ route('notifications.index', ['type' => 'community']) }}"
+            @if (request()->routeIs('notifications.index') && request('type') === 'community') aria-current="page" @endif>
+            <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+            <span>Communities</span>
+        </a>
         {{-- @if (Auth::user()->role === 'admin')
             <a class="communication-sidebar-link {{ request()->routeIs('admin.contacts*') ? 'active' : '' }}"
             href="{{ route('admin.contacts') }}" @if (request()->routeIs('admin.contacts*')) aria-current="page" @endif>

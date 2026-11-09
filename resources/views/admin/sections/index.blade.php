@@ -439,6 +439,7 @@
                                         @if (in_array($title, ['Comments', 'Reviews'], true) && $key === 'event.title')
                                             <td>{{ $record->event ? $value : '-' }}</td>
                                         @elseif ($title === 'Messages' && $key === 'message')
+                                            
                                             <td>{{ $value ? \Illuminate\Support\Str::limit($value, 120) : '-' }}</td>
                                         @elseif ($title === 'Contacts' && $key === 'detail')
                                             <td>{{ $value ? \Illuminate\Support\Str::limit($value, 120) : '-' }}</td>

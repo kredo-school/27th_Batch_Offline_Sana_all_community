@@ -1,4 +1,4 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
 
 @section('title', 'Community')
 
@@ -289,7 +289,12 @@
     }
 </style>
 
-<div class="events-main-wrapper px-3 py-3 mx-0">
+<div class="row g-0">
+    <div class="col-md-3 col-lg-2">
+        @include('community.partials.sidebar')
+    </div>
+    <div class="col-md-9 col-lg-10">
+        <div class="events-main-wrapper px-3 py-3 mx-0">
 
     {{-- 検索・並び替え・作成ボタン・カテゴリー（イベントの filter と同じ構成） --}}
     <section class="event-filters">
@@ -359,6 +364,8 @@
                 <p class="text-muted text-center py-4 mb-0">There are no upcoming community events yet.</p>
             @endforelse
         </div>
+    </div>
+</div>
     </div>
 </div>
 @endsection

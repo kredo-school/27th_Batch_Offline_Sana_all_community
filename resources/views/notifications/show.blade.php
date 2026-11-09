@@ -1,4 +1,4 @@
-@extends('layouts.app')
+{{-- @extends('layouts.app')
 
 @section('title', 'Notification')
 
@@ -21,4 +21,4 @@
         </div>
     </div>
 </section>
-@endsection
+@endsection --}}

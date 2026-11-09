@@ -331,6 +331,7 @@
                 <span class="admin-count">{{ $all_users->total() }} users</span>
             </header>
 
+            <div class="container-fluid mt-4">
             <form class="admin-toolbar" method="GET" action="{{ route('admin.users') }}">
                 <div class="admin-search">
                     <label class="visually-hidden" for="user-search">Search users</label>
@@ -361,6 +362,9 @@
                             <th>Email</th>
                             <th>Registered</th>
                             <th>Language</th>
+                            <th>Page views</th>
+                            <th>Category views</th>
+                            <th>Top category</th>
                             <th>Status</th>
                             <th>Role</th>
                             <th aria-label="Actions"></th>
@@ -375,11 +379,21 @@
                                 <td>{{ $user->id }}</td>
                                 <td>
                                     <span class="admin-avatar">
-                                        @if ($user->profile?->avatar)
+                                        {{-- @if ($user->profile?->avatar)
                                             <img src="{{ $user->profile->avatar }}" alt="{{ $user->name }}">
                                         @else
                                             {{ strtoupper(substr($user->name, 0, 1)) }}
-                                        @endif
+                                        @endif --}}
+                                        @if ($user->profile?->avatar)
+                                                @php
+                                                    $avatarPath = $user->profile->avatar;
+                                                    $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
+                                                        ? $avatarPath : asset('storage/'.$avatarPath);
+                                                @endphp
+                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                            @else
+                                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                                            @endif
                                     </span>
                                 </td>
                                 <td class="fw-semibold">
@@ -393,6 +407,19 @@
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->created_at?->format('M d, Y') ?? '-' }}</td>
                                 <td>{{ $user->preferred_language ?? '-' }}</td>
+                                @php
+                                    $userCategories = $categoryAnalytics->get($user->id, collect());
+                                    $topCategory = $userCategories->first();
+                                @endphp
+                                <td>{{ data_get($pageViewStats->get($user->id), 'page_view_count', 0) }}</td>
+                                <td>{{ $userCategories->sum('view_count') }}</td>
+                                <td>
+                                    @if ($topCategory)
+                                        {{ $topCategory->name }} ({{ $topCategory->view_count }})
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="admin-badge {{ $user->trashed() ? 'inactive' : 'active' }}">
                                         {{ $user->trashed() ? 'Inactive' : 'Active' }}
@@ -431,7 +458,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-empty" colspan="9">No users match this search.</td>
+                                <td class="admin-empty" colspan="12">No users match this search.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -440,6 +467,7 @@
 
             <div class="admin-pagination d-flex justify-content-center">
                 {{ $all_users->withQueryString()->links() }}
+            </div>
             </div>
         </section>
     </div>
