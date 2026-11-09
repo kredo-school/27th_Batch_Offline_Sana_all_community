@@ -122,14 +122,20 @@
                                         <li class="text-center bg-success"><span class="h5 text-white">Notifications</span></li>
                                         @forelse ($notifications as $notification)
                                             <li class="dropdown-content">
-                                                <a href="{{ route('notifications.show', $notification) }}"
+                                                <a href="{{ $notification->type === 'community_message' && $notification->related_id
+                                                    ? route('community.show', $notification->related_id) . '#chat'
+                                                    : route('notifications.show', $notification) }}"
                                                     class="dropdown-item text-wrap border-bottom text-start {{ $notification->read_at ? '' : 'fw-semibold bg-body-tertiary' }}">
-                                                        <span class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
-                                                        @if ($notification->sender_name)
-                                                            <span class="d-block small text-muted">{{ __('From') }}: {{ $notification->sender_name }}</span>
-                                                        @endif
-                                                        @if ($notification->message)
-                                                            <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->message, 100) }}</span>
+                                                        @if ($notification->type === 'community_message')
+                                                            <span class="d-block">{{ $notification->related?->name ?? __('Community') }}</span>
+                                                        @else
+                                                            <span class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
+                                                            @if ($notification->sender_name)
+                                                                <span class="d-block small text-muted">{{ __('From') }}: {{ $notification->sender_name }}</span>
+                                                            @endif
+                                                            @if ($notification->message)
+                                                                <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->message, 100) }}</span>
+                                                            @endif
                                                         @endif
                                                         @if ($notification->created_at)
                                                             <time class="d-block small text-muted" datetime="{{ $notification->created_at->toIso8601String() }}">

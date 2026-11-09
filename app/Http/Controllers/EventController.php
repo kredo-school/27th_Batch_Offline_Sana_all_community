@@ -47,7 +47,10 @@ class EventController extends Controller
                 $request->input('category') !== 'all',
             function ($query) use ($request) {
                 $query->whereHas('categories', function ($categoryQuery) use ($request) {
-                    $categoryQuery->where('categories.id', $request->input('category'));
+                    $categoryQuery->where(
+                        is_numeric($request->input('category')) ? 'categories.id' : 'categories.name',
+                        $request->input('category')
+                    );
                 });
             }
         );
@@ -219,6 +222,12 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
+         DB::table('category_views')->insert([
+            'user_id'     => Auth::id(),
+            'session_id'  => session()->getId(),
+            'category_id' => $event->categories()->value('categories.id'),
+            'created_at'  => now(),
+        ]);
         $event->load(['owner', 'categories', 'comments.user', 'reviews.user', 'userReviews']);
         $myParticipation = null;
         if (Auth::check()) {
@@ -229,6 +238,8 @@ class EventController extends Controller
         $hostEventIds = Event::where('owner_id', $event->owner_id)->pluck('id');
         $hostRating = round((float) UserReview::whereIn('event_id', $hostEventIds)->avg('rating'), 1);
         $hostReviewCount = UserReview::whereIn('event_id', $hostEventIds)->count();
+
+       
         return view('events.detail', array_merge(
             compact('event', 'myParticipation', 'hostRating', 'hostReviewCount'),
             $this->calendarData()

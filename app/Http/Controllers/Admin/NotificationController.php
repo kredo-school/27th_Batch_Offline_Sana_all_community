@@ -82,9 +82,13 @@ class NotificationController extends Controller
     {
         $validated = $request->validate($this->rules(true));
 
-        $recipients = in_array($validated['user_id'], ['admin', 'user'], true)
-            ? User::query()->where('role', $validated['user_id'])->pluck('id')
-            : collect([(int) $validated['user_id']]);
+        if ($validated['user_id'] === 'user') {
+            $recipients = User::query()->whereIn('role', ['user', 'admin'])->pluck('id');
+        } elseif ($validated['user_id'] === 'admin') {
+            $recipients = User::query()->where('role', 'admin')->pluck('id');
+        } else {
+            $recipients = collect([(int) $validated['user_id']]);
+        }
 
         $sender = $this->senderName($validated['from']);
         unset($validated['from']);

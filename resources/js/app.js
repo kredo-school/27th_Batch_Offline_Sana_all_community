@@ -60,11 +60,23 @@ const chatInput = document.querySelector('#message-chat-input');
 if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 	let activeRequest = 0;
 
+	const requestHeaders = {
+		Accept: 'application/json',
+		'Content-Type': 'application/json',
+		'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+		'X-Requested-With': 'XMLHttpRequest',
+	};
+
 	const appendMessage = (message) => {
 		const item = document.createElement('li');
+		item.dataset.messageId = message.id;
+		item.dataset.updateUrl = message.update_url;
+		item.dataset.deleteUrl = message.delete_url;
 		item.className = message.is_mine
 			? 'message-chat-item message-chat-item--mine'
 			: 'message-chat-item';
+		const bubble = document.createElement('div');
+		bubble.className = 'message-chat-bubble';
 		const sender = message.sender || {};
 		const senderName = sender.username || sender.name || 'Unknown user';
 		const senderHeader = document.createElement('div');
@@ -84,11 +96,11 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		const username = document.createElement('span');
 		username.textContent = senderName;
 		senderHeader.append(avatar, username);
-		item.append(senderHeader);
+		bubble.append(senderHeader);
 
 		const body = document.createElement('p');
 		body.textContent = message.body;
-		item.append(body);
+		bubble.append(body);
 
 		if (message.sent_at) {
 			const time = document.createElement('time');
@@ -96,11 +108,39 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 			if (message.datetime) {
 				time.dateTime = message.datetime;
 			}
-			item.append(time);
+			bubble.append(time);
+		}
+
+		item.append(bubble);
+
+		if (message.is_mine) {
+			const actions = document.createElement('div');
+			actions.className = 'message-chat-actions';
+			const editButton = document.createElement('button');
+			editButton.type = 'button';
+			editButton.dataset.messageAction = 'edit';
+			editButton.setAttribute('aria-label', 'Edit message');
+			editButton.title = 'Edit message';
+			editButton.innerHTML = '<i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>';
+			const deleteButton = document.createElement('button');
+			deleteButton.type = 'button';
+			deleteButton.dataset.messageAction = 'delete';
+			deleteButton.setAttribute('aria-label', 'Delete message');
+			deleteButton.title = 'Delete message';
+			deleteButton.innerHTML = '<i class="fa-solid fa-trash" aria-hidden="true"></i>';
+			actions.append(editButton, deleteButton);
+			bubble.append(actions);
 		}
 
 		chatList.append(item);
 		chatList.scrollTop = chatList.scrollHeight;
+	};
+
+	const replaceMessage = (item, message) => {
+		const currentScroll = chatList.scrollTop;
+		item.remove();
+		appendMessage(message);
+		chatList.scrollTop = currentScroll;
 	};
 
 	document.addEventListener('click', async (event) => {
@@ -158,6 +198,112 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 				}
 			}
 
+			return;
+		}
+
+		const actionButton = event.target.closest('[data-message-action="edit"], [data-message-action="delete"]');
+		if (actionButton) {
+			const item = actionButton.closest('.message-chat-item');
+			if (!item) {
+				return;
+			}
+
+			const message = actionButton.dataset.messageAction === 'edit'
+				? 'edit'
+				: 'delete';
+			const messageId = item.dataset.messageId;
+			const messageData = item.dataset;
+
+			if (message === 'delete') {
+				if (!window.confirm('Delete this message?')) {
+					return;
+				}
+
+				actionButton.disabled = true;
+				try {
+					const response = await fetch(messageData.deleteUrl, {
+						method: 'DELETE',
+						credentials: 'same-origin',
+						headers: requestHeaders,
+					});
+					const result = await response.json();
+					if (!response.ok) {
+						throw new Error(result.message || 'Could not delete message.');
+					}
+					item.remove();
+				} catch (error) {
+					actionButton.disabled = false;
+					chatStatus.textContent = error.message || 'Could not delete message.';
+				}
+				return;
+			}
+
+			const body = item.querySelector('p');
+			const editor = document.createElement('textarea');
+			editor.className = 'form-control message-chat-edit';
+			editor.value = body.textContent;
+			body.replaceWith(editor);
+			actionButton.setAttribute('aria-label', 'Save message');
+			actionButton.title = 'Save message';
+			actionButton.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>';
+			actionButton.dataset.messageAction = 'save';
+			const cancelButton = item.querySelector('[data-message-action="delete"]');
+			cancelButton.setAttribute('aria-label', 'Cancel editing');
+			cancelButton.title = 'Cancel editing';
+			cancelButton.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+			cancelButton.dataset.messageAction = 'cancel';
+			editor.focus();
+			return;
+		}
+
+		const saveButton = event.target.closest('[data-message-action="save"]');
+		if (saveButton) {
+			const item = saveButton.closest('.message-chat-item');
+			const editor = item?.querySelector('.message-chat-edit');
+			const messageText = editor?.value.trim();
+			if (!item || !editor || !messageText) {
+				return;
+			}
+
+			saveButton.disabled = true;
+			try {
+				const response = await fetch(item.dataset.updateUrl, {
+					method: 'PATCH',
+					credentials: 'same-origin',
+					headers: requestHeaders,
+					body: JSON.stringify({ message: messageText }),
+				});
+				const result = await response.json();
+				if (!response.ok) {
+					throw new Error(result.message || 'Could not update message.');
+				}
+				replaceMessage(item, result.message);
+			} catch (error) {
+				saveButton.disabled = false;
+				chatStatus.textContent = error.message || 'Could not update message.';
+			}
+			return;
+		}
+
+		const cancelButton = event.target.closest('[data-message-action="cancel"]');
+		if (cancelButton) {
+			const item = cancelButton.closest('.message-chat-item');
+			const editor = item?.querySelector('.message-chat-edit');
+			if (!item || !editor) {
+				return;
+			}
+			const body = document.createElement('p');
+			body.textContent = editor.defaultValue;
+			editor.replaceWith(body);
+			cancelButton.setAttribute('aria-label', 'Delete message');
+			cancelButton.title = 'Delete message';
+			cancelButton.innerHTML = '<i class="fa-solid fa-trash" aria-hidden="true"></i>';
+			cancelButton.dataset.messageAction = 'delete';
+			const editButton = item.querySelector('[data-message-action="save"]');
+			editButton.setAttribute('aria-label', 'Edit message');
+			editButton.title = 'Edit message';
+			editButton.innerHTML = '<i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>';
+			editButton.dataset.messageAction = 'edit';
 			return;
 		}
 

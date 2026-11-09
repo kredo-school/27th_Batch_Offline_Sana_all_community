@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app-with-event-sidebar')
 
 @section('title', 'Event top')
 
@@ -7,10 +7,9 @@
         /* 全体の幅を持たせつつ、右側のスカスカ感をなくすコンパクト設計 */
         .events-main-wrapper {
             width: 100%;
-            max-width: none;
+            max-width: 1240px;
             margin: 0 auto;
             min-width: 0;
-            background-color: #F7F7F5;
         }
 
         /* イベントカードの3列グリッド（適度な余白） */
@@ -25,7 +24,7 @@
 
         /* カード全体のスタイル（完成イメージの上質な比率） */
         .event-card {
-            background: #F7F7F5;
+            background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 16px;
             overflow: hidden;
@@ -186,132 +185,72 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        .event-page-layout {
-            width: 100%;
-            max-width: none;
-            padding-left: 16px;
-            padding-right: 0;
-            background-color: #ffffff;
-            box-sizing: border-box;
-        }
-
-        .event-page-row {
-            display: grid;
-            grid-template-columns: 16.6666667% minmax(0, 1fr);
-            width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        .event-page-sidebar {
-            min-width: 0;
-            padding-right: 16px;
-            background-color: #fff;
-            box-sizing: border-box;
-        }
-
-        .event-page-content {
-            min-width: 0;
-            width: 100%;
-            background-color: #f7f7f5;
-        }
-
-        /* サイドバー内のルート要素が狭くならないようにする */
-        .event-page-sidebar>* {
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* 画面が狭い場合は縦並び */
-        @media (max-width: 991.98px) {
-            .event-page-row {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 
-    {{-- <div class="container-fluid pe-0">
-        <div class="row gy-0">
-            <aside class="col-12 col-lg-3 col-xl-2">
-                @include('events.partials.sidebar')
-            </aside>
-            <div class="col-12 col-lg-9 col-xl-10">
 
-            </div>
-        </div>
+    {{-- <div class="show-section-layout">
+        @include('events.partials.sidebar')
+
+        
     </div> --}}
+    <div class="events-main-wrapper px-3 py-3 mx-0">
+        {{-- 検索・フィルター部分 --}}
+        @include('events.partials.filter')
 
-    <div class="event-page-layout">
-        <div class="event-page-row">
-            <aside class="event-page-sidebar">
-                @include('events.partials.sidebar')
-            </aside>
+        {{-- イベント一覧グリッド --}}
+        <div class="event-grid">
+            @forelse ($events as $event)
+                @include('events.partials.card', ['event' => $event])
+            @empty
+                <div class="no-events-container">
+                    <h3 class="text-muted text-center mb-0">Not Event Yet</h3>
+                </div>
+            @endforelse
+            <div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteEventModalLabel">
+                                Are you sure delete this event?
+                            </h5>
 
-            <div class="event-page-content">
-                <div class="events-main-wrapper px-3 py-3 mx-0">
-                    {{-- 検索・フィルター部分 --}}
-                    @include('events.partials.filter')
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                        </div>
 
-                    {{-- イベント一覧グリッド --}}
-                    <div class="event-grid">
-                        @forelse ($events as $event)
-                            @include('events.partials.card', ['event' => $event])
-                        @empty
-                            <div class="no-events-container">
-                                <h3 class="text-muted text-center mb-0">Not Event Yet</h3>
-                            </div>
-                        @endforelse
-                        <div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="deleteEventModalLabel">
-                                            Are you sure delete this event?
-                                        </h5>
+                        <div class="modal-body">
+                            <p>
+                                Delete "<span id="deleteEventName"></span>".
+                            </p>
 
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="close"></button>
-                                    </div>
+                            <p class="text-danger mb-0">
+                                This action cannot be undone.
+                            </p>
+                        </div>
 
-                                    <div class="modal-body">
-                                        <p>
-                                            Delete "<span id="deleteEventName"></span>".
-                                        </p>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
 
-                                        <p class="text-danger mb-0">
-                                            This action cannot be undone.
-                                        </p>
-                                    </div>
+                            <form id="deleteEventForm" method="POST">
+                                @csrf
+                                @method('DELETE')
 
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                            Cancel
-                                        </button>
-
-                                        <form id="deleteEventForm" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-
-                                            <button type="submit" class="btn btn-danger">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                                <button type="submit" class="btn btn-danger">
+                                    Delete
+                                </button>
+                            </form>
                         </div>
                     </div>
-
-                    @if ($events instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                        <div class="mt-4">
-                            {{ $events->withQueryString()->links() }}
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
-    </div>
 
+        @if ($events instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="mt-4">
+                {{ $events->withQueryString()->links() }}
+            </div>
+        @endif
+    </div>
 @endsection

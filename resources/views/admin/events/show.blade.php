@@ -109,27 +109,33 @@
                     $ratingCounts = $event->reviews->countBy('rating');
                     $ratingTotal = $event->reviews->count();
                 @endphp
+                <span><strong>Event Host</strong></span> 
                 <div class="mb-3" aria-label="Rating distribution">
-                     @if ($event->owner->avatar)
+                    
+                    <a href="{{ route('profile.show', $event->owner->id) }}"
+                                        class="d-inline-flex align-items-center gap-2 text-decoration-none text-dark">
+                     @if ($event->owner->profile?->avatar)
                         @php
-                            $avatarPath = $event->owner->avatar;
+                          $avatarPath = $event->owner->profile->avatar;
                             $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                 ? $avatarPath : asset('storage/'.$avatarPath);
                         @endphp
+                         
                         <dt class="col-sm-4">
-                        <img src="{{ $avatarUrl }}" alt="{{ $event->owner->username }}" class="rounded-circle">
+                        <img src="{{ $avatarUrl }}" alt="{{ $event->owner->username }}" class="rounded-circle navbar-avatar" width="50" height="50">
                         </dt>
-                        <dd class="col-sm-8">{{ $event->owner?->username ?? 'Unknown' }}</dd> 
+                        <dd class="col-sm-8">{{ $event->owner?->username ?? 'Unknown' }}</dd>
                     @else
-                        <dt class="col-sm-4">Owner</dt>
+                        <dt class="col-sm-4">Event Host</dt>
                         <dd class="col-sm-8 h1 text-bold">
                             <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center"
-                            style="width: 40px; height: 40px;" aria-hidden="true">
+                            style="width: 50px; height: 50px;" aria-hidden="true">
                             {{ strtoupper(substr($event->owner->name, 0, 1)) }}
                             </span>
                         {{ $event->owner?->username ?? 'Unknown' }}
                         </dd>
                     @endif
+                    </a>
                     <h6 class="mb-2">Rating distribution</h6>
                     @for ($rating = 5; $rating >= 1; $rating--)
                         @php
@@ -151,7 +157,7 @@
                             <div>
                                 @if ($review->user)
                                     @php
-                                        $avatarPath = $review->user->avatar;
+                                        $avatarPath = $review->user->profile?->avatar;
                                         $avatarUrl = $avatarPath
                                             ? (str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                 ? $avatarPath : asset('storage/'.$avatarPath))
@@ -161,10 +167,10 @@
                                         class="d-inline-flex align-items-center gap-2 text-decoration-none text-dark">
                                         @if ($avatarUrl)
                                             <img src="{{ $avatarUrl }}" alt="{{ $review->user->username }}" class="rounded-circle"
-                                                width="40" height="40" style="object-fit: cover;">
+                                                width="30" height="30" style="object-fit: cover;">
                                         @else
                                             <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center"
-                                                style="width: 40px; height: 40px;" aria-hidden="true">
+                                                style="width: 30px; height: 30px;" aria-hidden="true">
                                                 {{ strtoupper(substr($review->user->username, 0, 1)) }}
                                             </span>
                                         @endif

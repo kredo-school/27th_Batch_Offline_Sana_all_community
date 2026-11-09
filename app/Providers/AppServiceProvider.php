@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Comment;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\Event;
 use App\Models\Follow;
@@ -14,6 +15,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +40,24 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.app', 'layouts.app-with-event-sidebar'], function ($view): void {
             $currentUserId = Auth::id();
+            $categoryOrder = ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs'];
+            $storedCategories = Category::query()
+                ->whereIn('name', $categoryOrder)
+                ->get()
+                ->keyBy('name');
+            $categories = collect($categoryOrder)->mapWithKeys(function (string $label) use ($storedCategories): array {
+                $category = $storedCategories->get($label);
+
+                return [$category?->id ?? $label => $label];
+            });
+            $unreadMessageSenderIds = $currentUserId
+                ? Message::query()
+                    ->where('receiver_id', $currentUserId)
+                    ->whereNull('read_at')
+                    ->pluck('sender_id')
+                    ->map(fn ($senderId): int => (int) $senderId)
+                    ->all()
+                : [];
             $chats = $currentUserId
                 ? Message::with(['sender:id,username,name', 'sender.profile', 'receiver:id,username,name', 'receiver.profile'])
                     ->where(function ($query) use ($currentUserId): void {
@@ -50,12 +70,16 @@ class AppServiceProvider extends ServiceProvider
                     ->unique(fn (Message $message) => (int) $message->sender_id === (int) $currentUserId
                         ? $message->receiver_id
                         : $message->sender_id)
-                    ->map(function (Message $message) use ($currentUserId): array {
+                    ->map(function (Message $message) use ($currentUserId, $unreadMessageSenderIds): array {
+                        $participant = (int) $message->sender_id === (int) $currentUserId
+                            ? $message->receiver
+                            : $message->sender;
+
                         return [
-                            'participant' => (int) $message->sender_id === (int) $currentUserId
-                                ? $message->receiver
-                                : $message->sender,
+                            'participant' => $participant,
                             'last_message' => $message,
+                            'has_unread' => $participant !== null
+                                && in_array((int) $participant->id, $unreadMessageSenderIds, true),
                         ];
                     })
                     ->filter(fn (array $chat): bool => $chat['participant'] !== null)
@@ -65,6 +89,8 @@ class AppServiceProvider extends ServiceProvider
             $notifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNotIn('type', ['community_message', 'community_join_request'])
+                    ->with('related')
                     ->latest()
                     ->limit(5)
                     ->get()
@@ -73,6 +99,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
+                    ->whereNotIn('type', ['community_message', 'community_join_request'])
                     ->count()
                 : 0;
             $unreadMessagesCount = $currentUserId
@@ -81,6 +108,33 @@ class AppServiceProvider extends ServiceProvider
                     ->whereNull('read_at')
                     ->count()
                 : 0;
+            $communityNotificationCount = $currentUserId
+                ? UserNotification::query()
+                    ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
+                    ->whereIn('type', ['community_message', 'community_join_request'])
+                    ->count()
+                : 0;
+            $communityNotifications = $currentUserId
+                ? UserNotification::query()
+                    ->where('user_id', $currentUserId)
+                    ->whereIn('type', ['community_message', 'community_join_request'])
+                    ->with('related')
+                    ->latest()
+                    ->limit(5)
+                    ->get()
+                : collect();
+            $hasMyEvents = $currentUserId
+                ? Event::query()->where('owner_id', $currentUserId)->exists()
+                : false;
+            $hasMyCommunities = $currentUserId
+                ? Community::query()
+                    ->where('owner_id', $currentUserId)
+                    ->orWhereHas('memberships', fn ($query) => $query
+                        ->where('user_id', $currentUserId)
+                        ->where('status', 'approved'))
+                    ->exists()
+                : false;
             $followedRecipientIds = $currentUserId
                 ? Follow::query()->where('follower_id', $currentUserId)->pluck('following_id')->all()
                 : [];
@@ -99,12 +153,17 @@ class AppServiceProvider extends ServiceProvider
             $otherMessageRecipients = $messageRecipients->whereNotIn('id', $followedRecipientIds)->values();
 
             $view->with([
+                'categories' => $categories,
                 'chats' => $chats,
                 'followedMessageRecipients' => $followedMessageRecipients,
                 'otherMessageRecipients' => $otherMessageRecipients,
                 'notifications' => $notifications,
                 'unreadNotificationCount' => $unreadNotificationCount,
                 'unreadMessagesCount' => $unreadMessagesCount,
+                'communityNotificationCount' => $communityNotificationCount,
+                'communityNotifications' => $communityNotifications,
+                'hasMyEvents' => $hasMyEvents,
+                'hasMyCommunities' => $hasMyCommunities,
             ]);
         });
 
@@ -119,5 +178,48 @@ class AppServiceProvider extends ServiceProvider
         // Choose either Bootstrap 5 or Bootstrap 4 depending on your frontend
         Paginator::useBootstrapFour(); 
         // or Paginator::useBootstrapFour();
+
+        // headerを含む共通コンポーネント（例: layouts.app や partials.header）にデータを渡す
+        View::composer(['layouts.app', 'partials.header'], function ($view) {
+        
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+
+        // 1. ログインユーザーまたはゲストの「よく見るカテゴリーID」を取得（直近30日間）
+        $frequentCategoryIds = DB::table('category_views')
+            ->select('category_id')
+            ->where(function($query) use ($userId, $sessionId) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('session_id', $sessionId);
+                }
+            })
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('category_id')
+            ->orderByRaw('COUNT(*) DESC')
+            ->take(3) // ショートカット用の上位3件
+            ->pluck('category_id');
+
+        // 2. 該当カテゴリーのモデルを取得（データがない場合はデフォルトのカテゴリーを入れる）
+        if ($frequentCategoryIds->isNotEmpty()) {
+            $personalizedCategories = Category::whereIn('id', $frequentCategoryIds)
+                ->orderByRaw('FIELD(id, ' . $frequentCategoryIds->implode(',') . ')')
+                ->get();
+        } else {
+            // 閲覧履歴がない場合は、全体の「人気カテゴリー」をデフォルト表示
+            $popularIds = DB::table('category_views')
+                ->select('category_id')
+                ->groupBy('category_id')
+                ->orderByRaw('COUNT(*) DESC')
+                ->take(3)
+                ->pluck('category_id');
+                
+            $personalizedCategories = Category::whereIn('id', $popularIds)->get();
+        }
+
+        // ビューに配列として渡す
+        $view->with('headerShortcuts', $personalizedCategories);
+        });
     }
 }
