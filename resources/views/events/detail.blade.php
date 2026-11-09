@@ -1,4 +1,6 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
+
+@section('sidebar', $event->community_id ? 'community' : 'events')
 
 @section('content')
     <style>

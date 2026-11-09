@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('sidebar', 'community')
+
 @section('title', $title ?? 'Create Community')
 
 @section('content')
@@ -67,12 +69,7 @@
     }
 </style>
 
-<div class="row g-0">
-    <div class="col-md-3 col-lg-2">
-        @include('community.partials.sidebar')
-    </div>
-    <div class="col-md-9 col-lg-10">
-        <div class="container py-4" style="max-width: 860px;">
+<div class="container py-4" style="max-width: 860px;">
 
     {{-- list --}}
     <nav class="mb-4 small">
@@ -275,14 +272,7 @@
         </div>
     @endif
 </div>
-</div>
-</div>
 
-{{-- 同意欄のリンクから開くモーダル（中に form があるので作成フォームの外に置く） --}}
-@unless ($editing)
-    @include('layouts.modals.guide')
-    @include('layouts.modals.terms')
-@endunless
 
 <script>
     // 選択した画像をプレビュー枠に表示する
