@@ -1,4 +1,6 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
+
+@section('sidebar', 'community')
 
 @section('title', $community->name ?? 'Community Detail')
 
@@ -88,7 +90,13 @@
                     <button class="nav-link text-muted border-0 px-3 pb-2" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">Events <span class="badge bg-light text-dark border rounded-pill">{{ $eventCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Chat</button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Chat
+                        @if ($canChat)
+                            <span class="badge rounded-pill community-chat-unread" @if ($unreadCount === 0) hidden @endif><span class="community-chat-unread-count">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span><span class="visually-hidden"> unread messages</span></span>
+                            {{-- 誰からの未読か（最近送った人の名前と、他の人数） --}}
+                            <span class="community-chat-unread-from" title="{{ implode(', ', $unreadSenders) }}" @if (empty($unreadSenders)) hidden @endif><span class="community-chat-unread-name">{{ $unreadSenders[0] ?? '' }}</span><span class="community-chat-unread-more">{{ count($unreadSenders) > 1 ? ' +' . (count($unreadSenders) - 1) : '' }}</span></span>
+                        @endif
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-muted border-0 px-3 pb-2" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">Members <span class="badge bg-light text-dark border rounded-pill">{{ $memberCount }}</span></button>
@@ -169,13 +177,13 @@
             <div class="card bg-white border shadow-sm rounded-3 p-4">
                 <h5 class="fw-bold text-dark h6 mb-3">Organizers</h5>
                 @if ($community->owner)
-                    <div class="d-flex align-items-center gap-3">
+                    <a href="{{ route('profile.show', $community->owner->id) }}" class="d-flex align-items-center gap-3 community-profile-link">
                         <x-avatar :user="$community->owner" />
                         <div>
                             <strong class="d-block text-dark small">{{ $community->owner->name }}</strong>
                             <small class="text-muted" style="font-size: 0.75rem;">Community organizer</small>
                         </div>
-                    </div>
+                    </a>
                 @endif
             </div>
         </div>
@@ -199,7 +207,9 @@
     <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
         @if ($canChat)
             <div class="card bg-white border shadow-sm rounded-3 overflow-hidden community-chat"
-                data-chat-url="{{ route('community.chat.index', $community->id) }}">
+                data-chat-url="{{ route('community.chat.index', $community->id) }}"
+                data-unread-url="{{ route('community.chat.unread', $community->id) }}"
+                data-read-url="{{ route('community.chat.read', $community->id) }}">
                 <div class="community-chat-body">
                     <ol class="community-chat-list" aria-live="polite"></ol>
                     <div class="community-chat-empty">Loading messages...</div>
@@ -250,13 +260,15 @@
         <div class="card bg-white border shadow-sm rounded-3 p-3 community-member-list">
             @foreach (collect([$community->owner])->filter()->merge($community->members->where('id', '!=', $community->owner_id)) as $member)
                 <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-                    <x-avatar :user="$member" />
-                    <div class="flex-grow-1">
-                        <strong class="d-block text-dark small">{{ $member->name }}</strong>
-                        <small class="text-muted" style="font-size: 0.75rem;">
-                            {{ $member->id === $community->owner_id ? 'Community organizer' : ucfirst($member->pivot->role ?? 'member') }}
-                        </small>
-                    </div>
+                    <a href="{{ route('profile.show', $member->id) }}" class="d-flex align-items-center gap-3 flex-grow-1 community-profile-link">
+                        <x-avatar :user="$member" />
+                        <div>
+                            <strong class="d-block text-dark small">{{ $member->name }}</strong>
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                {{ $member->id === $community->owner_id ? 'Community organizer' : ucfirst($member->pivot->role ?? 'member') }}
+                            </small>
+                        </div>
+                    </a>
                     @if (auth()->id() === $community->owner_id && $member->id !== $community->owner_id)
                         <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
                             data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
@@ -287,6 +299,47 @@
 <style>
     .community-chat {
         scroll-margin: 90px 0 16px;
+    }
+
+    /* Chat タブの未読バッジ */
+    .community-chat-unread {
+        background: #dc3545;
+        color: #fff;
+    }
+
+    /* プロフィールへのリンク */
+    .community-profile-link {
+        text-decoration: none;
+    }
+
+    .community-profile-link:hover strong,
+    .community-chat-name a:hover {
+        text-decoration: underline;
+    }
+
+    .community-chat-name a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .community-chat-unread[hidden],
+    .community-chat-unread-from[hidden] {
+        display: none;
+    }
+
+    .community-chat-unread-from {
+        display: inline-flex;
+        max-width: 150px;
+        margin-left: 2px;
+        vertical-align: middle;
+        color: #495057;
+        font-size: 0.72rem;
+        white-space: pre;
+    }
+
+    .community-chat-unread-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .community-chat-body {
@@ -349,7 +402,12 @@
     }
 
     .community-chat-item--mine {
+        flex-direction: row-reverse;
         align-self: flex-end;
+    }
+
+    .community-chat-item--mine .community-chat-name {
+        text-align: right;
     }
 
     .community-chat-avatar {
@@ -437,23 +495,64 @@
         flex-direction: row-reverse;
     }
 
-    /* 削除ボタンはマウスを乗せたときだけ出す（タッチ端末では常に表示） */
+    /* 編集・削除ボタン */
+    .community-chat-edit-button,
     .community-chat-delete {
-        padding: 0;
+        padding: 0 2px;
         border: 0;
         background: transparent;
         color: #6c757d;
         font-size: 0.78rem;
-        opacity: 0;
     }
 
-    .community-chat-item:hover .community-chat-delete,
-    .community-chat-delete:focus-visible {
-        opacity: 1;
+    .community-chat-edit-button:hover {
+        color: #F58634;
     }
 
     .community-chat-delete:hover {
         color: #dc3545;
+    }
+
+    /* 発言の編集中はその場に入力欄を出す */
+    .community-chat-item--editing {
+        width: 100%;
+    }
+
+    .community-chat-item--editing .community-chat-content,
+    .community-chat-edit {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .community-chat-edit textarea {
+        max-height: 160px;
+        border-radius: 12px;
+        font-size: 0.92rem;
+        resize: none;
+    }
+
+    .community-chat-edit textarea:focus {
+        border-color: #F58634;
+        box-shadow: 0 0 0 0.25rem rgba(245, 134, 52, 0.25);
+    }
+
+    .community-chat-edit-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 6px;
+    }
+
+    .community-chat-edit-save,
+    .community-chat-edit-save:hover,
+    .community-chat-edit-save:focus-visible,
+    .community-chat-edit-save:disabled {
+        background: #F58634;
+        color: #fff;
+    }
+
+    .community-chat-edit-save:hover {
+        background: #e0741f;
     }
 
     .community-chat-status {
@@ -518,10 +617,6 @@
     }
 
     @media (hover: none) {
-        .community-chat-delete {
-            opacity: 1;
-        }
-
         .community-chat-hint {
             padding-bottom: 6px;
             visibility: hidden;
@@ -559,10 +654,14 @@
         const button = form.querySelector('button[type="submit"]');
         const groupWindow = 5 * 60 * 1000; // 同じ人の発言を1つにまとめる間隔
         const messages = [];
+        let editing = null; // 編集中のメッセージ { id, draft }
         let lastId = 0;
         let syncedAt = '';
         let loading = false;
         let loaded = false;
+        const unreadBadge = document.querySelector('.community-chat-unread');
+        const unreadFrom = document.querySelector('.community-chat-unread-from');
+        let readId = 0;
 
         const dayLabel = (date) => {
             const yesterday = new Date();
@@ -574,6 +673,32 @@
                 return 'Yesterday';
             }
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        };
+
+        // 発言の位置に出す編集フォーム
+        const renderEditor = () => {
+            const editor = document.createElement('form');
+            editor.className = 'community-chat-edit';
+            const textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.rows = 1;
+            textarea.maxLength = 2000;
+            textarea.value = editing.draft;
+            textarea.setAttribute('aria-label', 'Edit message');
+            const actions = document.createElement('div');
+            actions.className = 'community-chat-edit-actions';
+            const cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'btn btn-sm btn-outline-secondary community-chat-edit-cancel';
+            cancel.textContent = 'Cancel';
+            const save = document.createElement('button');
+            save.type = 'submit';
+            save.className = 'btn btn-sm community-chat-edit-save';
+            save.textContent = 'Save';
+            actions.append(cancel, save);
+            editor.append(textarea, actions);
+
+            return editor;
         };
 
         // 1件分の要素を作る（日が変わるときは日付の区切りも一緒に返す）
@@ -595,29 +720,41 @@
             item.className = 'community-chat-item';
             item.classList.toggle('community-chat-item--mine', message.is_mine);
             item.classList.toggle('community-chat-item--grouped', grouped);
+            item.classList.toggle('community-chat-item--editing', editing?.id === message.id);
             item.dataset.messageId = message.id;
 
-            // 自分の発言にはアイコンと名前を出さない
-            if (!message.is_mine) {
-                const avatar = document.createElement('span');
-                avatar.className = 'community-chat-avatar';
-                if (message.sender.avatar) {
-                    const image = document.createElement('img');
-                    image.src = message.sender.avatar;
-                    image.alt = '';
-                    avatar.append(image);
-                } else {
-                    avatar.textContent = message.sender.initial;
-                }
-                item.append(avatar);
+            // アイコンと名前からプロフィールを開ける（キーボード操作では名前のリンクだけを使う）
+            const profileUrl = message.sender.profile_url;
+            const avatar = document.createElement(profileUrl ? 'a' : 'span');
+            avatar.className = 'community-chat-avatar text-decoration-none';
+            if (profileUrl) {
+                avatar.href = profileUrl;
+                avatar.tabIndex = -1;
+                avatar.setAttribute('aria-hidden', 'true');
             }
+            if (message.sender.avatar) {
+                const image = document.createElement('img');
+                image.src = message.sender.avatar;
+                image.alt = '';
+                avatar.append(image);
+            } else {
+                avatar.textContent = message.sender.initial;
+            }
+            item.append(avatar);
 
             const content = document.createElement('div');
             content.className = 'community-chat-content';
-            if (!message.is_mine && !grouped) {
+            if (!grouped) {
                 const name = document.createElement('div');
                 name.className = 'community-chat-name';
-                name.textContent = message.sender.name;
+                if (profileUrl) {
+                    const link = document.createElement('a');
+                    link.href = profileUrl;
+                    link.textContent = message.sender.name;
+                    name.append(link);
+                } else {
+                    name.textContent = message.sender.name;
+                }
                 content.append(name);
             }
 
@@ -635,17 +772,36 @@
             time.textContent = sentAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             time.dateTime = message.datetime;
             side.append(time);
+            if (message.is_edited) {
+                const edited = document.createElement('span');
+                edited.textContent = 'edited';
+                side.append(edited);
+            }
+            if (message.can_edit) {
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.className = 'community-chat-edit-button';
+                edit.title = 'Edit';
+                edit.setAttribute('aria-label', 'Edit message');
+                edit.innerHTML = '<i class="fa-regular fa-pen-to-square"></i>';
+                side.append(edit);
+            }
             if (message.can_delete) {
                 const remove = document.createElement('button');
                 remove.type = 'button';
                 remove.className = 'community-chat-delete';
                 remove.dataset.deleteUrl = message.delete_url;
+                remove.title = 'Delete';
                 remove.setAttribute('aria-label', 'Delete message');
                 remove.innerHTML = '<i class="fa-regular fa-trash-can"></i>';
                 side.append(remove);
             }
 
-            row.append(bubble, side);
+            if (editing?.id === message.id) {
+                row.append(renderEditor());
+            } else {
+                row.append(bubble, side);
+            }
             content.append(row);
             item.append(content);
             nodes.push(item);
@@ -674,13 +830,150 @@
                 return;
             }
             messages.splice(index, 1);
+            if (editing?.id === id) {
+                editing = null;
+            }
             list.replaceChildren(...messages.flatMap((message, i) => renderMessage(message, messages[i - 1])));
+            focusEditor();
         };
 
         // 入力に合わせて入力欄を広げる（上限は CSS の max-height）
-        const resizeInput = () => {
-            input.style.height = 'auto';
-            input.style.height = `${input.scrollHeight + 2}px`;
+        const fitTextarea = (textarea) => {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight + 2}px`;
+        };
+        const resizeInput = () => fitTextarea(input);
+
+        // 1件だけ描き直す（他の発言の表示やスクロール位置はそのまま）
+        const refreshMessage = (id) => {
+            const index = messages.findIndex((message) => message.id === id);
+            if (index !== -1) {
+                list.querySelector(`[data-message-id="${id}"]`)
+                    ?.replaceWith(renderMessage(messages[index], messages[index - 1]).at(-1));
+            }
+        };
+
+        const focusEditor = () => {
+            const textarea = list.querySelector('.community-chat-edit textarea');
+            if (textarea) {
+                fitTextarea(textarea);
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                textarea.scrollIntoView({ block: 'nearest' });
+            }
+        };
+
+        const startEditing = (message) => {
+            const previousId = editing?.id;
+            editing = { id: message.id, draft: message.body };
+            refreshMessage(previousId);
+            refreshMessage(message.id);
+            focusEditor();
+        };
+
+        const stopEditing = () => {
+            const id = editing?.id;
+            editing = null;
+            refreshMessage(id);
+            list.querySelector(`[data-message-id="${id}"] .community-chat-edit-button`)?.focus();
+        };
+
+        // 他の端末や他の人の編集を画面に反映する
+        const applyUpdate = (updated) => {
+            const index = messages.findIndex((message) => message.id === updated.id);
+            if (index === -1 || (messages[index].body === updated.body && messages[index].is_edited === updated.is_edited)) {
+                return;
+            }
+            messages[index] = updated;
+            refreshMessage(updated.id);
+        };
+
+        const saveEdit = async (editor) => {
+            const message = messages.find((candidate) => candidate.id === editing.id);
+            const body = editor.querySelector('textarea').value.trim();
+            if (!body) {
+                status.textContent = 'A message cannot be empty.';
+                return;
+            }
+            if (body === message.body) {
+                status.textContent = '';
+                stopEditing();
+                return;
+            }
+            const save = editor.querySelector('.community-chat-edit-save');
+            save.disabled = true;
+            try {
+                const response = await fetch(message.update_url, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ message: body }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message);
+                }
+                messages[messages.indexOf(message)] = data.message;
+                status.textContent = '';
+                stopEditing();
+            } catch (error) {
+                status.textContent = error.message || 'Could not save the message.';
+                save.disabled = false;
+            }
+        };
+
+        const setUnreadBadge = (count, senders = []) => {
+            unreadBadge.hidden = count === 0;
+            unreadBadge.querySelector('.community-chat-unread-count').textContent = count > 99 ? '99+' : count;
+            unreadFrom.hidden = senders.length === 0;
+            unreadFrom.title = senders.join(', ');
+            unreadFrom.querySelector('.community-chat-unread-name').textContent = senders[0] ?? '';
+            unreadFrom.querySelector('.community-chat-unread-more').textContent = senders.length > 1 ? ` +${senders.length - 1}` : '';
+        };
+
+        // 別のタブを見ている間も未読数を更新する
+        const loadUnread = async () => {
+            try {
+                const response = await fetch(chat.dataset.unreadUrl, {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (response.ok && !pane.classList.contains('active')) {
+                    const data = await response.json();
+                    setUnreadBadge(data.unread, data.senders);
+                }
+            } catch {
+                // 次の更新でまた取りに行く
+            }
+        };
+
+        // Chat タブで表示できたメッセージまでを既読にする（失敗したら次の更新でやり直す）
+        const markRead = async () => {
+            if (lastId <= readId || !pane.classList.contains('active')) {
+                return;
+            }
+            readId = lastId;
+            try {
+                const response = await fetch(chat.dataset.readUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ last_read_id: lastId }),
+                });
+                if (!response.ok) {
+                    throw new Error();
+                }
+            } catch {
+                readId = 0;
+            }
         };
 
         const loadMessages = async () => {
@@ -702,6 +995,7 @@
                 data.messages.forEach(appendMessage);
                 // 前回の取得以降に（自分や他の人が）消したメッセージを画面からも消す
                 data.deleted_ids.forEach(removeMessage);
+                data.updated_messages.forEach(applyUpdate);
                 syncedAt = data.synced_at;
                 // 過去の発言を読み返しているときは勝手にスクロールしない
                 if (data.messages.length && (atBottom || !loaded)) {
@@ -710,6 +1004,7 @@
                 loaded = true;
                 updateEmptyState();
                 status.textContent = '';
+                markRead();
             } catch {
                 empty.hidden = true;
                 status.textContent = 'Could not load messages.';
@@ -743,6 +1038,7 @@
                 // 送信の間に届いた他の人のメッセージを先に取り込んでから自分の分を足す
                 await loadMessages();
                 appendMessage(data.message);
+                markRead();
                 list.scrollTop = list.scrollHeight;
                 input.value = '';
                 resizeInput();
@@ -753,6 +1049,46 @@
             } finally {
                 button.disabled = false;
                 input.focus();
+            }
+        });
+
+        // 編集の開始と取り消し
+        list.addEventListener('click', (event) => {
+            if (event.target.closest('.community-chat-edit-cancel')) {
+                status.textContent = '';
+                stopEditing();
+                return;
+            }
+            const edit = event.target.closest('.community-chat-edit-button');
+            if (edit) {
+                const id = Number(edit.closest('[data-message-id]').dataset.messageId);
+                startEditing(messages.find((message) => message.id === id));
+            }
+        });
+
+        list.addEventListener('submit', (event) => {
+            event.preventDefault();
+            saveEdit(event.target);
+        });
+
+        list.addEventListener('input', (event) => {
+            if (editing && event.target.matches('.community-chat-edit textarea')) {
+                editing.draft = event.target.value;
+                fitTextarea(event.target);
+            }
+        });
+
+        // 編集欄では Enter で保存、Shift+Enter で改行、Esc で取り消し
+        list.addEventListener('keydown', (event) => {
+            if (!event.target.matches('.community-chat-edit textarea')) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                status.textContent = '';
+                stopEditing();
+            } else if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                event.preventDefault();
+                event.target.form.requestSubmit();
             }
         });
 
@@ -797,11 +1133,17 @@
         document.querySelector('#chat-tab').addEventListener('shown.bs.tab', () => {
             // カバー画像の下でも入力欄まで画面に入るようにする
             chat.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            setUnreadBadge(0);
             loadMessages();
         });
         setInterval(() => {
-            if (pane.classList.contains('active') && document.visibilityState === 'visible') {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            if (pane.classList.contains('active')) {
                 loadMessages();
+            } else {
+                loadUnread();
             }
         }, 5000);
 

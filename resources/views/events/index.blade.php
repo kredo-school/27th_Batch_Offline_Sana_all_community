@@ -1,4 +1,6 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
+
+@section('sidebar', 'events')
 
 @section('title', 'Event top')
 

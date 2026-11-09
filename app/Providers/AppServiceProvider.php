@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
             'event' => Event::class,
         ]);
 
-        View::composer(['layouts.app', 'layouts.app-with-event-sidebar'], function ($view): void {
+        View::composer('layouts.app', function ($view): void {
             $currentUserId = Auth::id();
             $chats = $currentUserId
                 ? Message::with(['sender:id,username,name', 'sender.profile', 'receiver:id,username,name', 'receiver.profile'])

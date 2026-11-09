@@ -1,4 +1,6 @@
-@extends('layouts.app-with-event-sidebar')
+@extends('layouts.app')
+
+@section('sidebar', 'community')
 
 @section('title', $title ?? 'Create Community')
 
@@ -271,11 +273,6 @@
     @endif
 </div>
 
-{{-- 同意欄のリンクから開くモーダル（中に form があるので作成フォームの外に置く） --}}
-@unless ($editing)
-    @include('layouts.modals.guide')
-    @include('layouts.modals.terms')
-@endunless
 
 <script>
     // 選択した画像をプレビュー枠に表示する
