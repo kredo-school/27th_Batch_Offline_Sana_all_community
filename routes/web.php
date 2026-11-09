@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CommunityChatController;
+use App\Http\Controllers\CommunityMembershipController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\BookmarkController;
@@ -69,6 +71,8 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Profile(daichi)
     Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
+        Route::post('/{user}/follow', [ProfileController::class, 'follow'])->name('follow');
+        Route::delete('/{user}/follow', [ProfileController::class, 'unfollow'])->name('unfollow');
         Route::get('/profile/{id}/show', [ProfileController::class, 'show'])->name('show');
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
@@ -84,12 +88,26 @@ Route::group(['middleware' => 'auth'], function () {
 
     // コミュニティ詳細ページ
     Route::get('/community/{id}', [CommunityController::class, 'show'])->name('community.show');
-    Route::post('/community/{id}/events', [CommunityController::class, 'storeEvent'])->name('community.events.store');
+
+    // コミュニティ内のイベント作成（フォームはイベントの作成ページと同じ）
+    Route::get('/community/{community}/events/create', [EventController::class, 'create'])->name('community.events.create');
+    Route::post('/community/{community}/events', [EventController::class, 'store'])->name('community.events.store');
 
     // コミュニティ編集画面・更新
     Route::get('/community/{id}/edit', [CommunityController::class, 'edit'])->name('community.edit');
     Route::put('/community/{id}', [CommunityController::class, 'update'])->name('community.update');
     Route::delete('/community/{id}', [CommunityController::class, 'destroy'])->name('community.destroy');
+
+    // コミュニティ内チャット
+    Route::get('/community/{id}/chat', [CommunityChatController::class, 'index'])->name('community.chat.index');
+    Route::post('/community/{id}/chat', [CommunityChatController::class, 'store'])->name('community.chat.store');
+    Route::delete('/community/{id}/chat/{message}', [CommunityChatController::class, 'destroy'])->name('community.chat.destroy');
+
+    // コミュニティへの参加・退会・参加申請の承認
+    Route::post('/community/{id}/join', [CommunityMembershipController::class, 'join'])->name('community.join');
+    Route::delete('/community/{id}/leave', [CommunityMembershipController::class, 'leave'])->name('community.leave');
+    Route::patch('/community/{id}/members/{user}', [CommunityMembershipController::class, 'approve'])->name('community.members.approve');
+    Route::delete('/community/{id}/members/{user}', [CommunityMembershipController::class, 'remove'])->name('community.members.remove');
 
     // ==========================================================================================
     // ====================================ADMIN ROUTES==========================================

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Comment;
+use App\Models\Community;
 use App\Models\Event;
 use App\Models\EventCategory;
 use App\Models\EventParticipant;
@@ -22,7 +23,8 @@ class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Event::query();
+        // コミュニティ内のイベントはイベントページに出さない
+        $query = Event::query()->whereNull('community_id');
 
         // get categories
         $categories = Category::query()
@@ -168,7 +170,7 @@ class EventController extends Controller
         //////////////////////////// Event /////////////////////////////
         $events = $query->with(['categories'])->paginate(24)->withQueryString();
 
-        $hasMyEvents = Auth::check() && Event::where('owner_id', Auth::id())->exists();
+        $hasMyEvents = Auth::check() && Event::where('owner_id', Auth::id())->whereNull('community_id')->exists();
 
         // 現在表示しているイベントの中で、ログインユーザーがブックマーク済みのIDを取得
         $bookmarkedEventIds = collect();
@@ -233,16 +235,21 @@ class EventController extends Controller
         ));
     }
 
-    public function create()
+    // $community があるときは、そのコミュニティのイベントとして作る（オーナーだけ）
+    public function create(?Community $community = null)
     {
+        abort_if($community && $community->owner_id !== Auth::id(), 403);
+
         $categories = Category::all();
 
-        return view('events.create', array_merge(compact('categories'), $this->calendarData()));
+        return view('events.create', array_merge(compact('categories', 'community'), $this->calendarData()));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ?Community $community = null)
     {
-        $validated = $request->validate([
+        abort_if($community && $community->owner_id !== Auth::id(), 403);
+
+        $rules = [
             'title'             => 'required|string|max:60',
             'category_id'       => 'required|integer|exists:categories,id',
             'price'             => 'required|numeric|min:0',
@@ -253,22 +260,35 @@ class EventController extends Controller
             'description'       => 'required|string|max:500',
             'location'          => 'required|string|max:60',
             'image'             => 'nullable|image|max:2048',
-            'language'          => 'required|in:en,ja',
-            'visibility'        => 'required|in:public,members,followers',
-            'approval_required' => 'required|boolean',
-        ]);
+        ];
+
+        // コミュニティ内のイベントはこの3つを選ばず、テーブルの既定値で作る
+        if (! $community) {
+            $rules += [
+                'language'          => 'required|in:en,ja',
+                'visibility'        => 'required|in:public,members,followers',
+                'approval_required' => 'required|boolean',
+            ];
+        }
+
+        $validated = $request->validate($rules);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('events', 'public');
         }
 
         $validated['owner_id'] = Auth::id();
+        $validated['community_id'] = $community?->id;
 
         $categoryId = $validated['category_id'];
         unset($validated['category_id']);
 
         $event = Event::create($validated);
         $event->categories()->attach($categoryId);
+
+        if ($community) {
+            return redirect()->route('community.show', $community->id);
+        }
 
         return redirect()->route('events.show', $event);
     }
@@ -321,7 +341,7 @@ class EventController extends Controller
         $event->update($validated);
         $event->categories()->sync([$categoryId]);
 
-        return redirect()->route('events.show', $event)->with('success', 'Your event has been updated.');
+        return redirect()->route('events.show', $event);
     }
 
     public function storeComment(Request $request, Event $event)
@@ -375,11 +395,7 @@ class EventController extends Controller
         }
         $participant->save();
 
-        $message = $event->approval_required
-            ? 'Your request has been sent. Please wait for the host to approve it.'
-            : 'You have joined this event!';
-
-        return redirect()->route('events.show', $event)->with('success', $message);
+        return redirect()->route('events.show', $event);
     }
 
         public function cancelJoin(Event $event)
@@ -409,7 +425,7 @@ class EventController extends Controller
             ]);
         }
 
-        return redirect()->route('events.show', $event)->with('success', 'Your request has been cancelled.');
+        return redirect()->route('events.show', $event);
     }
 
     public function participants(Event $event)
@@ -441,7 +457,7 @@ class EventController extends Controller
         $participant->responded_at = now();
         $participant->save();
 
-        return back()->with('success', $participant->user->name . ' has been approved.');
+        return back();
     }
 
     public function rejectParticipant(Event $event, EventParticipant $participant)
@@ -454,7 +470,7 @@ class EventController extends Controller
         $participant->responded_at = now();
         $participant->save();
 
-        return back()->with('success', $participant->user->name . ' has been rejected.');
+        return back();
     }
 
     public function destroyComment(Event $event, Comment $comment)
@@ -469,7 +485,7 @@ class EventController extends Controller
 
         $comment->delete();
 
-        return redirect()->route('events.show', $event)->with('success', 'The comment has been deleted.');
+        return redirect()->route('events.show', $event);
     }
 
     public function cancelEvent(Request $request, Event $event)
@@ -490,7 +506,7 @@ class EventController extends Controller
         $event->cancel_reason = $request->cancel_reason;
         $event->save();
 
-        return redirect()->route('events.show', $event)->with('success', 'The event has been cancelled.');
+        return redirect()->route('events.show', $event);
     }
 
     public function storeReview(Request $request, Event $event)
@@ -534,7 +550,7 @@ class EventController extends Controller
         $review->comment = $request->comment;
         $review->save();
 
-        return redirect()->route('events.show', $event)->with('success', 'Thank you for your review!');
+        return redirect()->route('events.show', $event);
     }
 
     public function storeHostReview(Request $request, Event $event)
@@ -580,7 +596,7 @@ class EventController extends Controller
         $review->comment = $request->host_comment;
         $review->save();
 
-        return redirect()->route('events.show', $event)->with('success', 'Thank you for reviewing the host!');
+        return redirect()->route('events.show', $event);
     }
 
     private function calendarData(): array
@@ -668,9 +684,12 @@ class EventController extends Controller
 
         $event->delete();
 
-        return redirect()
-            ->route('events.index')
-            ->with('success', 'Event has been deleted.');
+        // コミュニティ内のイベントはそのコミュニティへ戻る
+        if ($event->community) {
+            return redirect()->route('community.show', $event->community_id);
+        }
+
+        return redirect()->route('events.index');
     }
 
     /////////// Bookmark /////////////////////

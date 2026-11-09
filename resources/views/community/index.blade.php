@@ -1,198 +1,364 @@
-@extends('layouts.app')
+@extends('layouts.app-with-event-sidebar')
 
 @section('title', 'Community')
 
 @section('content')
 <style>
-    /* ホームページ (home.blade.php) と同じ配色・構成に合わせる */
-    .community-hero {
-        position: relative;
+    /* イベント一覧 (events/index.blade.php・events/partials/*) と同じ見た目に揃える */
+    .events-main-wrapper {
+        width: 100%;
+        max-width: 1240px;
+        margin: 0 auto;
+        min-width: 0;
+    }
+
+    /* 検索・並び替え・作成ボタン・カテゴリー */
+    .event-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .event-search-form {
+        display: flex;
+        flex: 1 1 350px;
+        gap: 8px;
+    }
+
+    .search-input-wrapper {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        background: #fff;
+        border: 1px solid #DDDDDD;
+        border-radius: 14px;
+        padding: 0 16px;
+    }
+
+    .search-icon {
+        color: #888;
+        font-size: 22px;
+        margin-right: 10px;
+    }
+
+    .search-input-wrapper input {
+        width: 100%;
+        height: 50px;
+        border: 0;
+        outline: 0;
+        font-size: 14px;
+        background: transparent;
+    }
+
+    .search-button {
+        min-width: 90px;
+        height: 50px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    .event-action {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sort-dropdown-btn {
+        width: 50px;
+        height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 340px;
-        padding: 48px 16px;
-        /* 画像内の文字と重ならないよう、人物と海が写る下側を表示する */
-        background: url("{{ asset('images/BGforTop.png') }}") center bottom / cover no-repeat;
-        text-align: center;
+        background: #fff;
+        border: 1px solid #DDDDDD;
+        border-radius: 12px;
+        color: #333;
+        font-size: 18px;
     }
 
-    .community-hero::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.3) 100%);
+    .sort-dropdown-btn:hover {
+        background: #F8F9FA;
     }
 
-    .community-hero-inner {
-        position: relative;
-        width: min(100%, 560px);
-    }
-
-    .community-hero .search {
-        display: flex;
-    }
-
-    .community-hero .search input {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .btn-act {
-        background-color: #A8CF45 !important;
-    }
-
-    .btn-com {
-        background-color: #F58634 !important;
-    }
-
-    .community-section-title {
+    .create-event-button {
+        height: 50px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 1rem;
+        justify-content: center;
+        padding: 0 24px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* カードの3列グリッド */
+    .event-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+        width: 100%;
+        margin-top: 24px;
+    }
+
+    .event-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .event-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .event-card-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 160px;
+        background-color: #f3f4f6;
+    }
+
+    .event-card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* コミュニティのカバーは切り抜かず全体を表示する */
+    .community-card-image {
+        object-fit: contain;
+    }
+
+    .community-card-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #9ca3af;
+        font-size: 40px;
         font-weight: 700;
     }
 
-    .community-section-title::before {
-        content: '';
-        width: 6px;
-        height: 1.4em;
-        border-radius: 3px;
-        background: #F58634;
+    .event-actions {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 20;
     }
 
-    /* カバー写真がないときの枠の高さ */
-    .community-cover-empty {
-        height: 150px;
+    .event-menu-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.25);
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
     }
 
-    .community-card {
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    .event-menu-button:hover,
+    .event-menu-button:focus {
+        background: rgba(0, 0, 0, 0.4);
+        color: #ffffff;
+        outline: none;
     }
 
-    .community-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+    .event-actions .dropdown-menu {
+        min-width: 120px;
+        z-index: 30;
+    }
+
+    .event-card-body {
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .event-card-badges {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .event-card .badge {
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .event-category {
+        background: #BEDB74;
+        color: #365314;
+    }
+
+    .event-status.status-warning {
+        background: #fde047;
+        color: #713f12;
+    }
+
+    .event-status.status-info {
+        background: #7dd3fc;
+        color: #075985;
+    }
+
+    .event-status.status-closed {
+        background: #e5e7eb;
+        color: #4b5563;
+    }
+
+    .event-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }
+
+    .event-card-description {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 16px 0;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 38px;
+    }
+
+    .event-card-footer {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .event-card-footer a {
+        color: #111827;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .no-events-container {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 0;
+    }
+
+    .community-section-heading {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin: 40px 0 0;
+    }
+
+    @media (max-width: 1100px) {
+        .event-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 640px) {
+        .event-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<!-- ヒーロー（ホームページと同じく画像の上に検索とボタンを重ねる） -->
-<section class="community-hero">
-    <div class="community-hero-inner">
-        <p class="text-white fw-bold small mb-1" style="letter-spacing: 0.2em;">SANA ALL</p>
-        <h1 class="text-white fw-bold display-5 mb-2">COMMUNITY</h1>
-        <p class="text-white mb-4">Find your people, join a community, and take part in local events.</p>
+<div class="events-main-wrapper px-3 py-3 mx-0">
 
-        <form class="mb-3" method="GET" action="{{ route('community.index') }}">
-            <div class="search">
-                <label class="visually-hidden" for="community-search">Search communities</label>
-                <input class="form-control" id="community-search" type="search" name="search" value="{{ $keyword }}"
-                    placeholder="Search communities">
-                <button type="submit" aria-label="Search" title="Search" class="btn btn-primary">
-                    <i class="fa-solid fa-magnifying-glass text-white"></i>
-                </button>
+    {{-- 検索・並び替え・作成ボタン・カテゴリー（イベントの filter と同じ構成） --}}
+    <section class="event-filters">
+        <form action="{{ route('community.index') }}" method="GET" class="event-search-form">
+            <div class="search-input-wrapper">
+                <span class="search-icon">⌕</span>
+                <input type="search" name="search" value="{{ $keyword }}" placeholder="Search communities"
+                    aria-label="search-community">
             </div>
+
+            @if ($filter)
+                <input type="hidden" name="filter" value="{{ $filter }}">
+            @endif
+            <input type="hidden" name="sort" value="{{ $sort }}">
+
+            <button type="submit" class="btn btn-primary search-button">Search</button>
         </form>
 
-        <a href="{{ route('community.create') }}" class="btn btn-com text-white fw-bold px-4 border">
-            <i class="fa-solid fa-plus me-1"></i> CREATE COMMUNITY
-        </a>
-    </div>
-</section>
-
-<div class="container py-5">
-
-    <!-- 成功メッセージ -->
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <!-- コミュニティ一覧 -->
-    <div class="d-flex justify-content-between align-items-center">
-        <h2 class="community-section-title h4 text-dark">
-            {{ $keyword !== '' ? 'Results for "' . $keyword . '"' : 'Featured communities' }}
-        </h2>
-        @if ($keyword !== '')
-            <a href="{{ route('community.index') }}" class="text-decoration-none small fw-bold mb-3">Clear search</a>
-        @endif
-    </div>
-
-    <div class="row g-4 mb-5">
-        @forelse ($communities as $community)
-            <div class="col-md-6 col-lg-4">
-                <div class="card community-card h-100 bg-white border shadow-sm rounded-3 overflow-hidden">
-                    <!-- カバー写真：写真の縦横比に合わせて枠の高さが変わる -->
-                    <div class="card-header border-0 position-relative p-0 {{ $community->image ? 'bg-white' : 'bg-light community-cover-empty' }}">
-                        @if ($community->image)
-                            <img src="{{ asset('storage/' . $community->image) }}" alt="{{ $community->name }} cover image" class="d-block w-100 object-fit-contain" style="max-height: 320px;">
-                        @endif
-                        <div class="position-absolute bottom-0 start-0 translate-middle-y ms-3 bg-white rounded-circle p-1 shadow">
-                            <x-icon :community="$community" class="rounded-circle" style="width: 64px; height: 64px;" />
-                        </div>
-                        <span class="position-absolute top-0 end-0 m-2 badge bg-white text-dark border small">
-                            <i class="fa-solid fa-user-group text-muted me-1"></i> {{ $community->approved_members_count + ($community->owner_is_member ? 0 : 1) }}
-                        </span>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="mt-3">
-                            @if ($community->category)
-                                <span class="badge btn-act text-white mb-2">{{ $community->category }}</span>
-                            @endif
-                        </div>
-                        <h5 class="card-title fw-bold text-dark text-truncate">{{ $community->name }}</h5>
-                        <p class="card-text text-muted small mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                            {{ $community->description }}
-                        </p>
-                    </div>
-
-                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-3 pt-0">
-                        <!-- 編集ボタンへのリンク（オーナーのみ） -->
-                        @if (auth()->id() === $community->owner_id)
-                            <a href="{{ route('community.edit', $community->id) }}" class="btn btn-outline-secondary btn-sm fw-bold">
-                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+        <div class="event-action">
+            <div class="dropdown">
+                <button class="sort-dropdown-btn" type="button" id="communitySortMenu" data-bs-toggle="dropdown"
+                    aria-expanded="false" aria-label="sort-menu">
+                    <i class="fa-solid fa-sort"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="communitySortMenu">
+                    @foreach (['latest' => 'Latest', 'oldest' => 'Oldest', 'name' => 'Name (A–Z)'] as $value => $label)
+                        <li>
+                            <a class="dropdown-item {{ $sort === $value ? 'active' : '' }}"
+                                href="{{ route('community.index', array_merge(request()->except('page'), ['sort' => $value])) }}">
+                                {{ $label }}
                             </a>
-                        @endif
-                        <a href="{{ route('community.show', $community->id) }}" class="btn btn-primary btn-sm fw-bold ms-auto">
-                            View details &gt;
-                        </a>
-                    </div>
-                </div>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
+
+            <a href="{{ route('community.create') }}" class="btn btn-primary create-event-button">+ Create community</a>
+        </div>
+    </section>
+
+    {{-- コミュニティ一覧グリッド --}}
+    <div class="event-grid">
+        @forelse ($communities as $community)
+            @include('community.partials.card', ['community' => $community])
         @empty
-            <div class="col-12">
-                <div class="text-center border rounded-3 bg-white py-5 shadow-sm">
-                    @if ($keyword !== '')
-                        <p class="text-muted mb-0">No communities match "{{ $keyword }}".</p>
-                    @else
-                        <p class="text-muted mb-3">No communities found yet. Create your first community!</p>
-                        <a href="{{ route('community.create') }}" class="btn btn-com text-white fw-bold">Create community</a>
-                    @endif
-                </div>
+            <div class="no-events-container">
+                <h3 class="text-muted text-center mb-3">
+                    {{ $keyword !== '' ? 'No communities match "' . $keyword . '"' : 'No Community Yet' }}
+                </h3>
+                @if ($keyword === '' && $filter !== 'joined')
+                    <a href="{{ route('community.create') }}" class="btn btn-primary">+ Create community</a>
+                @endif
             </div>
         @endforelse
     </div>
 
-    <!-- Upcoming Events -->
-    <h2 class="community-section-title h4 text-dark">Upcoming events</h2>
+    {{-- コミュニティのイベント --}}
+    <h2 class="community-section-heading">Upcoming community events</h2>
 
-    <div class="card bg-white border shadow-sm rounded-3 p-3">
+    <div class="event-card mt-3">
         <div class="list-group list-group-flush">
             @forelse ($upcomingEvents as $event)
-                <x-event-row :event="$event" show-community accent="#F58634" class="list-group-item py-3">
-                    @if ($event->community)
-                        <a href="{{ route('community.show', $event->community_id) }}" class="btn btn-outline-secondary btn-sm">Community</a>
-                    @endif
+                <x-event-row :event="$event" show-community class="list-group-item py-3 px-4">
+                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm">View details &gt;</a>
                 </x-event-row>
             @empty
-                <p class="text-muted text-center py-3 mb-0">There are no upcoming community events yet.</p>
+                <p class="text-muted text-center py-4 mb-0">There are no upcoming community events yet.</p>
             @endforelse
         </div>
     </div>
-
 </div>
 @endsection

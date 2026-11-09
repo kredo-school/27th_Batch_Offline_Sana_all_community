@@ -214,8 +214,13 @@
 
 <article class="event-card">
     <div class="event-card-image-wrapper">
-        {{-- <img src="{{ asset('images/event-placeholder.jpeg') }}" alt="event" class="event-card-image"> --}}
-        <img src="{{ asset('storage/' . $event->image) }}" alt="{{ $event->title }}" class="event-card-image">
+        @php
+            $eventImageUrl = $event->image
+                ? (str_starts_with($event->image, 'https://') || str_starts_with($event->image, 'http://')
+                    ? $event->image : asset('storage/'.$event->image))
+                : asset('images/onlylogo.jpg');
+        @endphp
+        <img src="{{ $eventImageUrl }}" alt="{{ $event->title }}" class="event-card-image">
 
         @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
             {{-- My Event --}}

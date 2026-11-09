@@ -10,7 +10,7 @@
         @if ($showCommunity && $event->community)
             <a href="{{ route('community.show', $event->community_id) }}" class="badge bg-light text-secondary border mb-1 text-decoration-none">{{ $event->community->name }}</a>
         @endif
-        <h6 class="fw-bold mb-1 text-dark">{{ $event->title }}</h6>
+        <h6 class="fw-bold mb-1"><a href="{{ route('events.show', $event->id) }}" class="text-dark text-decoration-none">{{ $event->title }}</a></h6>
         <small class="text-muted">
             <i class="fa-regular fa-clock me-1"></i>{{ $event->start_at->format('D, M j · g:i A') }}
             @if ($event->location)

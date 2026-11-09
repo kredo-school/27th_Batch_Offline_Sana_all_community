@@ -15,19 +15,38 @@ class CommunityController extends Controller
     public function index(Request $request)
     {
         $keyword = trim((string) $request->input('search'));
+        $sort = in_array($request->input('sort'), ['latest', 'oldest', 'name'], true)
+            ? $request->input('sort')
+            : 'latest';
+        // サイドバーの絞り込み（joined: 参加中 / owned: 自分が作った）
+        $filter = in_array($request->input('filter'), ['joined', 'owned'], true)
+            ? $request->input('filter')
+            : null;
+        $userId = $request->user()->id;
 
-        $communities = Community::when($keyword !== '', function ($query) use ($keyword) {
+        $communities = Community::when($filter === 'joined', function ($query) use ($userId) {
+            $query->where(function ($query) use ($userId) {
+                $query->where('owner_id', $userId)
+                    ->orWhereHas('memberships', fn ($query) => $query->where('user_id', $userId)->where('status', 'approved'));
+            });
+        })->when($filter === 'owned', fn ($query) => $query->where('owner_id', $userId))
+            ->when($keyword !== '', function ($query) use ($keyword) {
             $query->where(function ($query) use ($keyword) {
                 $query->where('name', 'like', "%{$keyword}%")
                     ->orWhere('description', 'like', "%{$keyword}%")
                     ->orWhere('category', 'like', "%{$keyword}%");
             });
-        })->withCount([
-            'memberships as approved_members_count' => fn ($query) => $query->where('status', 'approved'),
-        ])->withExists([
-            'memberships as owner_is_member' => fn ($query) => $query->where('status', 'approved')
-                ->whereColumn('user_id', 'communities.owner_id'),
-        ])->get();
+        })
+            ->withCount([
+                'memberships as approved_members_count' => fn ($query) => $query->where('status', 'approved'),
+            ])->withExists([
+                'memberships as owner_is_member' => fn ($query) => $query->where('status', 'approved')
+                    ->whereColumn('user_id', 'communities.owner_id'),
+            ])
+            ->when($sort === 'latest', fn ($query) => $query->latest())
+            ->when($sort === 'oldest', fn ($query) => $query->oldest())
+            ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
+            ->get();
         $upcomingEvents = Event::with('community')
             ->where('status', 'published')
             ->where('start_at', '>=', now())
@@ -36,7 +55,7 @@ class CommunityController extends Controller
             ->limit(10)
             ->get();
 
-        return view('community.index', compact('communities', 'upcomingEvents', 'keyword'));
+        return view('community.index', compact('communities', 'upcomingEvents', 'keyword', 'sort', 'filter'));
     }
 
     /**
@@ -80,9 +99,7 @@ class CommunityController extends Controller
 
         $community->save();
 
-        return redirect()
-            ->route('community.index')
-            ->with('success', 'コミュニティを作成しました。');
+        return redirect()->route('community.index');
     }
 
     /**
@@ -105,31 +122,17 @@ class CommunityController extends Controller
             $memberCount++;
         }
 
-        return view('community.show', compact('community', 'allEvents', 'eventCount', 'memberCount'));
-    }
+        $canChat = $community->hasMember(auth()->user());
+        // 自分の参加状況（null: 未参加 / pending: 申請中 / approved: 参加中）
+        $membershipStatus = $community->memberships()->where('user_id', auth()->id())->value('status');
+        // オーナーだけに見せる参加申請の一覧
+        $pendingMembers = auth()->id() === $community->owner_id
+            ? $community->members()->wherePivot('status', 'pending')->with('profile')->get()
+            : collect();
 
-    public function storeEvent(Request $request, $id)
-    {
-        $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === $request->user()->id, 403);
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:200',
-            'description' => 'nullable|string|max:10000',
-            'location' => 'nullable|string|max:255',
-            'start_at' => 'required|date|after:now',
-            'end_at' => 'required|date|after:start_at',
-        ]);
-
-        $community->events()->create([
-            ...$validated,
-            'owner_id' => $request->user()->id,
-            'join_till' => $validated['start_at'],
-        ]);
-
-        return redirect()
-            ->route('community.show', $community->id)
-            ->with('success', 'イベントを投稿しました。');
+        return view('community.show', compact(
+            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'membershipStatus', 'pendingMembers'
+        ));
     }
 
     /**
@@ -183,9 +186,7 @@ class CommunityController extends Controller
 
         $community->save();
 
-        return redirect()
-            ->route('community.show', $community->id)
-            ->with('success', 'コミュニティを更新しました。');
+        return redirect()->route('community.show', $community->id);
     }
 
     public function destroy($id)
@@ -195,9 +196,7 @@ class CommunityController extends Controller
 
         $community->delete();
 
-        return redirect()
-            ->route('community.index')
-            ->with('success', 'コミュニティを削除しました。');
+        return redirect()->route('community.index');
     }
 
 }

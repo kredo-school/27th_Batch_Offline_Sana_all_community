@@ -55,7 +55,11 @@
 
     {{-- list --}}
     <nav class="mb-4 small">
-        <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">Events</a>
+        @if ($event->community)
+            <a href="{{ route('community.show', $event->community) }}" class="text-decoration-none fw-semibold text-dark">{{ $event->community->name }}</a>
+        @else
+            <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">Events</a>
+        @endif
         <span class="mx-2">&gt;</span>
         <span class="text-muted">Edit an event</span>
     </nav>
