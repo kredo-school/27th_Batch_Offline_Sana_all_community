@@ -619,7 +619,7 @@
     @endif
 </head>
 
-<body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
+<body class="{{ request()->routeIs('profile.show', 'profile.edit') ? 'profile-overview-page' : '' }}">
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
