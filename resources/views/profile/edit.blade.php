@@ -10,11 +10,7 @@
     $avatar = $imageUrl(old('remove_avatar') ? null : $user->profile?->avatar, $defaultAvatar);
 @endphp
 <div class="profile-page profile-editor">
-    <nav class="profile-sidebar" aria-label="Profile navigation">
-        @foreach (['Profile' => 'fa-user', 'Review' => 'fa-star', 'History' => 'fa-clock-rotate-left', 'Event' => 'fa-calendar-days', 'Bookmark' => 'fa-bookmark', 'Community' => 'fa-users'] as $tab => $icon)
-            <a class="profile-nav-item {{ $loop->first ? 'is-active' : '' }}" href="{{ route('profile.show', ['id' => $user->id, 'tab' => strtolower($tab)]) }}" @if($loop->first) aria-current="page" @endif><i class="fa-solid {{ $icon }}" aria-hidden="true"></i>{{ $tab }}</a>
-        @endforeach
-    </nav>
+    @include('profile.partials.editor-sidebar')
     <div class="profile-editor-content">
         <header class="profile-editor-heading">
             <h1>Edit Profile</h1>

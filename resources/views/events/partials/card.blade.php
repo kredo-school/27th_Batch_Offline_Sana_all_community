@@ -165,6 +165,13 @@
         color: #111827;
         margin: 0 0 8px 0;
         line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        height: 2.8em;
+        flex-shrink: 0;
     }
 
     .event-card-description {
@@ -176,7 +183,9 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 38px;
+        overflow-wrap: anywhere;
+        height: 3em;
+        flex-shrink: 0;
     }
 
     /* フッター（日付・リンク） */

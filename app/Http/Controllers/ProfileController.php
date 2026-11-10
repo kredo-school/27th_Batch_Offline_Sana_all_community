@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Follow;
+use App\Models\Event;
+use App\Models\EventReview;
+use App\Models\UserReview;
 use App\Models\User;
 use App\Models\UserBlock;
 use App\Services\ProfileImages;
@@ -22,8 +25,17 @@ class ProfileController extends Controller
 
     public function show(Request $request, $id)
     {
+        $isOwnProfile = (int) Auth::id() === (int) $id;
+        $activeTab = $request->query('tab', 'event');
+        $activeTab = $activeTab === 'profile' ? 'feed' : $activeTab;
+        if (!in_array($activeTab, ['feed', 'event', 'review', 'community', 'bookmark', 'history'], true)) {
+            $activeTab = 'event';
+        }
+        if (!$isOwnProfile && in_array($activeTab, ['feed', 'bookmark', 'history'], true)) {
+            return redirect()->route('profile.show', ['id' => Auth::id(), 'tab' => $activeTab]);
+        }
         $user = $this->user->with('profile')->withCount([
-            'attendingEvents',
+            'attendingEvents' => fn ($query) => $query->whereIn('event_participants.status', ['approved', 'pending']),
             'eventsOwned' => function ($query) use ($id) {
                 if ((int) Auth::id() !== (int) $id) {
                     $query->where('visibility', 'public')->where('status', 'published');
@@ -39,6 +51,30 @@ class ProfileController extends Controller
             })
             ->latest()
             ->get();
+        $reviewType = $request->query('review_type') === 'host' ? 'host' : 'event';
+        $eventReviews = null;
+        $hostReviews = null;
+        if ($activeTab === 'review') {
+            $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
+                $query->where('owner_id', $user->id);
+                if (!$isOwnProfile) {
+                    $query->where('visibility', 'public')->where('status', 'published');
+                }
+            };
+            $eventReviews = EventReview::query()
+                ->whereHas('event', $visibleHostedEvent)
+                ->with(['user', 'event'])
+                ->latest()->orderByDesc('id')
+                ->paginate(10, ['*'], 'event_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'event']);
+            $hostReviews = UserReview::query()
+                ->whereHas('event', $visibleHostedEvent)
+                ->with(['user', 'event'])
+                ->latest()->orderByDesc('id')
+                ->paginate(10, ['*'], 'host_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'host']);
+        }
+
         $isBlockedByViewer = Auth::check()
             && Auth::id() !== $user->id
             && UserBlock::query()
@@ -75,16 +111,58 @@ class ProfileController extends Controller
             ->appends(['tab' => 'community']);
 
         $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
+        $followingEvents = Event::query()
+            ->whereIn('owner_id', Auth::user()->following()->select('users.id'))
+            ->where('visibility', 'public')
+            ->where('status', 'published')
+            ->with(['owner.profile', 'categories'])
+            ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(12, ['events.*'], 'following_posts_page')
+            ->appends(['tab' => 'feed']);
         $followBlocked = Auth::id() !== $user->id
             && UserBlock::blocksEitherWay(Auth::id(), $user->id);
         $connectionType = $request->query('connections');
-        $connections = in_array($connectionType, ['followers', 'following'], true)
-            ? $user->{$connectionType}()->with('profile')->orderBy('users.name')->orderBy('users.id')
-                ->paginate(20, ['users.*'], 'connections_page')->appends(['connections' => $connectionType])
+        $connectionSearch = $request->validate(['connection_search' => 'nullable|string|max:100'])['connection_search'] ?? '';
+        $connectionQuery = match ($connectionType) {
+            'followers', 'following' => $user->{$connectionType}(),
+            'people' => User::query()->where('users.id', '!=', Auth::id())
+                ->whereNotIn('users.id', UserBlock::active()->where('blocked_by', Auth::id())->select('user_id'))
+                ->whereNotIn('users.id', UserBlock::active()->where('user_id', Auth::id())->select('blocked_by')),
+            default => null,
+        };
+        $connections = $connectionQuery
+            ? $connectionQuery->with('profile')
+                ->when($connectionSearch !== '', fn ($query) => $query->where(function ($query) use ($connectionSearch) {
+                    $query->where('users.name', 'like', '%'.$connectionSearch.'%')
+                        ->orWhere('users.username', 'like', '%'.$connectionSearch.'%');
+                }))
+                ->orderBy('users.name')->orderBy('users.id')
+                ->paginate(20, ['users.*'], 'connections_page')
+                ->appends(['connections' => $connectionType, 'connection_search' => $connectionSearch, 'tab' => $activeTab])
             : null;
+        if ($connections !== null) {
+            if ($connections->currentPage() > $connections->lastPage()) {
+                return redirect()->route('profile.show', [
+                    'id' => $user->id, 'tab' => $activeTab, 'connections' => $connectionType,
+                    'connection_search' => $connectionSearch, 'connections_page' => $connections->lastPage(),
+                ]);
+            }
+            $ids = $connections->getCollection()->pluck('id');
+            $followingIds = Follow::where('follower_id', Auth::id())->whereIn('following_id', $ids)->pluck('following_id')->all();
+            $followerIds = Follow::where('following_id', Auth::id())->whereIn('follower_id', $ids)->pluck('follower_id')->all();
+            $connections->getCollection()->each(function ($person) use ($followingIds, $followerIds) {
+                $person->followed_by_viewer = in_array($person->id, $followingIds);
+                $person->follows_viewer = in_array($person->id, $followerIds);
+            });
+        }
+        $connectionBlockedIds = UserBlock::query()->active()
+            ->where(fn ($query) => $query->where('blocked_by', Auth::id())->orWhere('user_id', Auth::id()))
+            ->get()->map(fn ($block) => (int) $block->blocked_by === (int) Auth::id() ? (int) $block->user_id : (int) $block->blocked_by)->all();
 
-        return view('profile.show', compact('user', 'events', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
-            'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities'));
+        return view('profile.show', compact('user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+            'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities', 'followingEvents', 'activeTab', 'connectionSearch', 'connectionBlockedIds'));
 
     }
 
@@ -99,21 +177,51 @@ class ProfileController extends Controller
             'following_id' => $user->id,
         ], ['created_at' => now()]);
 
-        return redirect()->route('profile.show', $user->id)->with('success', 'You are now following this user.');
+        return $this->followReturn($request, $user)->with('success', 'You are now following this user.');
     }
 
     public function unfollow(Request $request, User $user)
     {
         $request->user()->following()->detach($user->id);
 
-        return redirect()->route('profile.show', $user->id)->with('success', 'You unfollowed this user.');
+        return $this->followReturn($request, $user)->with('success', 'You unfollowed this user.');
     }
 
-    public function edit()
+    private function followReturn(Request $request, User $user)
+    {
+        if ($request->filled('connections_owner')) {
+            $data = $request->validate([
+                'connections_owner' => 'required|integer|exists:users,id',
+                'connections' => 'required|in:followers,following,people',
+                'connection_search' => 'nullable|string|max:100',
+                'connections_page' => 'nullable|integer|min:1',
+                'tab' => 'nullable|in:event,review,community,bookmark,history,feed',
+            ]);
+            $id = $data['connections_owner'];
+            unset($data['connections_owner']);
+            return redirect()->route('profile.show', ['id' => $id] + $data);
+        }
+
+        return redirect()->route('profile.show', $user->id);
+    }
+
+    public function edit(Request $request)
     {
         $user = $this->user->with('profile')->withCount([
             'attendingEvents', 'eventsOwned', 'followers', 'following',
         ])->findOrFail(Auth::id());
+
+        if ($request->query('tab') === 'blocked') {
+            $blockedUsers = $user->blocksMade()->active()
+                ->whereHas('user')
+                ->with('user.profile')
+                ->orderByDesc('blocked_at')
+                ->orderByDesc('id')
+                ->paginate(15)
+                ->appends(['tab' => 'blocked']);
+
+            return view('profile.blocked', compact('user', 'blockedUsers'));
+        }
 
         return view('profile.edit')->with('user', $user);
     }
