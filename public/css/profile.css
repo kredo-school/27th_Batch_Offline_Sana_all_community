@@ -442,3 +442,7 @@
     .profile-overview .profile-connection-list strong { font-size: 14px; }
     .profile-overview .profile-connection-list .profile-follow-button { min-width: 80px; font-size: 12px; padding: 8px; }
 }
+
+.profile-overview .profile-stats a:hover { text-decoration: underline; }
+.profile-overview .profile-stats a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+#profile-activity { scroll-margin-top: 24px; }

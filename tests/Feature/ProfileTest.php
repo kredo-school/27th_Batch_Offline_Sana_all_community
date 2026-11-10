@@ -11,6 +11,25 @@ class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_event_stats_link_to_the_correct_lists_and_keep_history_private(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $joinedUrl = route('profile.show', ['id' => $owner->id, 'tab' => 'history']).'#profile-activity';
+        $hostedUrl = route('profile.show', ['id' => $owner->id, 'tab' => 'event']).'#profile-activity';
+
+        $this->actingAs($owner)->get(route('profile.show', $owner->id))
+            ->assertOk()->assertSee('href="'.$joinedUrl.'"', false)
+            ->assertSee('href="'.$hostedUrl.'"', false);
+        $this->get($joinedUrl)->assertOk()->assertViewHas('activeTab', 'history')
+            ->assertSee('No joined events yet.');
+        $this->get($hostedUrl)->assertOk()->assertViewHas('activeTab', 'event')
+            ->assertSee('No events shared yet.');
+        $this->actingAs($viewer)->get(route('profile.show', $owner->id))
+            ->assertOk()->assertDontSee('href="'.$joinedUrl.'"', false)
+            ->assertSee('href="'.$hostedUrl.'"', false);
+    }
+
     public function test_empty_feed_links_to_searchable_people_excluding_self_and_blocks(): void
     {
         $viewer = User::factory()->create();
@@ -162,6 +181,7 @@ class ProfileTest extends TestCase
         $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
             ->assertOk()->assertSee('History approved')->assertSee('History pending')->assertSee('Pending approval')
             ->assertDontSee('History rejected')
+            ->assertViewHas('user', fn ($user) => $user->attending_events_count === 2)
             ->assertViewHas('historyEvents', fn ($events) => $events->total() === 2
                 && (bool) $events->firstWhere('title', 'History approved')->is_bookmarked);
         $this->actingAs($host)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))

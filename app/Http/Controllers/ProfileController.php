@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Follow;
 use App\Models\Event;
+use App\Models\EventReview;
+use App\Models\UserReview;
 use App\Models\User;
 use App\Models\UserBlock;
 use App\Services\ProfileImages;
@@ -33,7 +35,7 @@ class ProfileController extends Controller
             return redirect()->route('profile.show', ['id' => Auth::id(), 'tab' => $activeTab]);
         }
         $user = $this->user->with('profile')->withCount([
-            'attendingEvents',
+            'attendingEvents' => fn ($query) => $query->whereIn('event_participants.status', ['approved', 'pending']),
             'eventsOwned' => function ($query) use ($id) {
                 if ((int) Auth::id() !== (int) $id) {
                     $query->where('visibility', 'public')->where('status', 'published');
@@ -49,6 +51,30 @@ class ProfileController extends Controller
             })
             ->latest()
             ->get();
+        $reviewType = $request->query('review_type') === 'host' ? 'host' : 'event';
+        $eventReviews = null;
+        $hostReviews = null;
+        if ($activeTab === 'review') {
+            $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
+                $query->where('owner_id', $user->id);
+                if (!$isOwnProfile) {
+                    $query->where('visibility', 'public')->where('status', 'published');
+                }
+            };
+            $eventReviews = EventReview::query()
+                ->whereHas('event', $visibleHostedEvent)
+                ->with(['user', 'event'])
+                ->latest()->orderByDesc('id')
+                ->paginate(10, ['*'], 'event_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'event']);
+            $hostReviews = UserReview::query()
+                ->whereHas('event', $visibleHostedEvent)
+                ->with(['user', 'event'])
+                ->latest()->orderByDesc('id')
+                ->paginate(10, ['*'], 'host_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'host']);
+        }
+
         $isBlockedByViewer = Auth::check()
             && Auth::id() !== $user->id
             && UserBlock::query()
@@ -135,7 +161,7 @@ class ProfileController extends Controller
             ->where(fn ($query) => $query->where('blocked_by', Auth::id())->orWhere('user_id', Auth::id()))
             ->get()->map(fn ($block) => (int) $block->blocked_by === (int) Auth::id() ? (int) $block->user_id : (int) $block->blocked_by)->all();
 
-        return view('profile.show', compact('user', 'events', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+        return view('profile.show', compact('user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
             'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities', 'followingEvents', 'activeTab', 'connectionSearch', 'connectionBlockedIds'));
 
     }
