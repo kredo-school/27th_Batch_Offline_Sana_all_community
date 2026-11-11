@@ -231,12 +231,17 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        DB::table('category_views')->insert([
-            'user_id'     => Auth::id(),
-            'session_id'  => session()->getId(),
-            'category_id' => $event->categories()->value('categories.id'),
-            'created_at'  => now(),
-        ]);
+        // カテゴリがあるイベントだけ閲覧を記録する
+        $categoryId = $event->categories()->value('categories.id');
+        if ($categoryId) {
+            DB::table('category_views')->insert([
+                'user_id'     => Auth::id(),
+                'session_id'  => session()->getId(),
+                'category_id' => $categoryId,
+                'created_at'  => now(),
+            ]);
+        }
+
         $event->load(['owner', 'categories', 'comments.user', 'reviews.user', 'userReviews']);
         $myParticipation = null;
         if (Auth::check()) {
