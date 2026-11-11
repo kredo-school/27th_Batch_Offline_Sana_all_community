@@ -117,7 +117,7 @@
     <form action="{{ route('events.index') }}" method="GET" class="event-search-form">
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
-            <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="Search events"
+            <input type="search" name="keyword" id="keyword" value="{{ request('keyword') }}" placeholder="Search events"
                 aria-label="search-event">
         </div>
 

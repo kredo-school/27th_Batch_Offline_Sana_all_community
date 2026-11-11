@@ -46,6 +46,49 @@
         background: #e6f1fb;
         border-color: #3d8fd6;
     }
+
+    .event-page-layout {
+            width: 100%;
+            max-width: none;
+            padding-left: 16px;
+            padding-right: 0;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .event-page-row {
+            display: grid;
+            grid-template-columns: 16.6666667% minmax(0, 1fr);
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .event-page-sidebar {
+            min-width: 0;
+            padding-right: 16px;
+            background-color: #fff;
+            box-sizing: border-box;
+        }
+
+        .event-page-content {
+            min-width: 0;
+            width: 100%;
+            background-color: #f7f7f5;
+        }
+
+        /* サイドバー内のルート要素が狭くならないようにする */
+        .event-page-sidebar>* {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 画面が狭い場合は縦並び */
+        @media (max-width: 991.98px) {
+            .event-page-row {
+                grid-template-columns: 1fr;
+            }
+        }
 </style>
 
 @php

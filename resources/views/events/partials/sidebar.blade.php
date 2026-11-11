@@ -7,6 +7,8 @@
         position: sticky;
         top: 70px;
         align-self: flex-start;
+        padding-left: 15px;
+        padding-right: 15px;
     }
 
     .calendar-box {

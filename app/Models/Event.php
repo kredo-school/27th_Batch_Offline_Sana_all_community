@@ -132,7 +132,7 @@ class Event extends Model
         $daysLeft = $today->diffInDays($joinTill);
 
         // Today
-        if ($daysLeft === 0) {
+        if ($daysLeft <= 0) {
             return [
                 'label' => 'Today',
                 'class' => 'status-today',
@@ -143,7 +143,7 @@ class Event extends Model
         if ($daysLeft <= 3) {
             return [
                 'label' => "{$daysLeft} days left",
-                'class' => 'status-warning',
+                'class' => 'status-urgent',
             ];
         }
 

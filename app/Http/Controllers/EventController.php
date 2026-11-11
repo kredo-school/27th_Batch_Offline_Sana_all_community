@@ -24,7 +24,7 @@ class EventController extends Controller
     public function index(Request $request)
     {
         // コミュニティ内のイベントはイベントページに出さない
-        $query = Event::query()->whereNull('community_id');
+        $query = Event::query()->whereNull('community_id')->where('end_at', '>=', now());
 
         // get categories
         $categories = Category::query()
@@ -32,11 +32,20 @@ class EventController extends Controller
             ->pluck('name', 'id');
 
         // search keywords
-        $query->when($request->filled('keyword'), function ($query) use ($request) {
-            $keyword = $request->input('keyword');
+        $validated = $request->validate([
+            'keyword' => ['nullable', 'string', 'max:100'],
+            'event_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+        ]);
 
+        $keyword = trim($validated['keyword'] ?? '');
+
+        $query->when($keyword !== '', function ($query) use ($keyword) {
             $query->where(function ($query) use ($keyword) {
-                $query->where('title', 'like', "%{$keyword}%")
+                $query
+                    ->where('title', 'like', "%{$keyword}%")
                     ->orWhere('description', 'like', "%{$keyword}%");
             });
         });
@@ -142,12 +151,12 @@ class EventController extends Controller
         $startDate = $startOfMonth->copy()->startOfWeek(Carbon::SUNDAY);
         $endDate = $endOfMonth->copy()->endOfWeek(Carbon::SATURDAY);
 
-        $validated = $request->validate([
-            'event_date' => [
-                'nullable',
-                'date_format:Y-m-d',
-            ],
-        ]);
+        // $validated = $request->validate([
+        //     'event_date' => [
+        //         'nullable',
+        //         'date_format:Y-m-d',
+        //     ],
+        // ]);
 
         $selectedEventDate = $validated['event_date'] ?? null;
 
@@ -222,7 +231,7 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-         DB::table('category_views')->insert([
+        DB::table('category_views')->insert([
             'user_id'     => Auth::id(),
             'session_id'  => session()->getId(),
             'category_id' => $event->categories()->value('categories.id'),
@@ -239,7 +248,7 @@ class EventController extends Controller
         $hostRating = round((float) UserReview::whereIn('event_id', $hostEventIds)->avg('rating'), 1);
         $hostReviewCount = UserReview::whereIn('event_id', $hostEventIds)->count();
 
-       
+
         return view('events.detail', array_merge(
             compact('event', 'myParticipation', 'hostRating', 'hostReviewCount'),
             $this->calendarData()
@@ -358,7 +367,7 @@ class EventController extends Controller
     public function storeComment(Request $request, Event $event)
     {
         if ($event->end_at->isPast()) {
-        return back()->with('error', 'Comments are closed because this event has ended.');
+            return back()->with('error', 'Comments are closed because this event has ended.');
         }
         $request->validate([
             'content' => 'required|string|max:500',
@@ -409,7 +418,7 @@ class EventController extends Controller
         return redirect()->route('events.show', $event);
     }
 
-        public function cancelJoin(Event $event)
+    public function cancelJoin(Event $event)
     {
         $participant = EventParticipant::where('event_id', $event->id)
             ->where('user_id', Auth::id())

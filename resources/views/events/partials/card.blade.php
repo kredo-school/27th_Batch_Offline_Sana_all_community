@@ -143,7 +143,7 @@
         color: #9f1239;
     }
 
-    .event-status.status-warning {
+    .event-status.status-urgent {
         background: #fde047;
         color: #713f12;
     }
