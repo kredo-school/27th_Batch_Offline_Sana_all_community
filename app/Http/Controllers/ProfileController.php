@@ -43,24 +43,39 @@ class ProfileController extends Controller
             },
             'followers', 'following',
         ])->findOrFail($id);
+        $profileNow = now();
+        $eventFilter = $request->query('event_filter', 'all');
+        $allowedEventFilters = $isOwnProfile ? ['all', 'upcoming', 'past', 'draft'] : ['all', 'upcoming', 'past'];
+        if (!in_array($eventFilter, $allowedEventFilters, true)) {
+            $eventFilter = 'all';
+        }
         $events = $user->eventsOwned()
             ->with('categories')
             ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
             ->when(Auth::id() !== $user->id, function ($query) {
                 $query->where('visibility', 'public')->where('status', 'published');
             })
+            ->when($eventFilter === 'draft', fn ($query) => $query->where('status', 'draft'))
+            ->when(in_array($eventFilter, ['upcoming', 'past'], true), fn ($query) => $query
+                ->where('status', 'published')->where('end_at', $eventFilter === 'upcoming' ? '>=' : '<', $profileNow))
+            ->when($eventFilter === 'upcoming', fn ($query) => $query->orderBy('start_at'))
             ->latest()
+            ->orderByDesc('id')
             ->get();
         $reviewType = $request->query('review_type') === 'host' ? 'host' : 'event';
         $eventReviews = null;
         $hostReviews = null;
+        $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
+            $query->where('owner_id', $user->id);
+            if (!$isOwnProfile) {
+                $query->where('visibility', 'public')->where('status', 'published');
+            }
+        };
+        $hostRatingSummary = UserReview::query()
+            ->whereHas('event', $visibleHostedEvent)
+            ->selectRaw('COUNT(*) as review_count, AVG(rating) as average_rating')
+            ->first();
         if ($activeTab === 'review') {
-            $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
-                $query->where('owner_id', $user->id);
-                if (!$isOwnProfile) {
-                    $query->where('visibility', 'public')->where('status', 'published');
-                }
-            };
             $eventReviews = EventReview::query()
                 ->whereHas('event', $visibleHostedEvent)
                 ->with(['user', 'event'])
@@ -83,23 +98,55 @@ class ProfileController extends Controller
                 ->where('blocked_by', Auth::id())
                 ->exists();
 
+        $bookmarkFilter = $request->query('bookmark_filter', 'upcoming');
+        if (!in_array($bookmarkFilter, ['upcoming', 'all'], true)) {
+            $bookmarkFilter = 'upcoming';
+        }
+        $bookmarkSort = $request->query('bookmark_sort', 'saved');
+        if (!in_array($bookmarkSort, ['saved', 'nearest'], true)) {
+            $bookmarkSort = 'saved';
+        }
         $bookmarkedEvents = Auth::id() === $user->id
             ? $user->bookmarkedEvents()
                 ->with('categories')
+                ->when($bookmarkFilter === 'upcoming', fn ($query) => $query->where('events.end_at', '>=', $profileNow))
+                ->when($bookmarkSort === 'nearest', fn ($query) => $query
+                    ->orderByRaw('CASE WHEN events.start_at >= ? THEN 0 ELSE 1 END', [$profileNow])
+                    ->orderByRaw('CASE WHEN events.start_at >= ? THEN events.start_at END ASC', [$profileNow])
+                    ->orderByRaw('CASE WHEN events.start_at < ? THEN events.start_at END DESC', [$profileNow]))
                 ->orderByPivot('created_at', 'desc')
+                ->orderByDesc('events.id')
                 ->paginate(12, ['events.*'], 'bookmarks_page')
-                ->appends(['tab' => 'bookmark'])
+                ->appends(['tab' => 'bookmark', 'bookmark_filter' => $bookmarkFilter, 'bookmark_sort' => $bookmarkSort])
             : null;
 
+        $historyFilter = $request->query('history_filter', 'upcoming');
+        if (!in_array($historyFilter, ['all', 'upcoming', 'pending', 'past'], true)) {
+            $historyFilter = 'upcoming';
+        }
+        $historySort = $request->query('history_sort', 'nearest');
+        if (!in_array($historySort, ['nearest', 'newest', 'oldest'], true)) {
+            $historySort = 'nearest';
+        }
+        $historyNow = now();
         $historyEvents = Auth::id() === $user->id
             ? $user->attendingEvents()
                 ->wherePivotIn('status', ['approved', 'pending'])
                 ->with('categories')
                 ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
-                ->orderByDesc('events.start_at')
-                ->orderByDesc('events.id')
+                ->when($historyFilter === 'pending', fn ($query) => $query->where('event_participants.status', 'pending'))
+                ->when(in_array($historyFilter, ['upcoming', 'past'], true), function ($query) use ($historyFilter, $historyNow) {
+                    $query->where('event_participants.status', 'approved')
+                        ->where('events.end_at', $historyFilter === 'upcoming' ? '>=' : '<', $historyNow);
+                })
+                ->when($historySort === 'nearest', fn ($query) => $query
+                    ->orderByRaw('CASE WHEN events.start_at >= ? THEN 0 ELSE 1 END', [$historyNow])
+                    ->orderByRaw('CASE WHEN events.start_at >= ? THEN events.start_at END ASC', [$historyNow])
+                    ->orderByRaw('CASE WHEN events.start_at < ? THEN events.start_at END DESC', [$historyNow]))
+                ->when($historySort !== 'nearest', fn ($query) => $query->orderBy('events.start_at', $historySort === 'newest' ? 'desc' : 'asc'))
+                ->orderBy('events.id', $historySort === 'oldest' ? 'asc' : 'desc')
                 ->paginate(12, ['events.*'], 'history_page')
-                ->appends(['tab' => 'history'])
+                ->appends(['tab' => 'history', 'history_filter' => $historyFilter, 'history_sort' => $historySort])
             : null;
 
         $joinedCommunities = $user->communities()
@@ -161,7 +208,7 @@ class ProfileController extends Controller
             ->where(fn ($query) => $query->where('blocked_by', Auth::id())->orWhere('user_id', Auth::id()))
             ->get()->map(fn ($block) => (int) $block->blocked_by === (int) Auth::id() ? (int) $block->user_id : (int) $block->blocked_by)->all();
 
-        return view('profile.show', compact('user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+        return view('profile.show', compact('eventFilter', 'bookmarkFilter', 'bookmarkSort', 'historyFilter', 'historySort', 'historyNow', 'hostRatingSummary', 'user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
             'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities', 'followingEvents', 'activeTab', 'connectionSearch', 'connectionBlockedIds'));
 
     }
