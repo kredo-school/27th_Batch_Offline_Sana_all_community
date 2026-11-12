@@ -74,6 +74,9 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Profile(daichi)
     Route::group(['prefix' => 'profile', 'as' => 'profile.'], function () {
+        Route::get('/reviews/{type}/{id}/edit', [\App\Http\Controllers\ProfileReviewController::class, 'edit'])->where('type', 'event|host')->whereNumber('id')->name('reviews.edit');
+        Route::patch('/reviews/{type}/{id}', [\App\Http\Controllers\ProfileReviewController::class, 'update'])->where('type', 'event|host')->whereNumber('id')->name('reviews.update');
+        Route::delete('/reviews/{type}/{id}', [\App\Http\Controllers\ProfileReviewController::class, 'destroy'])->where('type', 'event|host')->whereNumber('id')->name('reviews.destroy');
         Route::post('/{user}/follow', [ProfileController::class, 'follow'])->name('follow');
         Route::delete('/{user}/follow', [ProfileController::class, 'unfollow'])->name('unfollow');
         Route::get('/profile/{id}/show', [ProfileController::class, 'show'])->name('show');

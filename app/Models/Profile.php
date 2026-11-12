@@ -11,12 +11,15 @@ class Profile extends Model
 
     protected $fillable = [
         'user_id', 'avatar', 'bio', 'region', 'country', 'gender', 'age', 'birthday', 'occupation',
+        'show_location', 'show_occupation',
     ];
 
     protected function casts(): array
     {
         return [
             'birthday' => 'date',
+            'show_location' => 'boolean',
+            'show_occupation' => 'boolean',
             'avatar_crop' => 'array',
             'cover_image_crop' => 'array',
         ];

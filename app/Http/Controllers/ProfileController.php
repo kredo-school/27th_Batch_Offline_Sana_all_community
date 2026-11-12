@@ -62,7 +62,31 @@ class ProfileController extends Controller
             ->latest()
             ->orderByDesc('id')
             ->get();
-        $reviewType = $request->query('review_type') === 'host' ? 'host' : 'event';
+        $reviewType = $request->query('review_type', 'event');
+        if (!in_array($reviewType, ['event', 'host', 'written'], true)) {
+            $reviewType = 'event';
+        }
+        abort_if($activeTab === 'review' && $reviewType === 'written' && !$isOwnProfile, 403);
+        $writtenType = $request->query('written_type', 'all');
+        if (!in_array($writtenType, ['all', 'event', 'host'], true)) {
+            $writtenType = 'all';
+        }
+        $writtenReviews = null;
+        if ($activeTab === 'review' && $reviewType === 'written') {
+            $eventQuery = EventReview::query()->where('user_id', Auth::id())
+                ->select(['id', 'event_id', 'rating', 'comment', 'created_at'])->selectRaw("'event' as review_kind");
+            $hostQuery = UserReview::query()->where('user_id', Auth::id())
+                ->select(['id', 'event_id', 'rating', 'comment', 'created_at'])->selectRaw("'host' as review_kind");
+            $writtenReviews = DB::query()->fromSub($eventQuery->toBase()->unionAll($hostQuery->toBase()), 'written_reviews')
+                ->when($writtenType !== 'all', fn ($query) => $query->where('review_kind', $writtenType))
+                ->orderByDesc('created_at')->orderByDesc('id')->orderBy('review_kind')
+                ->paginate(10, ['*'], 'written_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'written', 'written_type' => $writtenType]);
+            $reviewEvents = Event::with('owner')->whereIn('id', $writtenReviews->pluck('event_id'))->get()->keyBy('id');
+            $writtenReviews->getCollection()->each(function ($review) use ($reviewEvents) {
+                $review->event = $reviewEvents->get($review->event_id);
+            });
+        }
         $eventReviews = null;
         $hostReviews = null;
         $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
@@ -75,7 +99,7 @@ class ProfileController extends Controller
             ->whereHas('event', $visibleHostedEvent)
             ->selectRaw('COUNT(*) as review_count, AVG(rating) as average_rating')
             ->first();
-        if ($activeTab === 'review') {
+        if ($activeTab === 'review' && $reviewType !== 'written') {
             $eventReviews = EventReview::query()
                 ->whereHas('event', $visibleHostedEvent)
                 ->with(['user', 'event'])
@@ -208,7 +232,7 @@ class ProfileController extends Controller
             ->where(fn ($query) => $query->where('blocked_by', Auth::id())->orWhere('user_id', Auth::id()))
             ->get()->map(fn ($block) => (int) $block->blocked_by === (int) Auth::id() ? (int) $block->user_id : (int) $block->blocked_by)->all();
 
-        return view('profile.show', compact('eventFilter', 'bookmarkFilter', 'bookmarkSort', 'historyFilter', 'historySort', 'historyNow', 'hostRatingSummary', 'user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+        return view('profile.show', compact('writtenType', 'writtenReviews', 'eventFilter', 'bookmarkFilter', 'bookmarkSort', 'historyFilter', 'historySort', 'historyNow', 'hostRatingSummary', 'user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
             'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities', 'followingEvents', 'activeTab', 'connectionSearch', 'connectionBlockedIds'));
 
     }
@@ -316,6 +340,8 @@ class ProfileController extends Controller
             'gender' => 'nullable|in:male,female,other',
             'birthday' => 'nullable|date|before_or_equal:today',
             'occupation' => 'nullable|string|max:100',
+            'show_location' => 'sometimes|required|boolean',
+            'show_occupation' => 'sometimes|required|boolean',
         ]);
 
         try {
@@ -330,7 +356,7 @@ class ProfileController extends Controller
                 $profile = $user->profile()->firstOrCreate([]);
                 $profile->bio = $validated['bio'] ?? null;
                 $profile->country = $validated['country'] ?? null;
-                foreach (['region', 'gender', 'birthday', 'occupation'] as $field) {
+                foreach (['region', 'gender', 'birthday', 'occupation', 'show_location', 'show_occupation'] as $field) {
                     if (array_key_exists($field, $validated)) {
                         $profile->$field = $validated[$field];
                     }
