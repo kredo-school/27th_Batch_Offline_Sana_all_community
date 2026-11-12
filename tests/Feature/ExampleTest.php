@@ -54,6 +54,7 @@ class ExampleTest extends TestCase
             'email' => 'test-member-2026@example.test',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'agree' => '1',
         ])->assertRedirect('/home');
 
         $this->assertDatabaseHas('users', [

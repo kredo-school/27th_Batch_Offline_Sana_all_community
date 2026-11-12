@@ -26,7 +26,7 @@ class ProfileTest extends TestCase
         $deleted->delete();
         $this->actingAs($viewer)->get(route('profile.show', $owner->id))->assertOk()
             ->assertViewHas('hostRatingSummary', fn ($summary) => (int) $summary->review_count === 2 && (float) $summary->average_rating === 4.5)
-            ->assertSee('4.5')->assertSee('2 reviews')
+            ->assertSee('4.5')->assertDontSee('2 reviews')
             ->assertSee('href="'.e(route('profile.show', ['id' => $owner->id, 'tab' => 'review', 'review_type' => 'host']).'#profile-activity').'"', false);
         $this->actingAs($owner)->get(route('profile.show', ['id' => $owner->id, 'tab' => 'review', 'review_type' => 'host']))
             ->assertOk()->assertViewHas('hostRatingSummary', fn ($summary) => (int) $summary->review_count === 4 && (float) $summary->average_rating === 3.0)
@@ -300,12 +300,14 @@ class ProfileTest extends TestCase
     public function test_profile_displays_saved_details_and_owner_edit_link(): void
     {
         $user = User::factory()->create(['username' => 'surfer']);
-        $user->profile()->create(['bio' => 'Enjoying surfing in Cebu.', 'avatar' => 'avatars/surfer.jpg']);
+        $user->profile()->create(['bio' => 'Enjoying surfing in Cebu.', 'avatar' => 'avatars/surfer.jpg',
+            'region' => 'Cebu', 'country' => 'Philippines', 'occupation' => 'Web Developer']);
 
         $this->actingAs($user)->get(route('profile.show', $user->id))
             ->assertOk()
             ->assertSee('@surfer')
             ->assertSee('Enjoying surfing in Cebu.')
+            ->assertSee('Cebu, Philippines')->assertSee('Web Developer')
             ->assertSee(asset('storage/avatars/surfer.jpg'))
             ->assertSee('Edit Profile')
             ->assertSee('Events Hosted');
@@ -321,7 +323,8 @@ class ProfileTest extends TestCase
             ->assertSee($owner->name)
             ->assertDontSee('Edit Profile')
             ->assertSee('No events shared yet.')
-            ->assertDontSee('Surfing by the ocean');
+            ->assertDontSee('Surfing by the ocean')
+            ->assertDontSee('class="profile-basic-info"', false);
 
         $this->get(route('profile.show', 99999))->assertNotFound();
     }
@@ -502,7 +505,7 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)->get(route('profile.edit'))
             ->assertOk()
-            ->assertSee('src="'.asset('storage/avatars/navbar.jpg').'" alt="'.$user->name.'"', false);
+            ->assertSee('src="'.asset('storage/avatars/navbar.jpg').'" alt="'.e($user->username).'"', false);
     }
 
     public function test_saved_hearts_appear_only_in_the_owners_profile_bookmarks(): void

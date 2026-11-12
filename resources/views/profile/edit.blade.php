@@ -14,7 +14,7 @@
     <div class="profile-editor-content">
         <header class="profile-editor-heading">
             <h1>Edit Profile</h1>
-            <p class="profile-editor-intro">Update your profile information. This information will be visible to other users.</p>
+            <p class="profile-editor-intro">Update your profile information and choose who can see your location and occupation.</p>
         </header>
         <div class="profile-editor-main">
             @if ($errors->any())
@@ -112,6 +112,29 @@
                         <div><label for="gender">Gender (optional)</label><select id="gender" name="gender">@foreach (['' => 'Prefer not to say', 'male' => 'Male', 'female' => 'Female', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('gender', $user->profile?->gender) == $value)>{{ $label }}</option>@endforeach</select></div>
                         <div><label for="preferred_language">Language <span class="profile-required">*</span></label><select id="preferred_language" name="preferred_language" required>@foreach (['en' => 'English', 'ja' => 'Japanese'] as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
                         <div class="profile-bio-field"><label for="bio">Bio</label><div class="profile-bio-input"><textarea id="bio" name="bio" maxlength="300" rows="3" aria-describedby="bio-count">{{ old('bio', $user->profile?->bio) }}</textarea><span id="bio-count" aria-live="polite">0/300</span></div></div>
+                    </div>
+                </section>
+                <section class="profile-editor-section" aria-labelledby="profile-privacy-heading">
+                    <div class="profile-section-heading">
+                        <h2 id="profile-privacy-heading">Profile visibility</h2>
+                        <p>Choose who can see your location and occupation. Your saved information is kept when you select Only me.</p>
+                    </div>
+                    <div class="profile-editor-fields">
+                        <div>
+                            <label for="show_location">Country and region / city</label>
+                            <select id="show_location" name="show_location" aria-describedby="location-visibility-help">
+                                <option value="1" @selected((string) old('show_location', (int) ($user->profile?->show_location ?? true)) === '1')>Everyone</option>
+                                <option value="0" @selected((string) old('show_location', (int) ($user->profile?->show_location ?? true)) === '0')>Only me</option>
+                            </select>
+                            <small id="location-visibility-help">Applies to both country and region / city.</small>
+                        </div>
+                        <div>
+                            <label for="show_occupation">Occupation</label>
+                            <select id="show_occupation" name="show_occupation">
+                                <option value="1" @selected((string) old('show_occupation', (int) ($user->profile?->show_occupation ?? true)) === '1')>Everyone</option>
+                                <option value="0" @selected((string) old('show_occupation', (int) ($user->profile?->show_occupation ?? true)) === '0')>Only me</option>
+                            </select>
+                        </div>
                     </div>
                 </section>
                 <div class="profile-editor-actions"><a href="{{ route('profile.show', $user->id) }}">Cancel</a><button type="submit">Save Changes</button></div>

@@ -43,7 +43,6 @@
                             @if ($hostRatingSummary->review_count > 0)
                                 <span class="profile-host-stars" aria-hidden="true"><span>★★★★★</span><span class="profile-host-stars-fill" style="width: {{ min(100, max(0, (float) $hostRatingSummary->average_rating * 20)) }}%">★★★★★</span></span>
                                 <span class="profile-host-rating-score">{{ number_format($hostRatingSummary->average_rating, 1) }}<span class="visually-hidden"> out of 5</span></span>
-                                <span>{{ $hostRatingSummary->review_count }} {{ $hostRatingSummary->review_count == 1 ? 'review' : 'reviews' }}</span>
                             @else
                                 <span class="profile-host-stars" aria-hidden="true">★★★★★</span>
                             @endif
@@ -98,6 +97,28 @@
                         </div>
                         </div>
                         <p class="profile-bio">{{ $user->profile?->bio ?: 'Welcome to my profile!' }}</p>
+                        @php
+                            $isProfileOwner = (int) auth()->id() === (int) $user->id;
+                            $canSeeLocation = $isProfileOwner || ($user->profile?->show_location ?? true);
+                            $canSeeOccupation = $isProfileOwner || ($user->profile?->show_occupation ?? true);
+                            $profileLocation = collect($canSeeLocation ? [$user->profile?->region, $user->profile?->country] : [])
+                                ->map(fn ($value) => trim($value ?? ''))->filter(fn ($value) => $value !== '')->implode(', ');
+                            $profileOccupation = $canSeeOccupation ? trim($user->profile?->occupation ?? '') : '';
+                        @endphp
+                        @if ($profileLocation !== '' || $profileOccupation !== '')
+                            <ul class="profile-basic-info" aria-label="Profile information">
+                                @if ($profileLocation !== '')
+                                    <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span><span class="visually-hidden">Location: </span>{{ $profileLocation }}</span>
+                                        @if ($isProfileOwner && !$user->profile->show_location)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>Only you</span>@endif
+                                    </li>
+                                @endif
+                                @if ($profileOccupation !== '')
+                                    <li><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span><span class="visually-hidden">Occupation: </span>{{ $profileOccupation }}</span>
+                                        @if ($isProfileOwner && !$user->profile->show_occupation)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>Only you</span>@endif
+                                    </li>
+                                @endif
+                            </ul>
+                        @endif
                     </div>
                     <dl class="profile-stats">
                         @foreach (['Events Joined' => $user->attending_events_count, 'Events Hosted' => $user->events_owned_count, 'Followers' => $user->followers_count, 'Following' => $user->following_count] as $label => $count)
@@ -176,6 +197,11 @@
                                             {{ $reviewLabel }}
                                         </a>
                                     @endforeach
+                                    @if ((int) auth()->id() === (int) $user->id)
+                                        <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'written']) }}#profile-activity" @if($activeTab === 'review' && $reviewType === 'written') aria-current="page" @endif>
+                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>Written reviews
+                                        </a>
+                                    @endif
                                 </div>
                             </details>
                         @else
@@ -306,14 +332,14 @@
                     <div class="profile-feed-heading"><h2>Joined communities</h2><span>{{ $joinedCommunities->total() }}</span></div>
                     <div class="event-grid profile-bookmark-grid">
                         @forelse ($joinedCommunities as $community)
-                            <article class="card h-100 overflow-hidden">
+                            <article class="card h-100 overflow-hidden profile-community-card">
                                 <a href="{{ route('community.show', $community->id) }}">
                                     <img src="{{ $imageUrl($community->image, asset('images/onlylogo.jpg')) }}" alt="{{ $community->name }}" class="w-100" style="height: 160px; object-fit: cover;" loading="lazy">
                                 </a>
                                 <div class="card-body">
                                     <h3 class="h5"><a href="{{ route('community.show', $community->id) }}">{{ $community->name }}</a></h3>
                                     <p>{{ \Illuminate\Support\Str::limit($community->description, 150) }}</p>
-                                    <a href="{{ route('community.show', $community->id) }}">View community &gt;</a>
+                                    <a class="profile-community-link" href="{{ route('community.show', $community->id) }}">View community <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
                                 </div>
                             </article>
                         @empty
@@ -324,6 +350,15 @@
                 </div>
                 <div data-profile-panel="review" @if($activeTab !== 'review') hidden @endif>
                     @if ($activeTab === 'review')
+                        @if ((int) auth()->id() === (int) $user->id)
+                            <nav class="profile-review-direction" aria-label="Review direction">
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'event']) }}#profile-activity" @if ($reviewType !== 'written') aria-current="page" @endif>Received reviews</a>
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'written']) }}#profile-activity" @if ($reviewType === 'written') aria-current="page" @endif>Written reviews</a>
+                            </nav>
+                        @endif
+                        @if ($reviewType === 'written')
+                            @include('profile.partials.written-reviews')
+                        @else
                         @php
                             $heading = $reviewType === 'host' ? 'Host reviews' : 'Event reviews';
                             $reviews = $reviewType === 'host' ? $hostReviews : $eventReviews;
@@ -368,6 +403,7 @@
                                 @endforelse
                                 {{ $reviews->links() }}
                             </section>
+                        @endif
                     @endif
                 </div>
                 <p class="profile-feedback" role="status" aria-live="polite"></p>
