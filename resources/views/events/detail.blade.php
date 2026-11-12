@@ -162,7 +162,10 @@
             ($event->start_at->isSameDay($event->end_at)
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
-        $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP / person';
+
+        $hasPrice = (float) $event->price > 0;
+        $priceText = $hasPrice ? number_format((float) $event->price) . ' PHP / person' : ($event->fee_note ?: 'Free');
+        $feeNote = $hasPrice ? $event->fee_note : null;
         $isCancelled = $event->status === 'cancelled';
         $hasEnded = $event->end_at->isPast();
         $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;
@@ -257,6 +260,9 @@
                             <div class="event-info-box">
                                 <div class="event-info-label">Fee</div>
                                 <div class="event-info-value">{{ $priceText }}</div>
+                                @if ($feeNote)
+                                    <div class="event-help">{{ $feeNote }}</div>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -467,7 +473,10 @@
 
                 {{-- fee & join --}}
                 <div class="event-card">
-                    <div class="fs-4">{{ $priceText }}</div>
+                    <div class="{{ $hasPrice ? 'fs-4' : 'fs-5' }}">{{ $priceText }}</div>
+                    @if ($feeNote)
+                        <div class="event-help mb-1">{{ $feeNote }}</div>
+                    @endif
                     <div class="event-help mb-1">{{ $joined }}/{{ $event->capacity }} joined</div>
                     <div class="progress mb-3" style="height: 6px;">
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>

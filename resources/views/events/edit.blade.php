@@ -168,6 +168,14 @@
                            value="{{ old('price', $event->price) }}" min="0" step="1" placeholder="e.g. 500">
                     <small class="event-form-help">If it is free, please enter 0.</small>
                     @error('price') <div class="text-danger small">{{ $message }}</div> @enderror
+                                        {{-- Fee note --}}
+                    <label for="fee_note" class="event-form-label mt-3">Fee note <span class="event-form-help">(optional)</span></label>
+                    <input type="text" name="fee_note" id="fee_note" maxlength="100"
+                           class="form-control @error('fee_note') is-invalid @enderror"
+                           value="{{ old('fee_note', $event->fee_note) }}"
+                           placeholder="e.g. Order individually, approx. 220 PHP~">
+                    <small class="event-form-help">If the cost varies, enter 0 above and explain here.</small>
+                    @error('fee_note') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 {{-- Start date → start_at --}}

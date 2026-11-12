@@ -23,6 +23,7 @@ class Event extends Model
         'end_at',
         'capacity',
         'price',
+        'fee_note',
         'approval_required',
         'visibility',
         'status',

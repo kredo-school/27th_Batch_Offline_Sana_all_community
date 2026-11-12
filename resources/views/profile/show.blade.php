@@ -31,9 +31,37 @@
                             <a class="profile-camera" href="{{ route('profile.edit') }}" aria-label="Change profile photo"><i class="fa-solid fa-camera" aria-hidden="true"></i></a>
                         @endif
                     </div>
+                    <div class="profile-identity">
+                        <div class="profile-identity-heading">
+                            <div class="profile-identity-name">
+                                <h1>{{ $user->name }}</h1>
+                                <p class="profile-handle">{{ '@'.($user->username ?: 'user'.$user->id) }}</p>
+                            </div>
+                        <div class="profile-identity-tools">
+                        <a class="profile-host-rating" href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'host']) }}#profile-activity">
+                            <span class="visually-hidden">Host rating: </span>
+                            @if ($hostRatingSummary->review_count > 0)
+                                <span class="profile-host-stars" aria-hidden="true"><span>★★★★★</span><span class="profile-host-stars-fill" style="width: {{ min(100, max(0, (float) $hostRatingSummary->average_rating * 20)) }}%">★★★★★</span></span>
+                                <span class="profile-host-rating-score">{{ number_format($hostRatingSummary->average_rating, 1) }}<span class="visually-hidden"> out of 5</span></span>
+                                <span>{{ $hostRatingSummary->review_count }} {{ $hostRatingSummary->review_count == 1 ? 'review' : 'reviews' }}</span>
+                            @else
+                                <span class="profile-host-stars" aria-hidden="true">★★★★★</span>
+                            @endif
+                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                        </a>
                     <div class="profile-actions">
                         @if ((int) auth()->id() === (int) $user->id)
-                            <a href="{{ route('profile.edit') }}" class="profile-edit">Edit Profile</a>
+                            <div class="dropdown profile-more-actions">
+                                <button type="button" class="profile-more-button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More profile actions">
+                                    <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a href="{{ route('profile.edit') }}" class="dropdown-item"><i class="fa-solid fa-pen" aria-hidden="true"></i>Edit Profile</a>
+                                    <button type="button" class="dropdown-item" data-profile-share data-profile-url="{{ route('profile.show', $user->id) }}">
+                                        <i class="fa-solid fa-link" aria-hidden="true"></i>Copy profile link
+                                    </button>
+                                </div>
+                            </div>
                         @elseif (auth()->check())
                             <form action="{{ route($isFollowing ? 'profile.unfollow' : 'profile.follow', $user) }}" method="POST">
                                 @csrf
@@ -48,6 +76,9 @@
                                     <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end">
+                                    <button type="button" class="dropdown-item" data-profile-share data-profile-url="{{ route('profile.show', $user->id) }}">
+                                        <i class="fa-solid fa-link" aria-hidden="true"></i>Copy profile link
+                                    </button>
                                 @if ($isBlockedByViewer)
                                 <form action="{{ route('messages.unblock', $user) }}" method="POST">
                                     @csrf
@@ -64,9 +95,8 @@
                             </div>
                         @endif
                     </div>
-                    <div class="profile-identity">
-                        <h1>{{ $user->name }}</h1>
-                        <p class="profile-handle">{{ '@'.($user->username ?: 'user'.$user->id) }}</p>
+                        </div>
+                        </div>
                         <p class="profile-bio">{{ $user->profile?->bio ?: 'Welcome to my profile!' }}</p>
                     </div>
                     <dl class="profile-stats">
@@ -177,9 +207,16 @@
                     {{ $followingEvents->links() }}
                 </div>
                 <div data-profile-panel="event" @if($activeTab !== 'event') hidden @endif>
-                    <div class="profile-feed-heading">
-                        <h2>Hosted events</h2>
-                        <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? 'event' : 'events' }}</span>
+                    <div class="profile-hosted-header">
+                        <div class="profile-feed-heading">
+                            <h2>Hosted events</h2>
+                            <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? 'event' : 'events' }}</span>
+                        </div>
+                        <nav class="profile-history-filters" aria-label="Filter hosted events">
+                            @foreach (['all' => 'All', 'upcoming' => 'Upcoming', 'past' => 'Past'] + ((int) auth()->id() === (int) $user->id ? ['draft' => 'Drafts'] : []) as $value => $label)
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'event', 'event_filter' => $value]) }}#profile-activity" @if ($eventFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                            @endforeach
+                        </nav>
                     </div>
                     <div class="event-grid profile-bookmark-grid">
                         @forelse ($events as $event)
@@ -193,8 +230,27 @@
                 </div>
                 @if ((int) auth()->id() === (int) $user->id)
                 <div data-profile-panel="bookmark" @if($activeTab !== 'bookmark') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Bookmarks</h2></div>
+                    <div class="profile-feed-heading"><h2>Bookmarks</h2><span class="profile-history-count">{{ $bookmarkedEvents?->total() ?? 0 }} events</span></div>
                     @if ($bookmarkedEvents !== null)
+                        <div class="profile-history-toolbar">
+                            <nav class="profile-history-filters" aria-label="Filter bookmarked events">
+                                @foreach (['upcoming' => 'Upcoming', 'all' => 'All'] as $value => $label)
+                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'bookmark', 'bookmark_filter' => $value, 'bookmark_sort' => $bookmarkSort]) }}#profile-activity" @if ($bookmarkFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                                @endforeach
+                            </nav>
+                            <form method="GET" action="{{ route('profile.show', $user->id) }}#profile-activity" class="profile-history-sort">
+                                <input type="hidden" name="tab" value="bookmark">
+                                <input type="hidden" name="bookmark_filter" value="{{ $bookmarkFilter }}">
+                                <label for="bookmark-sort" class="visually-hidden">Sort bookmarked events</label>
+                                <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+                                <select id="bookmark-sort" name="bookmark_sort" onchange="this.form.requestSubmit()">
+                                    @foreach (['saved' => 'Recently saved', 'nearest' => 'Next events first'] as $value => $label)
+                                        <option value="{{ $value }}" @selected($bookmarkSort === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <noscript><button type="submit">Apply</button></noscript>
+                            </form>
+                        </div>
                         <div class="event-grid profile-bookmark-grid">
                             @forelse ($bookmarkedEvents as $event)
                                 @php $event->is_bookmarked = true; @endphp
@@ -209,16 +265,35 @@
                     @endif
                 </div>
                 <div data-profile-panel="history" @if($activeTab !== 'history') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Joined events</h2></div>
+                    <div class="profile-feed-heading"><h2>Joined events</h2><span class="profile-history-count">{{ $historyEvents?->total() ?? 0 }} events</span></div>
                     @if ($historyEvents !== null)
+                        <div class="profile-history-toolbar">
+                            <nav class="profile-history-filters" aria-label="Filter joined events">
+                                @foreach (['upcoming' => 'Upcoming', 'pending' => 'Pending', 'past' => 'Past', 'all' => 'All'] as $value => $label)
+                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'history', 'history_filter' => $value, 'history_sort' => $historySort]) }}#profile-activity" @if ($historyFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                                @endforeach
+                            </nav>
+                            <form method="GET" action="{{ route('profile.show', $user->id) }}#profile-activity" class="profile-history-sort">
+                                <input type="hidden" name="tab" value="history">
+                                <input type="hidden" name="history_filter" value="{{ $historyFilter }}">
+                                <label for="history-sort" class="visually-hidden">Sort joined events by event date</label>
+                                <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+                                <select id="history-sort" name="history_sort" onchange="this.form.requestSubmit()">
+                                    @foreach (['nearest' => 'Next events first', 'newest' => 'Newest first', 'oldest' => 'Oldest first'] as $value => $label)
+                                        <option value="{{ $value }}" @selected($historySort === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <noscript><button type="submit">Apply</button></noscript>
+                            </form>
+                        </div>
                         <div class="event-grid profile-bookmark-grid">
                             @forelse ($historyEvents as $event)
                                 <div>
-                                    <p class="mb-2"><span class="badge {{ $event->pivot->status === 'pending' ? 'bg-warning text-dark' : 'bg-success' }}">{{ $event->pivot->status === 'pending' ? 'Pending approval' : 'Joined' }}</span></p>
+                                    <p class="mb-2"><span class="profile-history-status {{ $event->pivot->status === 'pending' ? 'is-pending' : ($event->end_at->lt($historyNow) ? 'is-past' : 'is-upcoming') }}">{{ $event->pivot->status === 'pending' ? 'Pending approval' : ($event->end_at->lt($historyNow) ? 'Past event' : 'Upcoming') }}</span></p>
                                     @include('events.partials.card', ['event' => $event])
                                 </div>
                             @empty
-                                <p class="profile-events-empty">No joined events yet.</p>
+                                <p class="profile-events-empty">No events match this filter.</p>
                             @endforelse
                         </div>
                         {{ $historyEvents->links() }}
@@ -259,24 +334,34 @@
                                     <span>{{ $reviews->total() }} {{ $reviews->total() === 1 ? 'review' : 'reviews' }}</span>
                                 </div>
                                 @forelse ($reviews as $review)
-                                    <article class="card mb-3">
-                                        <div class="card-body">
-                                            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                                    <article class="profile-review-card">
+                                        <header class="profile-review-header">
+                                            <span class="profile-review-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($review->user?->name ?? '?', 0, 1)) }}</span>
+                                            <div class="profile-review-author">
                                                 @if ($review->user)
                                                     <a href="{{ route('profile.show', $review->user_id) }}">{{ $review->user->name }}</a>
                                                 @else
-                                                    <span>Deleted user</span>
+                                                    <strong>Deleted user</strong>
                                                 @endif
-                                                <span aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
+                                                @if ($review->created_at)
+                                                    <time datetime="{{ $review->created_at->toIso8601String() }}">{{ $review->created_at->format('M j, Y') }}</time>
+                                                @endif
                                             </div>
-                                            <a href="{{ route('events.show', $review->event_id) }}">{{ $review->event->title }}</a>
-                                            @if ($review->comment)
-                                                <p class="mt-2 mb-2 text-break" style="white-space: pre-line;">{{ $review->comment }}</p>
-                                            @endif
-                                            @if ($review->created_at)
-                                                <time class="text-muted small" datetime="{{ $review->created_at->toIso8601String() }}">{{ $review->created_at->format('M j, Y') }}</time>
-                                            @endif
-                                        </div>
+                                            <div class="profile-review-rating" aria-label="{{ $review->rating }} out of 5 stars">
+                                                <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}<span class="profile-review-unfilled">{{ str_repeat('★', 5 - $review->rating) }}</span></span>
+                                                <strong aria-hidden="true">{{ $review->rating }}<small>/5</small></strong>
+                                            </div>
+                                        </header>
+                                        @if ($review->comment)
+                                            <p class="profile-review-comment">{{ $review->comment }}</p>
+                                        @else
+                                            <p class="profile-review-no-comment">Rating only</p>
+                                        @endif
+                                        <a class="profile-review-event" href="{{ route('events.show', $review->event_id) }}">
+                                            <img src="{{ $imageUrl($review->event->image, asset('images/onlylogo.jpg')) }}" alt="" width="48" height="48" loading="lazy">
+                                            <span><small>{{ $reviewType === 'host' ? 'Hosted event' : 'Reviewed event' }}</small><strong>{{ $review->event->title }}</strong></span>
+                                            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                        </a>
                                     </article>
                                 @empty
                                     <p class="profile-events-empty">{{ $heading === 'Event reviews' ? 'No event reviews yet.' : 'No host reviews yet.' }}</p>
@@ -290,6 +375,30 @@
         </div>
     </div>
     <style>
+        .profile-review-card { padding: 22px; margin-bottom: 16px; border: 1px solid var(--profile-border); border-radius: 16px; background: #fff; color: var(--profile-ink); font-size: 14px; line-height: 1.7; }
+        .profile-review-card a, .profile-review-card a:visited { color: var(--profile-ink); text-decoration: none; }
+        .profile-review-card a:hover { color: #236d89; text-decoration: none; }
+        .profile-review-card a:focus-visible { outline: 2px solid #267795; outline-offset: 3px; border-radius: 4px; }
+        .profile-review-header { display: flex; align-items: center; gap: 12px; }
+        .profile-review-avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: #deeff7; color: #236d89; font-size: 18px; font-weight: 700; }
+        .profile-review-author { flex: 1; min-width: 0; }
+        .profile-review-author a, .profile-review-author strong { font-weight: 600; overflow-wrap: anywhere; }
+        .profile-review-author time { display: block; color: var(--profile-muted); font-size: 12px; }
+        .profile-review-rating { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; line-height: 1.4; }
+        .profile-review-rating > span { color: #b57b12; letter-spacing: 2px; }
+        .profile-review-unfilled { color: #dfe8ed; }
+        .profile-review-rating strong { font-size: 16px; }
+        .profile-review-rating small { color: var(--profile-muted); font-size: 11px; font-weight: 400; margin-left: 3px; }
+        .profile-review-comment { margin: 20px 0; font-size: 15px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+        .profile-review-no-comment { margin: 20px 0; color: var(--profile-muted); }
+        .profile-review-event { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f5f9fb; border-radius: 10px; }
+        .profile-review-event:hover { background: #edf5f9; }
+        .profile-review-event img { flex-shrink: 0; border-radius: 8px; object-fit: cover; }
+        .profile-review-event > span { flex: 1; min-width: 0; }
+        .profile-review-event small { display: block; color: var(--profile-muted); font-size: 11px; }
+        .profile-review-event strong { display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+        .profile-review-event > i { color: #236d89; font-size: 12px; }
+        @media (max-width: 420px) { .profile-review-card { padding: 16px; } .profile-review-header { flex-wrap: wrap; } .profile-review-rating { flex-direction: row; align-items: center; gap: 8px; width: 100%; padding-left: 56px; } }
         .profile-section-navigation { overflow: visible; }
         .profile-review-menu { position: relative; }
         .profile-review-menu summary { padding: 10px 18px; border-radius: 8px; color: #647580; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; list-style: none; }
@@ -301,7 +410,43 @@
         .profile-review-options a { display: flex; align-items: center; gap: 10px; }
         @media (max-width: 420px) { .profile-section-navigation { gap: 2px; } .profile-section-navigation > a, .profile-review-menu summary { padding-inline: 10px; } }
     </style>
+    <div class="profile-share-feedback" hidden>
+        <div class="profile-share-message">
+            <p id="profile-share-status" role="status" aria-live="polite"></p>
+            <button type="button" class="profile-share-dismiss" aria-label="Dismiss notification">×</button>
+        </div>
+        <input type="text" id="profile-share-url" value="{{ route('profile.show', $user->id) }}" aria-label="Profile link to copy" readonly hidden>
+    </div>
     <script>
+        let profileShareTimer;
+        document.querySelector('.profile-share-dismiss').addEventListener('click', () => {
+            clearTimeout(profileShareTimer);
+            document.querySelector('.profile-share-feedback').hidden = true;
+        });
+        document.querySelectorAll('[data-profile-share]').forEach(profileShareButton => {
+            profileShareButton.addEventListener('click', async () => {
+                const feedback = document.querySelector('.profile-share-feedback');
+                const status = document.getElementById('profile-share-status');
+                const urlInput = document.getElementById('profile-share-url');
+                clearTimeout(profileShareTimer);
+                profileShareButton.disabled = true;
+                try {
+                    await navigator.clipboard.writeText(profileShareButton.dataset.profileUrl);
+                    urlInput.hidden = true;
+                    feedback.hidden = false;
+                    status.textContent = 'Profile link copied.';
+                    profileShareTimer = setTimeout(() => { feedback.hidden = true; }, 3500);
+                } catch {
+                    feedback.hidden = false;
+                    status.textContent = 'Select and copy this profile link:';
+                    urlInput.hidden = false;
+                    urlInput.focus();
+                    urlInput.select();
+                } finally {
+                    profileShareButton.disabled = false;
+                }
+            });
+        });
         const reviewMenu = document.getElementById('profile-review-menu');
         if (reviewMenu) {
             reviewMenu.addEventListener('pointerenter', event => {
