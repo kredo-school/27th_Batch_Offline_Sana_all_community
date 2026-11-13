@@ -23,7 +23,7 @@ class NotifyEventParticipantsOnUpdateJob implements ShouldQueue
     public function handle(): void
     {
         $this->event->users()
-            ->wherePivot('status', 'accepted')
+            ->wherePivot('status', 'approved')
             ->each(function ($user): void {
                 UserNotification::create([
                     'user_id' => $user->id,

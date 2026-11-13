@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
 use App\Models\UserReview;
 use App\Models\UserNotification;
+use App\Jobs\NotifyEventParticipantsOnUpdateJob;
 
 class EventController extends Controller
 {
@@ -365,9 +366,14 @@ class EventController extends Controller
         $categoryId = $validated['category_id'];
         unset($validated['category_id']);
 
-        $event->update($validated);
+        $event->fill($validated);
+        $changedFields = array_keys($event->getDirty());
+        $event->save();
         $event->categories()->sync([$categoryId]);
 
+        if ($changedFields !== []) {
+            NotifyEventParticipantsOnUpdateJob::dispatch($event, $changedFields)->afterCommit();
+        }
         return redirect()->route('events.show', $event);
     }
 
