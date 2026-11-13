@@ -89,6 +89,26 @@ class NotificationController extends Controller
             $notification->update(['read_at' => now()]);
         }
 
+        if ($notification->type === 'admin_contact' && $notification->related_id !== null) {
+            UserNotification::query()
+                ->where('type', 'admin_contact')
+                ->where('related_id', $notification->related_id)
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            if (Auth::user()->role === 'admin') {
+                return redirect()->route('admin.contacts.show', $notification->related_id);
+            }
+        }
+
+        if ($notification->type === 'event_join_request' && $notification->related_id !== null) {
+            return redirect()->route('events.participants', $notification->related_id);
+        }
+
+        if ($notification->type === 'event_comment' && $notification->related_id !== null) {
+            return redirect()->route('events.show', $notification->related_id);
+        }
+
         // 招待・参加申請の結果のお知らせは、そのコミュニティのページを開く
         // （招待が取り消されて見られなくなっていたら、コミュニティの通知一覧へ）
         if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined'], true)) {

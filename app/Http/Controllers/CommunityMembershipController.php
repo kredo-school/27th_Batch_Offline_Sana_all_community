@@ -88,7 +88,7 @@ class CommunityMembershipController extends Controller
             'user_id' => $requester->id,
             'sender_name' => $owner->username ?: $owner->name,
             'type' => $approved ? 'community_join_approved' : 'community_join_declined',
-            'title' => $approved ? 'Join request approved' : 'Join request declined',
+            'title' => $approved ? 'Community join request approved' : 'Community join request declined',
             'message' => $approved
                 ? "Your request to join '{$community->name}' was approved."
                 : "Your request to join '{$community->name}' was declined.",
@@ -183,6 +183,7 @@ class CommunityMembershipController extends Controller
             ->where('status', 'pending')
             ->firstOrFail();
         $membership->update(['status' => 'approved', 'joined_at' => now()]);
+        // 申請者に承認を知らせ、オーナー側の申請の通知を片付ける（main 側で入った同じ通知もここにまとめた）
         $this->notifyRequestResult($community, $membership->user, $request->user(), true);
 
         return redirect()->to(route('community.show', $community->id) . '#members');

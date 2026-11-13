@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
 <head>
     @php
@@ -29,7 +29,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
 
     <!-- FAVICON -->
@@ -41,6 +40,19 @@
         /* コミュニティのページにいる間、上の COMMUNITY をオレンジにする */
         .nav-link.community-nav-active {
             color: #F58634;
+            font-weight: 700;
+        }
+
+        .header-list:hover,
+        .header-list:focus-visible,
+        .header-list-ja:hover,
+        .header-list-ja:focus-visible {
+            color: #126b6b !important;
+            background-color: rgba(192, 245, 245, 0.5) !important;
+        }
+
+        .nav-link.header-list-active {
+            color: #F58634 !important;
             font-weight: 700;
         }
 
@@ -300,10 +312,7 @@
             width: min(100%, 620px);
         }
 
-        /* .dropdown-menu{
-            color: #126b6b !important;
-            background-color: rgba(192, 245, 245, 0.5) !important;
-        } */
+      
         .message-chat-panel {
             position: fixed;
             right: 16px;
@@ -505,6 +514,11 @@
             list-style: none;
         }
 
+        /* Bootstrap controls menu display; override Tailwind's collapse visibility. */
+        #navbarSupportedContent {
+            visibility: visible;
+        }
+
         .navbar-icon-group .nav-link {
             padding-right: 0.35rem;
             padding-left: 0.35rem;
@@ -515,12 +529,13 @@
         }
 
         .nav-icons{
-            width: 100px;
+            width: 150px;
             height: auto;
         }
 
         .category-nav .nav-link:hover,
-        .category-nav .nav-link:focus-visible {
+        .category-nav .nav-link:focus-visible,
+        .category-nav .nav-link.active {
            color: #126b6b !important;
             background-color: rgba(192, 245, 245, 0.5) !important;
         }
@@ -555,12 +570,67 @@
             height: auto;
         }
         .all-navbar{
-           
             left: 1px;
+            min-width: 0;
         }
 
-        .header-list{
+        .all-navbar > .navbar-nav {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center;
+            max-width: 100%;
+            overflow: visible;
+            white-space: nowrap;
+        }
 
+        .all-navbar > .navbar-nav > .category-nav,
+        .all-navbar > .navbar-nav > .navbar-icon-group {
+            flex: 0 0 auto;
+        }
+
+        .all-navbar .category-nav {
+            flex-wrap: nowrap !important;
+            white-space: nowrap;
+        }
+
+        .all-navbar .navbar-icon-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-list,
+        .header-list-ja,
+        .header-list > span,
+        .header-list-ja > span{
+            font-size: 1rem !important;
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+
+        .header-list,
+        .header-list-ja {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 0 !important;
+        }
+
+        .position{
+            vertical-align: -50px;
+        }
+
+        @media (min-width: 768px) {
+            .all-navbar > .navbar-nav > .category-nav {
+                display: flex;
+                align-items: center;
+                flex-wrap: nowrap;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .all-navbar > .navbar-nav {
+                flex-wrap: nowrap;
+                align-items: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -586,11 +656,13 @@
                 border-top: 1px solid #e9ecef;
             }
 
+            /* 上の .all-navbar > .navbar-nav（折り返さない指定）より優先させる */
             .all-navbar .navbar-nav {
-                flex-direction: row;
-                flex-wrap: wrap;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
                 align-items: center;
                 gap: 8px;
+                white-space: normal;
             }
 
             .all-navbar .navbar-nav .mt-1,
@@ -626,18 +698,20 @@
             }
 
             /* Community と View All: 2 つ並びのボタン */
-            .all-navbar .navbar-nav > .nav-item:has(> .header-list) {
+            .all-navbar .navbar-nav > .category-nav:not(:first-child):has(> a.nav-link) {
                 flex: 1 1 calc(50% - 4px);
             }
 
-            .all-navbar .navbar-nav > .nav-item > .header-list {
+            .all-navbar .navbar-nav > .category-nav:not(:first-child) > a.nav-link {
+                display: block;
                 padding: 8px 4px;
                 border: 1px solid #e9ecef;
                 border-radius: 8px;
                 text-align: center;
             }
 
-            .all-navbar .navbar-nav > .nav-item > .header-list .h5 {
+            .all-navbar .navbar-nav > .category-nav:not(:first-child) > a.nav-link .h6 {
+                margin: 0;
                 font-size: 0.95rem;
             }
 
@@ -700,7 +774,7 @@
 
     @if ($sidebar !== '')
         <style>
-            /* ナビゲーションバーの固定 */
+            /* show nav bar in paticular place */
             .navbar {
                 position: sticky;
                 top: 0;
@@ -708,7 +782,7 @@
                 background-color: #fff;
             }
 
-            /* モーダルは固定ヘッダーより手前に出す */
+            /* show modal */
             .modal-backdrop {
                 z-index: 1105;
             }
@@ -717,7 +791,7 @@
                 z-index: 1110;
             }
 
-            /* サイドバー付きページのレイアウト */
+            /* with sidebar layout */
             .events-layout {
                 display: flex;
                 flex-wrap: nowrap;
@@ -725,17 +799,16 @@
                 align-items: flex-start;
             }
 
-            /* 左サイドバー */
+            /* left sidebar */
             .event-sidebar-col {
                 position: sticky;
-                top: 68px; /* ナビゲーションバーの高さ分下から固定始動 */
-                height: calc(100vh - 68px); /* 画面の高さからナビの高さを引いたサイズにする */
-                overflow-y: auto; /* サイドバー内が多くなった場合にスクロールできるようにする */
+                top: 68px; 
+                height: calc(100vh - 68px); 
+                overflow-y: auto; 
                 background-color: #fff;
                 z-index: 100;
             }
 
-            /* 本文側 */
             .event-content-col {
                 flex: 1;
                 min-width: 0;
@@ -786,22 +859,17 @@
 </head>
 
 <body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
-    <div id="app">
+    
+            <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}">
                     <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;">
                     <div class="h5 mb-0 lh-sm">
                         <strong class="fw-bold">Sana ALL</strong><br>
-                        <small class="text-muted">Community</small>
+                        <small class="text-muted">Community</small><span class="visually-hidden">EVENTS</span>
                     </div>
                 </a>
-                
-
-                {{-- <div class="d-flex align-items-center flex-shrink-0">
-                        <i class="fa-solid fa-map-pin text-white"></i>
-                        <p class="text-white ms-1 location text-center mb-0">Deliver to <br>Philippines</p>
-                    </div> --}}
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -815,18 +883,11 @@
 
                             <!-- CATEGORIES -->
                             <li class="nav-item category-nav">
-                                {{-- <button id="categoryDropdown" class="nav-link dropdown-toggle text-dark" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    Categories
-                                </button> --}}
                                 <ul class="list-unstyled d-flex flex-wrap align-items-center mb-0 mt-3">
-                                    {{-- <li>
-                                        <a class="dropdown-item" href="{{ route('events.index') }}">All events</a>
-                                    </li> --}}
                                     @isset($categories)
                                         @foreach ($categories as $value => $label)
                                             <li class="me-3 h5 fw-bold header-list">
-                                                <a class="dropdown-item {{ (string) request('category') === (string) $value ? 'active' : '' }}"
+                                                <a class="dropdown-item nav-link text-dark {{ (string) request('category') === (string) $value ? 'active' : '' }}"
                                                     href="{{ route('events.index', ['category' => $value]) }}">
                                                     {{ $label }}
                                                 </a>
@@ -835,22 +896,24 @@
                                     @endisset
                                 </ul>
                             </li>
-                            <li class="nav-item mt-2">
-                                <a class="nav-link {{ $inCommunity ? 'community-nav-active' : 'text-dark' }} header-list" href="{{ route('community.index', ['type' => 'community']) }}"><span class="h5 fw-normal">Community</span></a>
+                            <li class="nav-item category-nav mt-2">
+                                {{-- コミュニティのページにいる間は、黒文字（text-dark）を外してオレンジにする --}}
+                                <a class="nav-link dropdown-item {{ $inCommunity ? 'community-nav-active' : 'text-dark' }}" href="{{ route('community.index', ['type' => 'community']) }}"><span class="h6 fw-bold {{ $inCommunity ? '' : 'text-dark' }}">{{ __('Community') }}</span></a>
                             </li>
-                            <li class="nav-item mt-2">
-                                <a class="nav-link text-dark header-list" href="{{ route('events.index') }}"><span class="h5 fw-normal">View All</span></a>
+                            <li class="nav-item category-nav mt-2">
+                                <a class="nav-link text-dark dropdown-item {{ request()->routeIs('events.index') && !request()->filled('category') ? 'header-list-active' : '' }}" href="{{ route('events.index') }}"><span class="h6 fw-bold text-dark">{{ __('View All') }}</span></a>
                             </li>
 
-                                <li class="nav-item dropdown my-auto ms-1 mt-1">
+                                 <li class="nav-item nav-link dropdown my-auto ms-1 mt-2 category-nav">
                                     <button id="languageDropdown" class="nav-link dropdown-toggle text-dark fs-5" type="button"
                                         data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fa-solid fa-language me-1" aria-hidden="true"></i>
-                                        {{ app()->getLocale() === 'ja' ? '日本語' : 'English' }}
+                                        <i class="fa-solid fa-language me-1 text-dark" aria-hidden="true"></i>
+                                        {{ config('app.supported_locales')[app()->getLocale()] ?? config('app.supported_locales.en') }}
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                                        <li><a class="dropdown-item" href="#">English</a></li>
-                                        <li><a class="dropdown-item" href="#">日本語</a></li>
+                                        @foreach (config('app.supported_locales') as $code => $label)
+                                            <li><form method="POST" action="{{ route('language.update') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}"><button type="submit" class="dropdown-item">{{ $label }}</button></form></li>
+                                        @endforeach
                                     </ul>
                                 </li>
                                    
@@ -858,7 +921,7 @@
                                         {{-- show messages --}}
                                         <li class="nav-item dropdown d-flex align-items-center category-nav mt-2">
                                             @guest
-                                            <li class="nav-item">
+                                            <li class="nav-item mt-2">
                                                 <a class="nav-link btn text-dark" href="{{ route('login') }}"><i class="fa-regular fa-envelope dropdown-icon-lg"></i></a>
                                             </li>
                                             @else
@@ -871,7 +934,7 @@
                                             {{-- show latest messages --}}
                                             <ul class="dropdown-menu border-primary bg-primary rounded" aria-labelledby="messageDropdown"
                                                 style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
-                                                <li class="bg-primary text-center mb-1"><span class="h5 text-white">Messages</span></li>
+                                                <li class="bg-primary text-center mb-1"><span class="h5 text-white">{{ __('Messages') }}</span></li>
                                                 @forelse ($chats as $chat)
                                                     <li class="dropdown-content bg-white">
                                                         <button type="button"
@@ -909,10 +972,38 @@
                                                 @empty
                                                     <li><span class="dropdown-item-text text-muted">{{ __('No messages') }}</span></li>
                                                 @endforelse
+                                                @foreach ($eventCommentNotifications as $eventCommentNotification)
+                                                    <li class="dropdown-content bg-white">
+                                                        <a href="{{ route('notifications.show', $eventCommentNotification) }}"
+                                                            class="dropdown-item text-wrap border-bottom text-start {{ $eventCommentNotification->read_at ? '' : 'dropdown-item--unread fw-semibold' }}">
+                                                            <span class="d-block">{{ $eventCommentNotification->title }}</span>
+                                                            <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($eventCommentNotification->message, 100) }}</span>
+                                                            @if ($eventCommentNotification->created_at)
+                                                                <time class="d-block small text-muted" datetime="{{ $eventCommentNotification->created_at->toIso8601String() }}">
+                                                                    {{ $eventCommentNotification->created_at->format('M j, Y g:i A') }}
+                                                                </time>
+                                                            @endif
+                                                        </a>
+                                                    </li>
+                                                @endforeach
+                                                @foreach ($adminContactNotifications as $adminContactNotification)
+                                                    <li class="dropdown-content bg-white">
+                                                        <a href="{{ route('notifications.show', $adminContactNotification) }}"
+                                                            class="dropdown-item text-wrap border-bottom text-start {{ $adminContactNotification->read_at ? '' : 'dropdown-item--unread fw-semibold' }}">
+                                                            <span class="d-block">{{ $adminContactNotification->title }}</span>
+                                                            <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($adminContactNotification->message, 100) }}</span>
+                                                            @if ($adminContactNotification->created_at)
+                                                                <time class="d-block small text-muted" datetime="{{ $adminContactNotification->created_at->toIso8601String() }}">
+                                                                    {{ $adminContactNotification->created_at->format('M j, Y g:i A') }}
+                                                                </time>
+                                                            @endif
+                                                        </a>
+                                                    </li>
+                                                @endforeach
                                                 {{-- go to the all show messages --}}
-                                                <li><a href="{{ route('messages.index') }}" class="dropdown-item text-primary bg-white">Show All</a></li>
+                                                <li><a href="{{ route('messages.index') }}" class="dropdown-item text-primary bg-white">{{ __('Show All') }}</a></li>
                                                     <li><button type="button" class="dropdown-item text-primary bg-white" data-bs-toggle="modal"
-                                                        data-bs-target="#create-message-modal">Create Message</button></li>
+                                                        data-bs-target="#create-message-modal">{{ __('Create Message') }}</button></li>
                                             </ul>
                                             @endif
                                         </li>
@@ -921,7 +1012,7 @@
                                     <ul class="navbar-icon-group">
                                         <li class="nav-item dropdown d-flex align-items-center category-nav mt-2">
                                             @guest
-                                            <li class="nav-item">
+                                            <li class="nav-item mt-2">
                                                 <a class="nav-link btn text-dark" href="{{ route('login') }}"><i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i></a>
                                             </li>
                                             @else
@@ -934,7 +1025,7 @@
                                             </button>
                                             <ul class="dropdown-menu border-primary rounded bg-success" aria-labelledby="notificationDropdown"
                                                 style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
-                                                <li class="text-center bg-success mb-1"><span class="h5 text-white">Notifications</span></li>
+                                                <li class="text-center bg-success mb-1"><span class="h5 text-white">{{ __('Notifications') }}</span></li>
                                                 @forelse ($notifications as $notification)
                                                     <li class="dropdown-content bg-white">
                                                         <a href="{{ $notification->type === 'community_message' && $notification->related_id
@@ -967,7 +1058,7 @@
                                             @endguest
                                         </li>
                                     </ul>
-                                    <ul class="navbar-icon-group">
+                                    {{-- <ul class="navbar-icon-group">
                                         @guest
                                             <li class="nav-item">
                                                 <a class="nav-link btn text-dark mt-2" href="{{ route('login') }}"><i class="fa-regular fa-calendar dropdown-icon-lg" aria-hidden="true"></i></a>
@@ -977,7 +1068,7 @@
                                                 <a class="nav-link text-dark link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-calendar" href="#"> <i class="fa-regular fa-calendar dropdown-icon-lg"></i></a>
                                             </li>
                                         @endguest
-                                    </ul>
+                                    </ul> --}}
                                      <ul class="navbar-icon-group">
                                         @guest
                                             <li class="nav-item">
@@ -986,7 +1077,7 @@
                                         @else
                                             <li class="nav-item dropdown d-flex align-items-center category-nav mt-2">
                                                 <button class="nav-link text-dark link-secondary text-decoration-none position-relative dropdown-toggle no-arrow" type="button"
-                                                    data-bs-toggle="dropdown" aria-expanded="false" aria-label="Community">
+                                                    data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Community') }}">
                                                     <i class="fa-solid fa-people-group dropdown-icon-lg" aria-hidden="true"></i>
                                                     @if ($communityNotificationCount > 0)
                                                         <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0 js-community-notification-badge">{{ $communityNotificationCount }}</span>
@@ -994,7 +1085,7 @@
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end border-primary rounded bg-white js-community-notification-list"
                                                     style="max-height: 24rem; min-width: 20rem; overflow-y: auto;">
-                                                    <li class="bg-primary text-center mb-1"><span class="h5 text-white">Community</span></li>
+                                                    <li class="bg-primary text-center mb-1"><span class="h5 text-white">{{ __('Community') }}</span></li>
                                                     @forelse ($communityNotifications as $communityNotification)
                                                         {{-- チャットの通知は、Chat タブで読んだときに画面上からも消せるようにコミュニティの ID を持たせる --}}
                                                         <li class="dropdown-content bg-white"
@@ -1033,6 +1124,9 @@
                                                                         <span class="d-block small text-secondary">
                                                                             <i class="fa-solid fa-circle-xmark me-1" aria-hidden="true"></i>{{ __('Your join request was declined') }}
                                                                         </span>
+                                                                    @else
+                                                                        {{-- それ以外の種類は、本文（なければタイトル）をそのまま出す --}}
+                                                                        <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($communityNotification->message ?: $communityNotification->title, 100) }}</span>
                                                                     @endif
                                                                 @endif
                                                                 @if ($communityNotification->created_at)
@@ -1050,6 +1144,15 @@
                                             </li>
                                         @endguest
                                     </ul>
+                                      <ul class="navbar-icon-group">
+                                        <li class="nav-item mt-2">
+                                            <button type="button" class="nav-link btn text-dark link-secondary"
+                                                data-bs-toggle="modal" data-bs-target="#global-search-modal"
+                                                aria-label="{{ __('Search') }}" title="{{ __('Search') }}">
+                                                <i class="fa-solid fa-magnifying-glass dropdown-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                        </li>
+                                    </ul>
                                 <!-- Authentication Links -->
                                 @guest
                                     @if (Route::has('login'))
@@ -1064,8 +1167,8 @@
                                         </li>
                                     @endif
                                 @else
-                                    <a href="#" class="btn btn-primary text-white btn-create mt-2 d-inline-flex align-items-center justify-content-center  mt-3" data-bs-toggle="modal" data-bs-target="#modal-post">
-                                        <span>CREATE</span>
+                                    <a href="#" class="btn btn-primary text-white btn-create d-inline-flex align-items-center justify-content-center  mt-2" data-bs-toggle="modal" data-bs-target="#modal-post">
+                                        <span>{{ __('Create') }}</span>
                                     </a>
                                     <li class="nav-item dropdown dropdown-sm">
 
@@ -1078,11 +1181,11 @@
                                                     $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                         ? $avatarPath : asset('storage/'.$avatarPath);
                                                 @endphp
-                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
                                             @else
                                                 {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                             @endif
-                                            Hello, {{ Auth::user()->username }}
+                                            {{ __('Hello') }}, {{ Auth::user()->username }}
                                             <i class="fa-solid fa-list"></i>
                                         </a>
 
@@ -1090,37 +1193,37 @@
                                             @if (Auth::user()->role === 'admin')
                                                 <a href="{{ Route::has('admin.users') ? route('admin.users') : '#' }}"
                                                     class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-user-gear"></i> Admin
+                                                    <i class="fa-solid fa-user-gear"></i> {{ __('Admin') }}
                                                 </a>
                                             @endif
 
                                             <a href="{{ route('profile.show', Auth::user()->id) }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-solid fa-circle-user user-menu-icon"></i> Profile
+                                                <i class="fa-solid fa-circle-user user-menu-icon"></i> {{ __('Profile') }}
                                             </a>
 
                                             <a href="{{ route('events.index', ['bookmark' => 1]) }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-solid fa-book-bookmark user-menu-icon"></i> Bookmark
+                                                <i class="fa-solid fa-book-bookmark user-menu-icon"></i> {{ __('Bookmark') }}
                                             </a>
                                             @if ($hasMyEvents)
                                                 <a href="{{ route('events.index', ['my_event' => 1]) }}"
                                                     class="{{ request()->boolean('my_event') ? 'active' : '' }} dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> My Event
+                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> {{ __('My Event') }}
                                                 </a>
                                                 
                                             @else
                                                 <a href="{{ route('events.index')}}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> Activity
+                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> {{ __('Activity') }}
                                                 </a>
                                             @endif
                                             
                                             @if ($hasMyCommunities)
                                                 <a class="dropdown-item d-flex align-items-center gap-2 text-nowrap"
-                                    href="{{ route('community.index', $hasMyCommunities ? ['filter' => 'owned'] : []) }}"><i class="fa-solid fa-people-group user-menu-icon"></i>My Community</span></a>
+                                    href="{{ route('community.index', $hasMyCommunities ? ['filter' => 'owned'] : []) }}"><i class="fa-solid fa-people-group user-menu-icon"></i>{{ __('My Community') }}</span></a>
                                                 
                                             @else
                                                 <a href="{{ route('community.index')}}"
                                                     class="dropdown-item d-flex align-items-center gap-2 text-nowrap {{ request()->boolean('my_community') ? 'active' : '' }}">
-                                                    <i class="fa-solid fa-people-group user-menu-icon"></i>Community
+                                                    <i class="fa-solid fa-people-group user-menu-icon"></i>{{ __('Community') }}
                                                 </a>
                                             @endif
                                             {{-- <a href="{{ route('community.index') }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
@@ -1129,7 +1232,7 @@
 
                                             <a href="{{ route('notifications.index') }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
                                                 <i class="fa-regular fa-message user-menu-icon"></i>
-                                                Message
+                                                {{ __('Message') }}
                                             </a>
                                             <hr class="dropdown-divider">
 
@@ -1154,7 +1257,7 @@
         </nav>
 
         <main
-            class="{{ request()->routeIs('login', 'register') ? 'auth-main' : '' }} {{ request()->routeIs('admin.categories.create', 'admin.categories.edit', 'admin.events.edit', 'admin.communities.edit', 'admin.communities.show', 'admin.messages.show') ? 'category-form-main' : '' }}">
+            class="{{ (request()->routeIs('login', 'register') || request()->is('login', 'register')) ? 'auth-main' : '' }} {{ request()->routeIs('admin.categories.create', 'admin.categories.edit', 'admin.events.edit', 'admin.communities.edit', 'admin.communities.show', 'admin.messages.show') ? 'category-form-main' : '' }}">
             @if ($sidebar !== '')
                 <div class="container-fluid px-0">
                     <div class="row g-0 events-layout">
@@ -1170,6 +1273,31 @@
                 @yield('content')
             @endif
         </main>
+
+        <div class="modal fade" id="global-search-modal" tabindex="-1"
+            aria-labelledby="global-search-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="global-search-title">{{ __('Search') }}</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <form method="GET" action="{{ route('search') }}">
+                        <div class="modal-body">
+                            <label class="form-label" for="global-search-input">{{ __('Search events, communities, users, and categories') }}</label>
+                            <input id="global-search-input" class="form-control" type="search" name="search"
+                                value="{{ request('search') }}" placeholder="{{ __('Search') }}" required autofocus>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-magnifying-glass me-1" aria-hidden="true"></i>{{ __('Search') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <div class="modal fade" id="action-confirmation-modal" tabindex="-1"
             aria-labelledby="action-confirmation-title" aria-hidden="true">
@@ -1263,15 +1391,15 @@
   </a>
   <div class="container text-center pt-2">
     <ul class="list-inline small mb-2">
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" href="#">Home</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-term" href="#">Terms and Privacy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-guide" href="#">Community Guidelines</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-report" href="#">Report & Content Removal Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-event" href="#">Event organizer term</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-job" href="#">Job posting policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-adv" href="#">Business Advertising Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-ptop" href="#">Peer-to-Peer Transaction Policy</a></li>
-      <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-contact" href="#">Contact Us</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" href="#">{{ __('Home') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-term" href="#">{{ __('Terms and Privacy') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-guide" href="#">{{ __('Community Guidelines') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-report" href="#">{{ __('Report & Content Removal Policy') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-event" href="#">{{ __('Event organizer term') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-job" href="#">{{ __('Job posting policy') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-adv" href="#">{{ __('Business Advertising Policy') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-ptop" href="#">{{ __('Peer-to-Peer Transaction Policy') }}</a></li>
+    <li class="list-inline-item mx-2"><a class="link-secondary text-decoration-none" data-bs-toggle="modal" data-bs-target="#modal-contact" href="#">{{ __('Contact Us') }}</a></li>
 
 
 
@@ -1286,7 +1414,10 @@
     @include('layouts.modals.job')
     @include('layouts.modals.adv')
     @include('layouts.modals.p2p')
-    @include('layouts.modals.calendar')
+    {{-- @include('layouts.modals.calendar') --}}
   </div>
 </footer>
+            {{-- @break
+    @endswitch
+     --}}
 </html>

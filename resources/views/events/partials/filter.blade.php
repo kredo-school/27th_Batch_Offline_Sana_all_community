@@ -128,7 +128,7 @@
         <input type="hidden" name="sort" value="{{ $sort }}">
 
         <button type="submit" class="btn btn-primary search-button">
-            Search
+            {{ __('Search') }}
 
         </button>
     </form>
@@ -147,7 +147,7 @@
                                 'sort' => 'date_asc',
                             ]),
                         ) }}">
-                        Nearest
+                        {{ __('Nearest') }}
                     </a>
                 </li>
                 <li>
@@ -156,7 +156,7 @@
                                 'sort' => 'date_desc',
                             ]),
                         ) }}">
-                        Furthest
+                        {{ __('Furthest') }}
                     </a>
                 </li>
                 <li>
@@ -165,14 +165,14 @@
                                 'sort' => 'created_desc',
                             ]),
                         ) }}">
-                        Latest
+                        {{ __('Latest') }}
                     </a>
                 </li>
             </ul>
         </div>
 
         <a href="{{ route('events.create') }}" class="btn btn-primary create-event-button">
-            + Create event
+            + {{ __('Create event') }}
 
         </a>
     </div>
@@ -186,7 +186,7 @@
             'sort' => $sort,
         ]) }}"
             class="category-button {{ request('category', 'all') === 'all' ? 'active' : '' }}">
-            All
+            {{ __('All') }}
         </a>
 
         {{-- Categories --}}

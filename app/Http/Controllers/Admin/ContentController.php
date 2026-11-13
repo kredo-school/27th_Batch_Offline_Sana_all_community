@@ -18,7 +18,10 @@ class ContentController extends Controller
 {
     public function categories(Request $request)
     {
-        $query = Category::query();
+        $query = Category::with(['translations' => function ($query) {
+            $query->where('field', 'name')
+                ->where('target_language', 'ja');
+        }]);
 
         if ($search = trim((string) $request->query('search'))) {
             $query->where('name', 'like', "%{$search}%");
@@ -26,6 +29,7 @@ class ContentController extends Controller
 
         return $this->listing($query, 'Categories', [
             'Name' => 'name',
+            'Japanese Name' => 'japanese_name',
             'Created' => 'created_at',
         ], [
             'latest' => ['created_at', 'desc'],

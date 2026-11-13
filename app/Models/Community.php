@@ -12,10 +12,27 @@ class Community extends Model
     // 作成フォームと一覧の絞り込みで使うカテゴリー
     public const CATEGORIES = ['Creative', 'Technology', 'Outdoors', 'Learning', 'Wellness', 'Other'];
 
+    private const LOCALIZED_CATEGORIES = [
+        'ja' => ['Creative' => 'クリエイティブ', 'Technology' => 'テクノロジー', 'Outdoors' => 'アウトドア', 'Learning' => '学習', 'Wellness' => 'ウェルネス', 'Other' => 'その他'],
+        'es' => ['Creative' => 'Creatividad', 'Technology' => 'Tecnología', 'Outdoors' => 'Aire libre', 'Learning' => 'Aprendizaje', 'Wellness' => 'Bienestar', 'Other' => 'Otros'],
+        'pt' => ['Creative' => 'Criatividade', 'Technology' => 'Tecnologia', 'Outdoors' => 'Ar livre', 'Learning' => 'Aprendizagem', 'Wellness' => 'Bem-estar', 'Other' => 'Outro'],
+        'ru' => ['Creative' => 'Творчество', 'Technology' => 'Технологии', 'Outdoors' => 'Активный отдых', 'Learning' => 'Обучение', 'Wellness' => 'Здоровье', 'Other' => 'Другое'],
+        'ar' => ['Creative' => 'الإبداع', 'Technology' => 'التقنية', 'Outdoors' => 'الأنشطة الخارجية', 'Learning' => 'التعلم', 'Wellness' => 'العافية', 'Other' => 'أخرى'],
+        'ko' => ['Creative' => '창작', 'Technology' => '기술', 'Outdoors' => '야외 활동', 'Learning' => '학습', 'Wellness' => '웰니스', 'Other' => '기타'],
+        'zh' => ['Creative' => '创意', 'Technology' => '科技', 'Outdoors' => '户外', 'Learning' => '学习', 'Wellness' => '健康', 'Other' => '其他'],
+        'vi' => ['Creative' => 'Sáng tạo', 'Technology' => 'Công nghệ', 'Outdoors' => 'Ngoài trời', 'Learning' => 'Học tập', 'Wellness' => 'Sức khỏe', 'Other' => 'Khác'],
+        'th' => ['Creative' => 'สร้างสรรค์', 'Technology' => 'เทคโนโลยี', 'Outdoors' => 'กิจกรรมกลางแจ้ง', 'Learning' => 'การเรียนรู้', 'Wellness' => 'สุขภาพ', 'Other' => 'อื่นๆ'],
+    ];
+
     protected $fillable = [
         'owner_id', 'name', 'description', 'category', 'location', 'guidelines',
         'image', 'icon', 'visibility', 'language',
     ];
+
+    public static function getLocalizedCategoryName(string $category): string
+    {
+        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? $category;
+    }
 
     public function owner()
     {

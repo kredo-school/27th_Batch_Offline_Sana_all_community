@@ -94,7 +94,7 @@
 
     {{-- title --}}
     <p class="{{ $community ? 'community-accent' : 'text-primary' }} fw-semibold small mb-1">New event</p>
-    <h1 class="fw-normal mb-1">Make your event.</h1>
+    <h1 class="fw-normal mb-1">{{ __('Make your event.') }}</h1>
     <p class="event-form-help mb-4">
         {{ $community ? "Fill in the details below to publish your event in {$community->name}." : 'Fill in the details below to publish your event.' }}
     </p>
@@ -135,7 +135,7 @@
                         <option value="" hidden>Select category</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>
-                                {{ $category->name }}
+                                {{ $category->localized_name }}
                             </option>
                         @endforeach
                     </select>
@@ -145,13 +145,21 @@
                 {{-- Participation fee → price --}}
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between">
-                        <label for="price" class="event-form-label">Participation fee</label>
+                        <label for="price" class="event-form-label">Participation fee (per person)</label>
                         <span class="event-form-required">REQUIRED</span>
                     </div>
                     <input type="number" name="price" id="price" class="form-control @error('price') is-invalid @enderror"
                            value="{{ old('price', 0) }}" min="0" step="1" placeholder="e.g. 500">
                     <small class="event-form-help">If it is free, please enter 0.</small>
                     @error('price') <div class="text-danger small">{{ $message }}</div> @enderror
+                                        {{-- Fee note --}}
+                    <label for="fee_note" class="event-form-label mt-3">Fee note <span class="event-form-help">(optional)</span></label>
+                    <input type="text" name="fee_note" id="fee_note" maxlength="100"
+                           class="form-control @error('fee_note') is-invalid @enderror"
+                           value="{{ old('fee_note') }}"
+                           placeholder="e.g. Order individually, approx. 220 PHP~">
+                    <small class="event-form-help">If the cost varies, enter 0 above and explain here.</small>
+                    @error('fee_note') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 {{-- Start date → start_at --}}
@@ -232,6 +240,14 @@
                    value="{{ old('location') }}" maxlength="60" placeholder="e.g. Apas, Cebu City, Philippines">
             <small class="event-form-help">Maximum 60 characters.</small>
             @error('location') <div class="text-danger small">{{ $message }}</div> @enderror
+                        {{-- 地図で場所を選ぶ --}}
+            <div class="d-flex align-items-center gap-2 mt-3 mb-2">
+                <button type="button" id="location-search-btn" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-magnifying-glass"></i> Find on map
+                </button>
+                <small class="event-form-help">Or click on the map to choose a place.</small>
+            </div>
+            <div id="location-map" style="height: 320px; border-radius: 8px;"></div>
         </div>
 
         {{-- 03 Event identity --}}
@@ -263,14 +279,12 @@
             </div>
 
             <div class="d-grid gap-2">
-                <label class="event-option">
-                    <input type="radio" name="language" value="en" class="form-check-input me-2" @checked(old('language', 'en') === 'en')>
-                    English
-                </label>
-                <label class="event-option">
-                    <input type="radio" name="language" value="ja" class="form-check-input me-2" @checked(old('language') === 'ja')>
-                    Japanese
-                </label>
+                @foreach (config('app.supported_locales') as $code => $label)
+                    <label class="event-option">
+                        <input type="radio" name="language" value="{{ $code }}" class="form-check-input me-2" @checked(old('language', 'en') === $code)>
+                        {{ $label }}
+                    </label>
+                @endforeach
             </div>
             @error('language') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
@@ -333,9 +347,85 @@
 
         {{-- button --}}
         <div class="d-flex justify-content-end gap-2">
-            <a href="{{ $community ? route('community.show', $community->id) : route('events.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4">Create event</button>
+            <a href="{{ $community ? route('community.show', $community->id) : route('events.index') }}" class="btn btn-outline-secondary px-4">{{ __('Cancel') }}</a>
+            <button type="submit" class="btn btn-primary px-4">{{ __('Create Event') }}</button>
         </div>
     </form>
 </div>
+{{-- 地図（Leaflet + OpenStreetMap） --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('location');
+        const mapEl = document.getElementById('location-map');
+        const searchBtn = document.getElementById('location-search-btn');
+        if (!input || !mapEl || !searchBtn) return;
+
+        // 最初はセブ市を表示
+        const map = L.map(mapEl).setView([10.3157, 123.8854], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+        function placeMarker(lat, lng) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng]).addTo(map);
+            }
+        }
+
+        // 長い住所を「場所, 市, 国」の形に短くする（最大60文字）
+        function shortAddress(data) {
+            const a = data.address || {};
+            const parts = [
+                a.amenity || a.building || a.road || a.suburb || a.neighbourhood || a.village,
+                a.city || a.town || a.municipality,
+                a.country
+            ].filter(Boolean);
+            const text = parts.length ? parts.join(', ') : (data.display_name || '');
+            return text.slice(0, 60);
+        }
+
+        // 地図をクリック → ピンを立てて住所を入力欄に入れる
+        map.on('click', async function (e) {
+            placeMarker(e.latlng.lat, e.latlng.lng);
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=en&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+                const data = await res.json();
+                input.value = shortAddress(data);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // 「Find on map」→ 入力した住所を地図で探す
+        searchBtn.addEventListener('click', async function () {
+            const q = input.value.trim();
+            if (!q) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+                const results = await res.json();
+                if (results.length) {
+                    const lat = parseFloat(results[0].lat);
+                    const lng = parseFloat(results[0].lon);
+                    map.setView([lat, lng], 16);
+                    placeMarker(lat, lng);
+                } else {
+                    alert('Place not found. Try a different address.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // バリデーションエラーで戻ってきたときは、入力済みの住所を地図に表示
+        if (input.value.trim()) {
+            searchBtn.click();
+        }
+    });
+</script>
 @endsection

@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_report']))
+                        <p>{!! nl2br(e($siteSettings['policy_report'])) !!}</p>
+                    @else
                     <p>
                         <strong>通報・コンテンツ削除ポリシー</strong> <br>
                         <strong>Report & Content Removal Policy</strong> <br>
@@ -178,6 +181,7 @@ Email： XXXXXXXX<br>
 Operator / 運営者： XXXXXXXX<br>
 Location / 所在地： Philippines<br>
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

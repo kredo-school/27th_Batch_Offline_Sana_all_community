@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
 import os from 'node:os';
 
 // この PC の Wi-Fi などのアドレス（例: 10.20.60.189）を探す
@@ -25,8 +26,10 @@ export default defineConfig(({ mode }) => {
 
     return {
         plugins: [
+            tailwindcss(),
             laravel({
                 input: [
+                    'resources/css/app.css',
                     'resources/sass/app.scss',
                     'resources/js/app.js',
                 ],

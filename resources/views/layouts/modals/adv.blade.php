@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_advertising']))
+                        <p>{!! nl2br(e($siteSettings['policy_advertising'])) !!}</p>
+                    @else
                     <p>
                         <strong>店舗・事業者広告ポリシー</strong> <br>
                         <strong>Business Advertising Policy</strong> <br>
@@ -105,6 +108,7 @@ Business ad reports / 広告通報： XXXXXXXX
 Email： XXXXXXXX
 
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

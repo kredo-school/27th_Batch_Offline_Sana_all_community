@@ -22,6 +22,16 @@
                     @enderror
                 </div>
 
+                <div class="mb-4">
+                    <label for="name_ja" class="form-label">Japanese Category Name</label>
+                    <input type="text" name="name_ja" id="name_ja"
+                        class="form-control @error('name_ja') is-invalid @enderror"
+                        value="{{ old('name_ja', $nameJa) }}">
+                    @error('name_ja')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <div class="d-flex justify-content-center gap-2">
                     <a href="{{ route('admin.categories.index') }}" class="btn btn-outline-warning btn-custom-outline">Cancel</a>
                     <button type="submit" class="btn btn-primary">Update Category</button>

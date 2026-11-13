@@ -117,6 +117,22 @@
             font-weight: 600;
         }
 
+        .user-action-avatar {
+            cursor: pointer;
+        }
+
+        .user-action-menu {
+            position: fixed;
+            z-index: 1080;
+            display: none;
+            width: 250px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15);
+        }
+
         .star-rating {
             display: inline-flex;
             flex-direction: row-reverse;
@@ -152,9 +168,9 @@
         $daysLeft = (int) floor(now()->diffInDays($event->join_till, false));
         $isOwner = auth()->id() === $event->owner_id;
         $visibilityLabels = [
-            'public' => 'All users',
-            'members' => 'Logged-in users',
-            'followers' => 'Followers only',
+            'public' => __('All users'),
+            'members' => __('Logged-in users'),
+            'followers' => __('Followers only'),
         ];
         $dateText =
             $event->start_at->format('M j (D) H:i') .
@@ -184,20 +200,21 @@
 
         {{-- back（コミュニティ内のイベントはそのコミュニティへ戻る） --}}
         @if ($event->community)
-            <a href="{{ route('community.show', $event->community) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
+            <a href="{{ route('community.show', $event->community) }}"
+                class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
                 {{ $event->community->name }}</a>
         @else
-            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
-                events</a>
+            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to') }}
+                {{ __('Events') }}</a>
         @endif
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
         @if ($isCancelled)
             <div class="alert alert-danger">
-                <strong>This event has been cancelled.</strong>
+                <strong>{{ __('This event has been cancelled.') }}</strong>
                 @if ($event->cancel_reason)
-                    <div class="mt-1" style="white-space: pre-line;">Reason: {{ $event->cancel_reason }}</div>
+                    <div class="mt-1" style="white-space: pre-line;">{{ __('Reason') }}: {{ $event->cancel_reason }}</div>
                 @endif
             </div>
         @endif
@@ -212,18 +229,18 @@
                     @if ($event->image)
                         <img src="{{ asset('storage/' . $event->image) }}" alt="{{ $event->title }}">
                     @else
-                        <div class="event-cover-empty">No image</div>
+                        <div class="event-cover-empty">{{ __('No image') }}</div>
                     @endif
 
                     <span class="event-deadline">
                         @if ($isCancelled)
-                            cancelled
+                            {{ __('Cancelled') }}
                         @elseif ($daysLeft > 0)
-                            closes in {{ $daysLeft }} days
+                            {{ __('Closes in') }} {{ $daysLeft }} {{ __('days') }}
                         @elseif ($daysLeft === 0)
-                            closes today
+                            {{ __('Closes today') }}
                         @else
-                            registration closed
+                            {{ __('Registration closed') }}
                         @endif
                     </span>
                 </div>
@@ -232,7 +249,7 @@
                 <div class="event-card">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         @if ($category)
-                            <span class="event-category">{{ $category->name }}</span>
+                            <span class="event-category">{{ $category->localized_name }}</span>
                         @endif
                         <span class="event-help">{{ $visibilityLabels[$event->visibility] ?? $event->visibility }}</span>
                     </div>
@@ -242,52 +259,55 @@
                     <div class="row g-2 mb-2">
                         <div class="col-md-6">
                             <div class="event-info-box">
-                                <div class="event-info-label">Date</div>
+                                <div class="event-info-label">{{ __('Date') }}</div>
                                 <div class="event-info-value">{{ $dateText }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="event-info-box">
-                                <div class="event-info-label">Location</div>
+                                <div class="event-info-label">{{ __('Location') }}</div>
                                 <div class="event-info-value">{{ $event->location }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="event-info-box">
-                                <div class="event-info-label">Fee</div>
+                                <div class="event-info-label">{{ __('Fee') }}</div>
                                 <div class="event-info-value">{{ $priceText }}</div>
+                                @if ($feeNote)
+                                    <div class="event-help">{{ $feeNote }}</div>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="event-info-box">
-                                <div class="event-info-label">Capacity</div>
-                                <div class="event-info-value">{{ $event->capacity }} people</div>
+                                <div class="event-info-label">{{ __('Capacity') }}</div>
+                                <div class="event-info-value">{{ $event->capacity }} {{ __('people') }}</div>
                             </div>
                         </div>
                         <div class="col-12">
                             <div class="event-info-box">
-                                <div class="event-info-label">Registration closes</div>
+                                <div class="event-info-label">{{ __('Registration closes') }}</div>
                                 <div class="event-info-value">{{ $event->join_till->format('M j (D) H:i') }}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center gap-2 mt-3">
-                        <span class="event-help">Language</span>
-                        <span class="event-lang {{ $event->language === 'en' ? 'active-en' : '' }}">EN English</span>
-                        <span class="event-lang {{ $event->language === 'ja' ? 'active-ja' : '' }}">JA Japanese</span>
+                        <span class="event-help">{{ __('Language') }}</span>
+                        <span class="event-lang {{ $event->language === 'en' ? 'active-en' : '' }}">EN {{ __('English') }}</span>
+                        <span class="event-lang {{ $event->language === 'ja' ? 'active-ja' : '' }}">JA {{ __('Japanese') }}</span>
                     </div>
                 </div>
 
                 {{-- description --}}
                 <div class="event-card">
-                    <h5>Description</h5>
+                    <h5>{{ __('Description') }}</h5>
                     <p class="mb-0" style="white-space: pre-line;">{{ $event->description }}</p>
                 </div>
                 {{-- reviews (イベント終了後だけ) --}}
                 @if ($hasEnded)
                     <div class="event-card">
-                        <h5 class="mb-3">Reviews({{ $reviewCount }})</h5>
+                        <h5 class="mb-3">{{ __('Reviews') }}({{ $reviewCount }})</h5>
 
                         {{-- 平均と評価ごとの棒グラフ --}}
                         <div class="d-flex align-items-center gap-4 mb-3">
@@ -347,7 +367,11 @@
                         {{-- レビュー一覧 --}}
                         @forelse ($event->reviews as $review)
                             <div class="d-flex gap-2 mb-3">
-                                <div class="event-avatar">{{ strtoupper(substr($review->user->name ?? '?', 0, 1)) }}</div>
+                                <a href="{{ route('profile.show', $review->user_id) }}"
+                                    class="event-avatar user-action-avatar text-decoration-none"
+                                    data-user-id="{{ $review->user_id }}"
+                                    data-user-name="{{ $review->user->username ?: $review->user->name }}"
+                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($review->user->name ?? '?', 0, 1)) }}</a>
                                 <div>
                                     <div>
                                         <strong>{{ $review->user->name ?? 'Unknown' }}</strong>
@@ -398,8 +422,11 @@
                             @endphp
 
                             <div class="d-flex gap-2 mb-3">
-                                <div class="event-avatar">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}
-                                </div>
+                                <a href="{{ route('profile.show', $comment->user_id) }}"
+                                    class="event-avatar user-action-avatar text-decoration-none"
+                                    data-user-id="{{ $comment->user_id }}"
+                                    data-user-name="{{ $comment->user->username ?: $comment->user->name }}"
+                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}</a>
                                 <div class="flex-grow-1">
                                     <div>
                                         <strong>{{ $comment->user->name ?? 'Unknown' }}</strong>
@@ -466,7 +493,10 @@
 
                 {{-- fee & join --}}
                 <div class="event-card">
-                    <div class="fs-4">{{ $priceText }}</div>
+                    <div class="{{ $hasPrice ? 'fs-4' : 'fs-5' }}">{{ $priceText }}</div>
+                    @if ($feeNote)
+                        <div class="event-help mb-1">{{ $feeNote }}</div>
+                    @endif
                     <div class="event-help mb-1">{{ $joined }}/{{ $event->capacity }} joined</div>
                     <div class="progress mb-3" style="height: 6px;">
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>
@@ -539,7 +569,14 @@
                     <div class="d-flex align-items-center gap-2">
                         <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
                         <div>
-                            <div>{{ $event->owner->name ?? 'Unknown' }}</div>
+                            @if ($event->owner)
+                                <a href="{{ route('profile.show', $event->owner->id) }}"
+                                    class="text-decoration-none text-reset fw-semibold">
+                                    {{ $event->owner->name }}
+                                </a>
+                            @else
+                                <div>Unknown</div>
+                            @endif
                             <div class="event-help">
                                 host
                                 @if ($hostReviewCount)
@@ -696,4 +733,71 @@
             </div>
         </div>
     @endif
+    @auth
+        <div id="user-action-menu" class="user-action-menu " role="menu" aria-hidden="true">
+            <a id="user-action-profile" class="btn btn-link d-block text-start px-0 text-decoration-none text-dark" href="#">
+                {{ __('View profile') }}
+            </a>
+            <button id="user-action-message" type="button" class="btn btn-link d-block text-start px-0 js-open-message-chat text-decoration-none text-dark"
+                data-message-chat-url="" data-message-chat-send-url="" data-message-chat-name="">
+                {{ __('Send message') }}
+            </button>
+            <form id="user-action-block-form" method="POST" class="mb-2">
+                @csrf
+                <button type="submit" class="btn btn-link d-block text-start text-warning px-0 text-decoration-none">
+                    {{ __('Block user') }}
+                </button>
+            </form>
+            <form id="user-action-report-form" method="POST">
+                @csrf
+                <label for="user-action-report-detail" class="small text-muted">{{ __('Report user') }}</label>
+                <textarea id="user-action-report-detail" name="detail" class="form-control form-control-sm mb-2"
+                    rows="2" maxlength="2000" required placeholder="{{ __('Reason for report') }}"></textarea>
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100">{{ __('Report to admin') }}</button>
+            </form>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const menu = document.getElementById('user-action-menu');
+                const profileLink = document.getElementById('user-action-profile');
+                const messageButton = document.getElementById('user-action-message');
+                const blockForm = document.getElementById('user-action-block-form');
+                const reportForm = document.getElementById('user-action-report-form');
+                const userUrl = (template, userId) => template.replace('__USER__', userId);
+                const profileTemplate = @json(route('profile.show', '__USER__'));
+                const messageTemplate = @json(route('messages.conversation', '__USER__'));
+                const sendTemplate = @json(route('messages.send', '__USER__'));
+                const blockTemplate = @json(route('messages.block', '__USER__'));
+                const reportTemplate = @json(route('users.report', '__USER__'));
+
+                document.querySelectorAll('.user-action-avatar').forEach(function (avatar) {
+                    avatar.addEventListener('contextmenu', function (event) {
+                        event.preventDefault();
+                        const userId = avatar.dataset.userId;
+                        if (String(userId) === String(@json(auth()->id()))) {
+                            return;
+                        }
+
+                        profileLink.href = userUrl(profileTemplate, userId);
+                        messageButton.dataset.messageChatUrl = userUrl(messageTemplate, userId);
+                        messageButton.dataset.messageChatSendUrl = userUrl(sendTemplate, userId);
+                        messageButton.dataset.messageChatName = avatar.dataset.userName || '';
+                        blockForm.action = userUrl(blockTemplate, userId);
+                        reportForm.action = userUrl(reportTemplate, userId);
+                        menu.style.display = 'block';
+                        menu.style.left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
+                        menu.style.top = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8) + 'px';
+                        menu.setAttribute('aria-hidden', 'false');
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!menu.contains(event.target)) {
+                        menu.style.display = 'none';
+                        menu.setAttribute('aria-hidden', 'true');
+                    }
+                });
+            });
+        </script>
+    @endauth
 @endsection
