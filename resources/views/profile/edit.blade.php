@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Edit Profile')
+@section('title', __('Edit Profile'))
 @section('content')
 @php
     $imageUrl = fn ($path, $fallback) => $path
@@ -17,7 +17,7 @@
     </nav>
     <div class="profile-editor-content">
         <header class="profile-editor-heading">
-            <h1>Edit Profile</h1>
+            <h1>{{ __('Edit Profile') }}</h1>
             <p class="profile-editor-intro">Update your profile information. This information will be visible to other users.</p>
         </header>
         <div class="profile-editor-main">
@@ -114,11 +114,11 @@
                             <small id="birthday-help">Your age is calculated from your birthday.</small>
                         </div>
                         <div><label for="gender">Gender (optional)</label><select id="gender" name="gender">@foreach (['' => 'Prefer not to say', 'male' => 'Male', 'female' => 'Female', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('gender', $user->profile?->gender) == $value)>{{ $label }}</option>@endforeach</select></div>
-                        <div><label for="preferred_language">Language <span class="profile-required">*</span></label><select id="preferred_language" name="preferred_language" required>@foreach (['en' => 'English', 'ja' => 'Japanese'] as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
+                        <div><label for="preferred_language">Language <span class="profile-required">*</span></label><select id="preferred_language" name="preferred_language" required>@foreach (config('app.supported_locales') as $code => $language)<option value="{{ $code }}" @selected(old('preferred_language', $user->preferred_language) === $code)>{{ $language }}</option>@endforeach</select></div>
                         <div class="profile-bio-field"><label for="bio">Bio</label><div class="profile-bio-input"><textarea id="bio" name="bio" maxlength="300" rows="3" aria-describedby="bio-count">{{ old('bio', $user->profile?->bio) }}</textarea><span id="bio-count" aria-live="polite">0/300</span></div></div>
                     </div>
                 </section>
-                <div class="profile-editor-actions"><a href="{{ route('profile.show', $user->id) }}">Cancel</a><button type="submit">Save Changes</button></div>
+                <div class="profile-editor-actions"><a href="{{ route('profile.show', $user->id) }}">{{ __('Cancel') }}</a><button type="submit">{{ __('Save Changes') }}</button></div>
             </form>
         </div>
         <aside class="profile-preview profile-overview" aria-label="Profile preview">

@@ -35,22 +35,22 @@
     <nav class="sidebar-menu">
         <a href="{{ route('community.index') }}"
             class="{{ request()->routeIs('community.index') && ! in_array($communityFilter, ['joined', 'owned'], true) ? 'active' : '' }}">
-            Top Page
+            {{ __('Top Page') }}
         </a>
 
         <a href="{{ route('community.index', ['filter' => 'joined']) }}"
             class="{{ $communityFilter === 'joined' ? 'active' : '' }}">
-            Joined Communities
+            {{ __('Joined Communities') }}
         </a>
 
         <a href="{{ route('community.index', ['filter' => 'owned']) }}"
             class="{{ $communityFilter === 'owned' ? 'active' : '' }}">
-            My Communities
+            {{ __('My Communities') }}
         </a>
 
         <a href="{{ route('community.create') }}"
             class="{{ request()->routeIs('community.create') ? 'active' : '' }}">
-            Create Community
+            {{ __('Create Community') }}
         </a>
     </nav>
 </aside>

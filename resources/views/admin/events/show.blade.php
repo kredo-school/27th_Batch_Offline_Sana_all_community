@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Event Details')
+@section('title', __('Event Details'))
 
 @section('content')
     <section class="category-form-panel mx-auto">
         <div class="card mx-auto">
             <div class="card-body">
                 <a href="{{ route('admin.events') }}" class="small text-decoration-none">
-                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>Back to events
+                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>{{ __('Back to') }} {{ __('Events') }}
                 </a>
 
                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mt-3 mb-4">
@@ -23,7 +23,7 @@
                         </div>
                     </div>
                     <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit event
+                        <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>{{ __('Edit event') }}
                     </a>
                 </div>
 
@@ -32,8 +32,8 @@
                         alt="{{ $event->title }}" style="max-height: 360px; width: 100%; object-fit: cover;">
                 @endif
 
-                <h2 class="h5">Description</h2>
-                <p class="mb-4" style="white-space: pre-wrap;">{{ $event->description ?: 'No description provided.' }}</p>
+                <h2 class="h5">{{ __('Description') }}</h2>
+                <p class="mb-4" style="white-space: pre-wrap;">{{ $event->description ?: __('No description provided.') }}</p>
 
                 <dl class="row mb-0">
                      @if ($event->owner->avatar)
@@ -55,7 +55,7 @@
                     <dt class="col-sm-4">Categories</dt>
                     <dd class="col-sm-8">
                         @forelse ($event->categories as $category)
-                            <span class="badge bg-success me-1">{{ $category->name }}</span>
+                            <span class="badge bg-success me-1">{{ $category->localized_name }}</span>
                         @empty
                             -
                         @endforelse

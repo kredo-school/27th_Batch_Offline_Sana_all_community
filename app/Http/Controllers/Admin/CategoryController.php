@@ -25,13 +25,13 @@ class CategoryController extends Controller
     // Store a new category
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_ja' => 'nullable|string|max:255',
         ]);
 
-        Category::create([
-            'name' => $request->name,
-        ]);
+        $category = Category::create(['name' => $validated['name']]);
+        $this->saveJapaneseName($category, $validated['name_ja'] ?? null);
 
         return redirect()->route('admin.categories.index');
     }
@@ -39,19 +39,21 @@ class CategoryController extends Controller
     // Show category edit form
     public function edit(Category $category)
     {
-        return view('admin.categories.edit', compact('category'));
+        $nameJa = $category->japanese_name;
+
+        return view('admin.categories.edit', compact('category', 'nameJa'));
     }
 
     // Update category
     public function update(Request $request, Category $category)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_ja' => 'nullable|string|max:255',
         ]);
 
-        $category->update([
-            'name' => $request->name,
-        ]);
+        $category->update(['name' => $validated['name']]);
+        $this->saveJapaneseName($category, $validated['name_ja'] ?? null);
 
         return redirect()->route('admin.categories.index');
     }
@@ -62,5 +64,23 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('admin.categories.index');
+    }
+
+    private function saveJapaneseName(Category $category, ?string $nameJa): void
+    {
+        $translation = $category->translations()
+            ->where('field', 'name')
+            ->where('target_language', 'ja');
+
+        if ($nameJa === null || trim($nameJa) === '') {
+            $translation->delete();
+
+            return;
+        }
+
+        $category->translations()->updateOrCreate(
+            ['field' => 'name', 'target_language' => 'ja'],
+            ['source_language' => 'en', 'translated_text' => trim($nameJa)],
+        );
     }
 }

@@ -10,6 +10,7 @@ use App\Models\Follow;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Models\SiteSetting;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
@@ -34,21 +35,25 @@ class AppServiceProvider extends ServiceProvider
     {
         Relation::morphMap([
             'comment' => Comment::class,
+            'category' => Category::class,
             'community' => Community::class,
             'event' => Event::class,
         ]);
 
         View::composer('layouts.app', function ($view): void {
             $currentUserId = Auth::id();
-            $categoryOrder = ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs'];
+            $storedOrder = json_decode((string) SiteSetting::get('header_category_order', ''), true);
+            $categoryOrder = array_values(array_filter(is_array($storedOrder) ? $storedOrder : ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs']));
+            $categoryOrder = $categoryOrder ?: ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs'];
             $storedCategories = Category::query()
                 ->whereIn('name', $categoryOrder)
+                ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
                 ->get()
                 ->keyBy('name');
             $categories = collect($categoryOrder)->mapWithKeys(function (string $label) use ($storedCategories): array {
                 $category = $storedCategories->get($label);
 
-                return [$category?->id ?? $label => $label];
+                return [$category?->id ?? $label => $category?->localized_name ?? $label];
             });
             $unreadMessageSenderIds = $currentUserId
                 ? Message::query()
@@ -89,7 +94,7 @@ class AppServiceProvider extends ServiceProvider
             $notifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
-                    ->whereNotIn('type', ['community_message', 'community_join_request'])
+                    ->whereNotIn('type', ['community_message', 'event_comment', 'admin_contact'])
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -99,7 +104,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereNotIn('type', ['community_message', 'community_join_request'])
+                    ->whereNotIn('type', ['community_message', 'event_comment', 'admin_contact'])
                     ->count()
                 : 0;
             $unreadMessagesCount = $currentUserId
@@ -107,18 +112,48 @@ class AppServiceProvider extends ServiceProvider
                     ->where('receiver_id', $currentUserId)
                     ->whereNull('read_at')
                     ->count()
+                    + UserNotification::query()
+                        ->where('user_id', $currentUserId)
+                        ->where('type', 'event_comment')
+                        ->whereNull('read_at')
+                        ->count()
+                    + ($currentUserId && Auth::user()?->role === 'admin'
+                        ? UserNotification::query()
+                            ->where('user_id', $currentUserId)
+                            ->where('type', 'admin_contact')
+                            ->whereNull('read_at')
+                            ->count()
+                        : 0)
                 : 0;
+            $eventCommentNotifications = $currentUserId
+                ? UserNotification::query()
+                    ->where('user_id', $currentUserId)
+                    ->where('type', 'event_comment')
+                    ->with('related')
+                    ->latest()
+                    ->limit(5)
+                    ->get()
+                : collect();
+            $adminContactNotifications = $currentUserId && Auth::user()?->role === 'admin'
+                ? UserNotification::query()
+                    ->where('user_id', $currentUserId)
+                    ->where('type', 'admin_contact')
+                    ->with('related')
+                    ->latest()
+                    ->limit(5)
+                    ->get()
+                : collect();
             $communityNotificationCount = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', ['community_message', 'community_join_request'])
+                    ->whereIn('type', ['community_message', 'community_join_request', 'community_join_approved'])
                     ->count()
                 : 0;
             $communityNotifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
-                    ->whereIn('type', ['community_message', 'community_join_request'])
+                    ->whereIn('type', ['community_message', 'community_join_request', 'community_join_approved'])
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -160,10 +195,13 @@ class AppServiceProvider extends ServiceProvider
                 'notifications' => $notifications,
                 'unreadNotificationCount' => $unreadNotificationCount,
                 'unreadMessagesCount' => $unreadMessagesCount,
+                'eventCommentNotifications' => $eventCommentNotifications,
+                'adminContactNotifications' => $adminContactNotifications,
                 'communityNotificationCount' => $communityNotificationCount,
                 'communityNotifications' => $communityNotifications,
                 'hasMyEvents' => $hasMyEvents,
                 'hasMyCommunities' => $hasMyCommunities,
+                'siteSettings' => SiteSetting::query()->pluck('value', 'key'),
             ]);
         });
 
@@ -205,6 +243,9 @@ class AppServiceProvider extends ServiceProvider
         if ($frequentCategoryIds->isNotEmpty()) {
             // よく見る順に並べる（MySQL 専用の FIELD() を使わず、テスト用の SQLite でも動くようにする）
             $personalizedCategories = Category::whereIn('id', $frequentCategoryIds)
+                ->with(['translations' => fn ($query) => $query
+                    ->where('field', 'name')
+                    ->where('target_language', app()->getLocale())])
                 ->get()
                 ->sortBy(fn (Category $category) => $frequentCategoryIds->search($category->id))
                 ->values();
@@ -217,7 +258,11 @@ class AppServiceProvider extends ServiceProvider
                 ->take(3)
                 ->pluck('category_id');
                 
-            $personalizedCategories = Category::whereIn('id', $popularIds)->get();
+            $personalizedCategories = Category::whereIn('id', $popularIds)
+                ->with(['translations' => fn ($query) => $query
+                    ->where('field', 'name')
+                    ->where('target_language', app()->getLocale())])
+                ->get();
         }
 
         // ビューに配列として渡す

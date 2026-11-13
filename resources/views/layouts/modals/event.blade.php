@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_event']))
+                        <p>{!! nl2br(e($siteSettings['policy_event'])) !!}</p>
+                    @else
                     <p>
                         <strong>イベント開催者規約</strong> <br>
                         <strong>Event Organizer Terms</strong> <br>
@@ -101,6 +104,7 @@ Operator may remove or restrict listings that violate its policies.<br>
 Event support / イベントに関するお問い合わせ： XXXXXXXX
 Email： XXXXXXXX
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

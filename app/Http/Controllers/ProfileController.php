@@ -74,7 +74,9 @@ class ProfileController extends Controller
             ->paginate(12, ['communities.*'], 'communities_page')
             ->appends(['tab' => 'community']);
 
-        $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
+        $isFollowing = Auth::check() && Follow::where('follower_id', Auth::id())
+            ->where('following_id', $user->id)
+            ->exists();
         $followBlocked = Auth::id() !== $user->id
             && UserBlock::blocksEitherWay(Auth::id(), $user->id);
         $connectionType = $request->query('connections');
@@ -134,7 +136,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:1|max:255',
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore(Auth::id())],
-            'preferred_language' => ['required', Rule::in(['en', 'ja'])],
+            'preferred_language' => ['required', Rule::in(array_keys(config('app.supported_locales')))],
             'email' => [
                 'sometimes',
                 'required',

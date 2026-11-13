@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_guidelines']))
+                        <p>{!! nl2br(e($siteSettings['policy_guidelines'])) !!}</p>
+                    @else
                     <p>
                     <strong>コミュニティガイドライン</strong><br>
                     <strong>Community Guidelines</strong> <br>
@@ -335,6 +338,7 @@ Share. Connect. Help. Respect.<br>
 
 シェアする。つながる。助け合う。尊重する。<br>
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

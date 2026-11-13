@@ -143,21 +143,40 @@ class ExampleTest extends TestCase
 
         $this->post(route('admin.categories.store'), [
             'name' => 'Community Events',
+            'name_ja' => 'コミュニティイベント',
         ])->assertRedirect(route('admin.categories.index'));
 
         $category = Category::where('name', 'Community Events')->firstOrFail();
 
+        $this->get(route('admin.categories.index'))
+            ->assertOk()
+            ->assertSee('コミュニティイベント');
+
         $this->get(route('admin.categories.edit', $category))
             ->assertOk()
-            ->assertSee('Community Events');
+            ->assertSee('Community Events')
+            ->assertSee('value="コミュニティイベント"', false);
+
+        $fallbackCategory = Category::create(['name' => 'Events']);
+
+        $this->get(route('admin.categories.edit', $fallbackCategory))
+            ->assertOk()
+            ->assertSee('value="イベント"', false);
 
         $this->patch(route('admin.categories.update', $category), [
             'name' => 'Local Events',
+            'name_ja' => '地域イベント',
         ])->assertRedirect(route('admin.categories.index'));
 
         $this->assertDatabaseHas('categories', [
             'id' => $category->id,
             'name' => 'Local Events',
+        ]);
+        $this->assertDatabaseHas('translations', [
+            'translatable_id' => $category->id,
+            'field' => 'name',
+            'target_language' => 'ja',
+            'translated_text' => '地域イベント',
         ]);
 
         $this->delete(route('admin.categories.destroy', $category))

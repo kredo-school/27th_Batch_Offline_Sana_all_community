@@ -108,7 +108,7 @@
                         <option value="" hidden>Select category</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected(old('category_id', $selectedCategoryId) == $category->id)>
-                                {{ $category->name }}
+                                {{ $category->localized_name }}
                             </option>
                         @endforeach
                     </select>
@@ -250,14 +250,12 @@
             </div>
 
             <div class="d-grid gap-2">
-                <label class="event-option">
-                    <input type="radio" name="language" value="en" class="form-check-input me-2" @checked(old('language', $event->language) === 'en')>
-                    English
-                </label>
-                <label class="event-option">
-                    <input type="radio" name="language" value="ja" class="form-check-input me-2" @checked(old('language', $event->language) === 'ja')>
-                    Japanese
-                </label>
+                    @foreach (config('app.supported_locales') as $code => $label)
+                        <label class="event-option">
+                            <input type="radio" name="language" value="{{ $code }}" class="form-check-input me-2" @checked(old('language', $event->language) === $code)>
+                            {{ $label }}
+                        </label>
+                    @endforeach
             </div>
             @error('language') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
