@@ -51,6 +51,21 @@ class Event extends Model
         return $this->belongsTo(Community::class);
     }
 
+    // コミュニティ外のイベントは誰にでも見せる。コミュニティのイベントは、そのコミュニティが見える人にだけ見せる
+    // （招待のみのコミュニティのイベントを、関係ない人の一覧や詳細ページに出さない）
+    public function scopeVisibleTo($query, ?User $user)
+    {
+        return $query->where(function ($query) use ($user) {
+            $query->whereNull($this->qualifyColumn('community_id'))
+                ->orWhereHas('community', fn ($query) => $query->visibleTo($user));
+        });
+    }
+
+    public function isVisibleTo(?User $user): bool
+    {
+        return ! $this->community_id || (bool) $this->community?->isVisibleTo($user);
+    }
+
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'event_categories')->using(EventCategory::class);

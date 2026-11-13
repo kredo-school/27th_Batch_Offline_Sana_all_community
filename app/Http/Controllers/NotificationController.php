@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Community;
+use App\Models\Event;
 use App\Models\UserNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class NotificationController extends Controller
             ->where('user_id', Auth::id())
             ->when(
                 $type === 'community',
-                fn ($query) => $query->whereIn('type', ['community_message', 'community_join_request'])
+                fn ($query) => $query->whereIn('type', UserNotification::COMMUNITY_TYPES)
             )
             ->when(
                 in_array($type, ['general', 'maintenance'], true),
@@ -88,12 +89,32 @@ class NotificationController extends Controller
             $notification->update(['read_at' => now()]);
         }
 
+        // 招待・参加申請の結果のお知らせは、そのコミュニティのページを開く
+        // （招待が取り消されて見られなくなっていたら、コミュニティの通知一覧へ）
+        if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined'], true)) {
+            $community = Community::find($notification->related_id);
+
+            return $community && $community->isVisibleTo(Auth::user())
+                ? redirect()->route('community.show', $community->id)
+                : redirect()->route('notifications.index', ['type' => 'community']);
+        }
+
         if (in_array($notification->type, ['community_message', 'community_join_request'], true)
             && $notification->related_id !== null) {
             return redirect()->route('notifications.index', [
                 'type' => 'community',
                 'community' => $notification->related_id,
             ]);
+        }
+
+        // コミュニティのイベントの中止のお知らせは、そのイベントの詳細ページで中止の理由を見せる
+        if ($notification->type === 'event_cancelled') {
+            $event = Event::find($notification->related_id);
+
+            // コミュニティを抜けるなどして見られなくなったイベントなら、コミュニティの通知一覧へ
+            return $event && $event->isVisibleTo(Auth::user())
+                ? redirect()->route('events.show', $event->id)
+                : redirect()->route('notifications.index', ['type' => 'community']);
         }
 
         return view('notifications.show', compact('notification'));

@@ -571,6 +571,131 @@
                 height: min(60vh, 480px);
             }
         }
+
+        /* スマホ幅でハンバーガーメニューを開いたときの並び（パソコン幅の見た目は変えない） */
+        @media (max-width: 767.98px) {
+            .navbar > .container-fluid > .my-auto {
+                width: 100%;
+            }
+
+            .all-navbar {
+                position: relative;
+                left: 0;
+                margin-top: 8px;
+                padding: 12px 4px 8px;
+                border-top: 1px solid #e9ecef;
+            }
+
+            .all-navbar .navbar-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .all-navbar .navbar-nav .mt-1,
+            .all-navbar .navbar-nav .mt-2,
+            .all-navbar .navbar-nav .mt-3,
+            .all-navbar .navbar-nav.my-auto {
+                margin-top: 0 !important;
+            }
+
+            /* カテゴリー: 3 列のボタン */
+            .all-navbar .navbar-nav > .category-nav:first-child {
+                flex: 0 0 100%;
+            }
+
+            .all-navbar .navbar-nav > .category-nav:first-child > ul {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 6px;
+                margin: 0 !important;
+            }
+
+            .all-navbar .navbar-nav > .category-nav:first-child > ul > li {
+                margin: 0 !important;
+                font-size: 0.95rem;
+            }
+
+            .all-navbar .navbar-nav > .category-nav:first-child > ul > li > a {
+                padding: 8px 4px;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                text-align: center;
+                white-space: nowrap;
+            }
+
+            /* Community と View All: 2 つ並びのボタン */
+            .all-navbar .navbar-nav > .nav-item:has(> .header-list) {
+                flex: 1 1 calc(50% - 4px);
+            }
+
+            .all-navbar .navbar-nav > .nav-item > .header-list {
+                padding: 8px 4px;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                text-align: center;
+            }
+
+            .all-navbar .navbar-nav > .nav-item > .header-list .h5 {
+                font-size: 0.95rem;
+            }
+
+            /* 言語は 1 行 */
+            .all-navbar .navbar-nav > .nav-item.dropdown:has(#languageDropdown) {
+                flex: 0 0 100%;
+                margin-left: 0 !important;
+                padding-top: 4px;
+                border-top: 1px solid #e9ecef;
+            }
+
+            /* メッセージ・通知・カレンダー・コミュニティ通知のアイコンを横一列に */
+            .all-navbar .navbar-nav > .navbar-icon-group {
+                display: flex;
+                margin: 0 !important;
+            }
+
+            .all-navbar .navbar-icon-group .nav-link {
+                display: grid;
+                place-items: center;
+                width: 44px;
+                height: 44px;
+                padding: 0;
+                border: 1px solid #e9ecef;
+                border-radius: 10px;
+            }
+
+            /* アイコンのメニューは、メニュー全体の幅いっぱいに開く */
+            .all-navbar .navbar-icon-group > .dropdown {
+                position: static;
+                display: block !important; /* 横並び（d-flex）だとメニューがアイコンの真下に出ないため */
+            }
+
+            .all-navbar .navbar-icon-group .dropdown-menu {
+                position: absolute;
+                top: auto !important; /* Bootstrap の top: 100% だとメニュー全体の一番下に出るので、アイコンの真下にする */
+                margin-top: 6px !important;
+                left: 4px;
+                right: 4px;
+                min-width: 0 !important;
+                max-width: none;
+            }
+
+            /* CREATE ボタンとユーザーメニュー */
+            .all-navbar .btn-create {
+                width: auto;
+                height: 44px;
+                margin-left: auto;
+                padding: 0 18px;
+                font-weight: 600;
+            }
+
+            .all-navbar .navbar-nav > .dropdown-sm {
+                flex: 0 0 100%;
+                padding-top: 4px;
+                border-top: 1px solid #e9ecef;
+            }
+        }
     </style>
 
     @if ($sidebar !== '')
@@ -614,6 +739,47 @@
             .event-content-col {
                 flex: 1;
                 min-width: 0;
+            }
+
+            /* スマホ幅ではサイドバーを本文の上に積む（横に並べると本文の幅が 0 になるため） */
+            @media (max-width: 767.98px) {
+                .events-layout {
+                    flex-wrap: wrap;
+                }
+
+                .events-layout > .event-sidebar-col,
+                .events-layout > .event-content-col {
+                    flex: 0 0 100%;
+                    width: 100%;
+                    max-width: 100%;
+                }
+
+                .events-layout > .event-sidebar-col {
+                    position: static;
+                    height: auto;
+                    overflow: visible;
+                    margin-bottom: 0 !important;
+                    border-bottom: 1px solid #e9ecef;
+                }
+
+                .event-sidebar-col .event-sidebar,
+                .event-sidebar-col .community-sidebar {
+                    min-height: 0;
+                }
+
+                /* イベントのサイドバーはカレンダーで背が高いので、本文の下に回す */
+                .events-layout > .event-sidebar-col--events {
+                    order: 2;
+                    border-top: 1px solid #e9ecef;
+                    border-bottom: 0;
+                }
+
+                /* コミュニティのサイドバーはリンクを横に並べて場所を取らないようにする */
+                .event-sidebar-col .community-sidebar .sidebar-menu {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
             }
         </style>
     @endif
@@ -759,6 +925,13 @@
                                                 <a class="nav-link btn text-dark" href="{{ route('login') }}"><i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i></a>
                                             </li>
                                             @else
+                                            <button id="notificationDropdown" class="nav-link dropdown-toggle text-dark no-arrow position-relative" type="button"
+                                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Notifications') }}">
+                                                <i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i>
+                                                @if ($unreadNotificationCount > 0)
+                                                    <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0">{{ $unreadNotificationCount }}</span>
+                                                @endif
+                                            </button>
                                             <ul class="dropdown-menu border-primary rounded bg-success" aria-labelledby="notificationDropdown"
                                                 style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
                                                 <li class="text-center bg-success mb-1"><span class="h5 text-white">Notifications</span></li>
@@ -791,13 +964,6 @@
                                                 @endforelse
                                                 <li class="bg-white"><a href="{{ route('notifications.index') }}" class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
                                             </ul>
-                                            <button id="notificationDropdown" class="nav-link dropdown-toggle text-dark no-arrow position-relative" type="button"
-                                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Notifications') }}">
-                                                <i class="fa-regular fa-bell dropdown-icon-lg" aria-hidden="true"></i>
-                                                @if ($unreadNotificationCount > 0)
-                                                    <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0">{{ $unreadNotificationCount }}</span>
-                                                @endif
-                                            </button>
                                             @endguest
                                         </li>
                                     </ul>
@@ -823,19 +989,52 @@
                                                     data-bs-toggle="dropdown" aria-expanded="false" aria-label="Community">
                                                     <i class="fa-solid fa-people-group dropdown-icon-lg" aria-hidden="true"></i>
                                                     @if ($communityNotificationCount > 0)
-                                                        <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0">{{ $communityNotificationCount }}</span>
+                                                        <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0 js-community-notification-badge">{{ $communityNotificationCount }}</span>
                                                     @endif
                                                 </button>
-                                                <ul class="dropdown-menu dropdown-menu-end border-primary rounded bg-white"
+                                                <ul class="dropdown-menu dropdown-menu-end border-primary rounded bg-white js-community-notification-list"
                                                     style="max-height: 24rem; min-width: 20rem; overflow-y: auto;">
                                                     <li class="bg-primary text-center mb-1"><span class="h5 text-white">Community</span></li>
                                                     @forelse ($communityNotifications as $communityNotification)
-                                                        <li class="dropdown-content bg-white">
+                                                        {{-- チャットの通知は、Chat タブで読んだときに画面上からも消せるようにコミュニティの ID を持たせる --}}
+                                                        <li class="dropdown-content bg-white"
+                                                            @if ($communityNotification->type === 'community_message') data-community-chat-notification="{{ $communityNotification->related_id }}" @endif>
                                                             <a href="{{ $communityNotification->type === 'community_message' && $communityNotification->related_id
                                                                 ? route('community.show', $communityNotification->related_id) . '#chat'
                                                                 : route('notifications.show', $communityNotification) }}"
                                                                 class="dropdown-item text-wrap border-bottom text-start {{ $communityNotification->read_at ? '' : 'dropdown-item--unread fw-semibold' }}">
-                                                                <span class="d-block">{{ $communityNotification->related?->name ?? __('Community') }}</span>
+                                                                @if ($communityNotification->type === 'event_cancelled')
+                                                                    {{-- コミュニティのイベントの中止: コミュニティ名、イベント名、理由 --}}
+                                                                    <span class="d-block">{{ $communityNotification->related?->community?->name ?? __('Community') }}</span>
+                                                                    <span class="d-block small text-danger">{{ __('Event cancelled') }}: {{ $communityNotification->related?->title }}</span>
+                                                                    @if ($communityNotification->related?->cancel_reason)
+                                                                        <span class="d-block small text-secondary">{{ __('Reason') }}: {{ \Illuminate\Support\Str::limit($communityNotification->related->cancel_reason, 80) }}</span>
+                                                                    @endif
+                                                                @else
+                                                                    <span class="d-block">{{ $communityNotification->related?->name ?? __('Community') }}</span>
+                                                                    {{-- チャットと参加申請を見分けられるように、種類と送った人を 1 行で出す --}}
+                                                                    @if ($communityNotification->type === 'community_message')
+                                                                        <span class="d-block small text-primary">
+                                                                            <i class="fa-regular fa-comment me-1" aria-hidden="true"></i>{{ $communityNotification->sender_name ? __('New message from :name', ['name' => $communityNotification->sender_name]) : __('New message') }}
+                                                                        </span>
+                                                                    @elseif ($communityNotification->type === 'community_join_request')
+                                                                        <span class="d-block small text-success">
+                                                                            <i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i>{{ $communityNotification->sender_name ? __('Join request from :name', ['name' => $communityNotification->sender_name]) : __('Join request') }}
+                                                                        </span>
+                                                                    @elseif ($communityNotification->type === 'community_invite')
+                                                                        <span class="d-block small text-warning-emphasis">
+                                                                            <i class="fa-solid fa-envelope-open-text me-1" aria-hidden="true"></i>{{ $communityNotification->sender_name ? __('Invitation from :name', ['name' => $communityNotification->sender_name]) : __('Invitation') }}
+                                                                        </span>
+                                                                    @elseif ($communityNotification->type === 'community_join_approved')
+                                                                        <span class="d-block small text-success">
+                                                                            <i class="fa-solid fa-circle-check me-1" aria-hidden="true"></i>{{ __('Your join request was approved') }}
+                                                                        </span>
+                                                                    @elseif ($communityNotification->type === 'community_join_declined')
+                                                                        <span class="d-block small text-secondary">
+                                                                            <i class="fa-solid fa-circle-xmark me-1" aria-hidden="true"></i>{{ __('Your join request was declined') }}
+                                                                        </span>
+                                                                    @endif
+                                                                @endif
                                                                 @if ($communityNotification->created_at)
                                                                     <time class="d-block small text-muted" datetime="{{ $communityNotification->created_at->toIso8601String() }}">
                                                                         {{ $communityNotification->created_at->format('M j, Y g:i A') }}
@@ -844,7 +1043,7 @@
                                                             </a>
                                                         </li>
                                                     @empty
-                                                        <li><span class="dropdown-item-text text-muted">{{ __('No community notifications') }}</span></li>
+                                                        <li><span class="dropdown-item-text text-muted">{{ __('No new community notifications') }}</span></li>
                                                     @endforelse
                                                     <li class="bg-white"><a href="{{ route('notifications.index', ['type' => 'community']) }}" class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
                                                 </ul>
@@ -959,7 +1158,7 @@
             @if ($sidebar !== '')
                 <div class="container-fluid px-0">
                     <div class="row g-0 events-layout">
-                        <aside class="col-md-3 col-lg-2 mb-4 mb-md-0 event-sidebar-col">
+                        <aside class="col-md-3 col-lg-2 mb-4 mb-md-0 event-sidebar-col event-sidebar-col--{{ $sidebar }}">
                             @include($sidebar === 'community' ? 'community.partials.sidebar' : 'events.partials.sidebar')
                         </aside>
                         <section class="col-md-9 col-lg-10 px-0 event-content-col">

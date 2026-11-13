@@ -31,7 +31,9 @@ class ProfileController extends Controller
             },
             'followers', 'following',
         ])->findOrFail($id);
+        // 招待のみのコミュニティのイベントは、そのコミュニティが見えない人のプロフィール表示には出さない
         $events = $user->eventsOwned()
+            ->visibleTo(Auth::user())
             ->with('categories')
             ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
             ->when(Auth::id() !== $user->id, function ($query) {
@@ -49,6 +51,7 @@ class ProfileController extends Controller
 
         $bookmarkedEvents = Auth::id() === $user->id
             ? $user->bookmarkedEvents()
+                ->visibleTo(Auth::user())
                 ->with('categories')
                 ->orderByPivot('created_at', 'desc')
                 ->paginate(12, ['events.*'], 'bookmarks_page')

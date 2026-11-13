@@ -104,10 +104,10 @@ class CommunityMembershipTest extends TestCase
         [$community] = $this->community('private');
         $user = User::factory()->create();
 
+        // 招待されていない人には、招待のみのコミュニティのページ自体を見せない
         $this->actingAs($user)
             ->get(route('community.show', $community->id))
-            ->assertSee('Invite only')
-            ->assertDontSee(route('community.join', $community->id), false);
+            ->assertNotFound();
 
         $this->actingAs($user)
             ->post(route('community.join', $community->id))

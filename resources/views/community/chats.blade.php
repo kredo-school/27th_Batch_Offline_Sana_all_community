@@ -2,6 +2,8 @@
 
 @section('title', 'Community Chats')
 
+@section('sidebar', 'community')
+
 @section('content')
     <style>
         .community-chats-page {

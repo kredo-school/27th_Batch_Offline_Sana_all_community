@@ -16,6 +16,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
+use App\Models\UserNotification;
 use App\Models\UserReview;
 
 class EventController extends Controller
@@ -221,6 +222,7 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
+        $this->abortUnlessVisible($event);
          DB::table('category_views')->insert([
             'user_id'     => Auth::id(),
             'session_id'  => session()->getId(),
@@ -356,6 +358,7 @@ class EventController extends Controller
 
     public function storeComment(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         if ($event->end_at->isPast()) {
         return back()->with('error', 'Comments are closed because this event has ended.');
         }
@@ -374,6 +377,7 @@ class EventController extends Controller
 
     public function requestJoin(Event $event)
     {
+        $this->abortUnlessVisible($event);
         if ($event->status === 'cancelled') {
             return back()->with('error', 'This event has been cancelled.');
         }
@@ -491,15 +495,38 @@ class EventController extends Controller
             'cancel_reason' => 'required|string|max:500',
         ]);
 
-        $event->status = 'cancelled';
-        $event->cancel_reason = $request->cancel_reason;
-        $event->save();
+        DB::transaction(function () use ($request, $event): void {
+            $event->status = 'cancelled';
+            $event->cancel_reason = $request->cancel_reason;
+            $event->save();
+
+            // コミュニティ内のイベントだけ、参加確定・申請中の人に中止になったことと理由を知らせる
+            if (! $event->community_id) {
+                return;
+            }
+            $owner = $request->user();
+            $event->participants()
+                ->whereIn('status', ['approved', 'pending'])
+                ->where('user_id', '!=', $event->owner_id)
+                ->pluck('user_id')
+                ->unique()
+                ->each(fn ($userId) => UserNotification::create([
+                    'user_id' => $userId,
+                    'sender_name' => $owner->username ?: $owner->name,
+                    'type' => 'event_cancelled',
+                    'title' => 'Event cancelled',
+                    'message' => "The event '{$event->title}' has been cancelled.\nReason: {$event->cancel_reason}",
+                    'related_type' => Event::class,
+                    'related_id' => $event->id,
+                ]));
+        });
 
         return redirect()->route('events.show', $event);
     }
 
     public function storeReview(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         // イベントが終わっていなければ止める
         if (! $event->end_at->isPast()) {
             return back()->with('error', 'You can write a review after the event ends.');
@@ -544,6 +571,7 @@ class EventController extends Controller
 
     public function storeHostReview(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         if (! $event->end_at->isPast()) {
             return back()->with('error', 'You can review the host after the event ends.');
         }
@@ -681,9 +709,16 @@ class EventController extends Controller
         return redirect()->route('events.index');
     }
 
+    // 招待のみのコミュニティのイベントは、そのコミュニティが見えない人には存在しないものとして扱う
+    private function abortUnlessVisible(Event $event): void
+    {
+        abort_unless($event->isVisibleTo(Auth::user()), 404);
+    }
+
     /////////// Bookmark /////////////////////
     public function addBookmark(Event $event)
     {
+        $this->abortUnlessVisible($event);
         Bookmark::firstOrCreate([
             'user_id' => Auth::id(),
             'event_id' => $event->id,
@@ -717,6 +752,7 @@ class EventController extends Controller
                     ->where('user_id', Auth::id())
                     ->select('event_id')
             )
+            ->visibleTo(Auth::user())
             ->with(['categories'])
             ->orderBy('start_at')
             ->paginate(10);

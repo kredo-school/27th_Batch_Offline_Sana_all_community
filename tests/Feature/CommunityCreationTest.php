@@ -397,7 +397,7 @@ class CommunityCreationTest extends TestCase
             $this->actingAs($owner)
                 ->get(route($routeName, $communityEvent))
                 ->assertOk()
-                ->assertSee('community-sidebar', false)
+                ->assertSee('<aside class="community-sidebar">', false)
                 ->assertSee('community-nav-active', false)
                 ->assertDontSee('event-sidebar"', false);
         }
@@ -496,6 +496,30 @@ class CommunityCreationTest extends TestCase
         $this->actingAs($owner)
             ->post(route('events.store'), $data)
             ->assertSessionHasErrors(['language', 'visibility', 'approval_required']);
+    }
+
+    public function test_cancelled_events_are_not_listed_as_upcoming_on_the_detail_page(): void
+    {
+        $owner = User::factory()->create();
+        $community = $owner->communitiesOwned()->create(['name' => 'Upcoming Club', 'description' => 'Has events.']);
+        $dates = [
+            'owner_id' => $owner->id,
+            'start_at' => now()->addWeek(),
+            'end_at' => now()->addWeek()->addHour(),
+            'join_till' => now()->addWeek(),
+        ];
+        $community->events()->create(['title' => 'Still On Picnic', ...$dates]);
+        $community->events()->create(['title' => 'Rained Out Picnic', 'status' => 'cancelled', ...$dates]);
+
+        $response = $this->actingAs($owner)
+            ->get(route('community.show', $community->id))
+            ->assertOk()
+            ->assertSee('Still On Picnic')
+            ->assertDontSee('Rained Out Picnic');
+
+        // Home タブの Upcoming と Events タブの一覧の両方から外れている
+        $this->assertFalse($response->viewData('community')->events->contains('title', 'Rained Out Picnic'));
+        $this->assertFalse($response->viewData('allEvents')->contains('title', 'Rained Out Picnic'));
     }
 
     public function test_community_detail_page_links_to_event_details(): void

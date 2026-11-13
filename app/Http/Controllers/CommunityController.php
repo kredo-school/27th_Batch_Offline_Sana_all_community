@@ -25,7 +25,8 @@ class CommunityController extends Controller
             : null;
         $userId = $request->user()->id;
 
-        $communities = Community::when($filter === 'joined', function ($query) use ($userId) {
+        // 招待のみのコミュニティは、オーナー・メンバー・招待中の人の一覧にだけ出す
+        $communities = Community::visibleTo($request->user())->when($filter === 'joined', function ($query) use ($userId) {
             $query->where(function ($query) use ($userId) {
                 $query->where('owner_id', $userId)
                     ->orWhereHas('memberships', fn ($query) => $query->where('user_id', $userId)->where('status', 'approved'));
@@ -51,7 +52,7 @@ class CommunityController extends Controller
         $upcomingEvents = Event::with('community')
             ->where('status', 'published')
             ->where('start_at', '>=', now())
-            ->whereHas('community')
+            ->whereHas('community', fn ($query) => $query->visibleTo($request->user()))
             ->orderBy('start_at')
             ->limit(10)
             ->get();
@@ -111,12 +112,20 @@ class CommunityController extends Controller
         $community = Community::with([
             'owner.profile',
             'owner',
-            'events' => fn ($query) => $query->where('start_at', '>=', now())
+            // 中止したイベントは Upcoming に出さない（一覧ページの Upcoming と同じく公開中だけ）
+            'events' => fn ($query) => $query->where('status', 'published')
+                ->where('start_at', '>=', now())
                 ->orderBy('start_at')
                 ->limit(5),
             'members' => fn ($query) => $query->wherePivot('status', 'approved')->with('profile'),
         ])->findOrFail($id);
-        $allEvents = $community->events()->where('start_at', '>=', now())->orderBy('start_at')->get();
+        // 招待のみのコミュニティは、関係ない人には存在しないものとして扱う
+        abort_unless($community->isVisibleTo($request->user()), 404);
+        $allEvents = $community->events()
+            ->where('status', 'published')
+            ->where('start_at', '>=', now())
+            ->orderBy('start_at')
+            ->get();
         $eventCount = $community->events()->count();
         $memberCount = $community->memberships()->where('status', 'approved')->count();
         if (! $community->memberships()->where('user_id', $community->owner_id)->where('status', 'approved')->exists()) {
@@ -132,9 +141,13 @@ class CommunityController extends Controller
         $pendingMembers = $request->user()->id === $community->owner_id
             ? $community->members()->wherePivot('status', 'pending')->with('profile')->get()
             : collect();
+        // オーナーだけに見せる、承諾待ちの招待の一覧
+        $invitedMembers = $request->user()->id === $community->owner_id
+            ? $community->members()->wherePivot('status', 'invited')->with('profile')->get()
+            : collect();
 
         return view('community.show', compact(
-            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'unreadCount', 'unreadSenders', 'membershipStatus', 'pendingMembers'
+            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'unreadCount', 'unreadSenders', 'membershipStatus', 'pendingMembers', 'invitedMembers'
         ));
     }
 
