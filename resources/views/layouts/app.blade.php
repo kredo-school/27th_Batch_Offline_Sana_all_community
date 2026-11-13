@@ -29,7 +29,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
 
     <!-- FAVICON -->
@@ -515,6 +514,11 @@
             list-style: none;
         }
 
+        /* Bootstrap controls menu display; override Tailwind's collapse visibility. */
+        #navbarSupportedContent {
+            visibility: visible;
+        }
+
         .navbar-icon-group .nav-link {
             padding-right: 0.35rem;
             padding-left: 0.35rem;
@@ -685,9 +689,7 @@
 </head>
 
 <body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
-    @switch('__translation_driven_layout__')
-        @case('ja')
-            <div id="app">
+    <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}">

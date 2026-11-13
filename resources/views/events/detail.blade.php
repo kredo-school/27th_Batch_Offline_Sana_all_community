@@ -178,7 +178,7 @@
             ($event->start_at->isSameDay($event->end_at)
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
-        $priceText = (float) $event->price == 0 ? __('Free') : number_format((float) $event->price) . ' PHP';
+        $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP';
         $isCancelled = $event->status === 'cancelled';
         $hasEnded = $event->end_at->isPast();
         $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;
@@ -200,7 +200,8 @@
 
         {{-- back（コミュニティ内のイベントはそのコミュニティへ戻る） --}}
         @if ($event->community)
-            <a href="{{ route('community.show', $event->community) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
+            <a href="{{ route('community.show', $event->community) }}"
+                class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
                 {{ $event->community->name }}</a>
         @else
             <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to') }}
@@ -272,6 +273,9 @@
                             <div class="event-info-box">
                                 <div class="event-info-label">{{ __('Fee') }}</div>
                                 <div class="event-info-value">{{ $priceText }}</div>
+                                @if ($feeNote)
+                                    <div class="event-help">{{ $feeNote }}</div>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -489,7 +493,10 @@
 
                 {{-- fee & join --}}
                 <div class="event-card">
-                    <div class="fs-4">{{ $priceText }}</div>
+                    <div class="{{ $hasPrice ? 'fs-4' : 'fs-5' }}">{{ $priceText }}</div>
+                    @if ($feeNote)
+                        <div class="event-help mb-1">{{ $feeNote }}</div>
+                    @endif
                     <div class="event-help mb-1">{{ $joined }}/{{ $event->capacity }} joined</div>
                     <div class="progress mb-3" style="height: 6px;">
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>
@@ -560,13 +567,16 @@
                 <div class="event-card">
                     <div class="event-help mb-2">Hosted by</div>
                     <div class="d-flex align-items-center gap-2">
-                        <a href="{{ route('profile.show', $event->owner_id) }}"
-                            class="event-avatar user-action-avatar text-decoration-none"
-                            data-user-id="{{ $event->owner_id }}"
-                            data-user-name="{{ $event->owner->username ?: $event->owner->name }}"
-                            aria-label="{{ __('View profile') }}">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</a>
+                        <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
                         <div>
-                            <div>{{ $event->owner->name ?? 'Unknown' }}</div>
+                            @if ($event->owner)
+                                <a href="{{ route('profile.show', $event->owner->id) }}"
+                                    class="text-decoration-none text-reset fw-semibold">
+                                    {{ $event->owner->name }}
+                                </a>
+                            @else
+                                <div>Unknown</div>
+                            @endif
                             <div class="event-help">
                                 host
                                 @if ($hostReviewCount)

@@ -11,6 +11,160 @@ class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_host_rating_summary_matches_visible_reviews_and_excludes_deleted_reviews(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $attributes = ['owner_id' => $owner->id, 'start_at' => now()->addDay(),
+            'join_till' => now(), 'end_at' => now()->addDays(2)];
+        foreach ([['public', 'published', 5], ['public', 'published', 4],
+            ['private', 'published', 1], ['public', 'draft', 2]] as [$visibility, $status, $rating]) {
+            $event = Event::create($attributes + ['title' => 'Rated event', 'visibility' => $visibility, 'status' => $status]);
+            \App\Models\UserReview::create(['event_id' => $event->id, 'user_id' => $viewer->id, 'rating' => $rating]);
+        }
+        $deleted = \App\Models\UserReview::create(['event_id' => $event->id, 'user_id' => $owner->id, 'rating' => 5]);
+        $deleted->delete();
+        $this->actingAs($viewer)->get(route('profile.show', $owner->id))->assertOk()
+            ->assertViewHas('hostRatingSummary', fn ($summary) => (int) $summary->review_count === 2 && (float) $summary->average_rating === 4.5)
+            ->assertSee('4.5')->assertDontSee('2 reviews')
+            ->assertSee('href="'.e(route('profile.show', ['id' => $owner->id, 'tab' => 'review', 'review_type' => 'host']).'#profile-activity').'"', false);
+        $this->actingAs($owner)->get(route('profile.show', ['id' => $owner->id, 'tab' => 'review', 'review_type' => 'host']))
+            ->assertOk()->assertViewHas('hostRatingSummary', fn ($summary) => (int) $summary->review_count === 4 && (float) $summary->average_rating === 3.0)
+            ->assertViewHas('hostReviews', fn ($reviews) => $reviews->total() === 4);
+        $this->actingAs($owner)->get(route('profile.show', $viewer->id))->assertOk()
+            ->assertDontSee('No host reviews yet')
+            ->assertViewHas('hostRatingSummary', fn ($summary) => (int) $summary->review_count === 0 && $summary->average_rating === null);
+    }
+
+    public function test_event_stats_link_to_the_correct_lists_and_keep_history_private(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $joinedUrl = route('profile.show', ['id' => $owner->id, 'tab' => 'history']).'#profile-activity';
+        $hostedUrl = route('profile.show', ['id' => $owner->id, 'tab' => 'event']).'#profile-activity';
+
+        $this->actingAs($owner)->get(route('profile.show', $owner->id))
+            ->assertOk()->assertSee('href="'.$joinedUrl.'"', false)
+            ->assertSee('href="'.$hostedUrl.'"', false);
+        $this->get($joinedUrl)->assertOk()->assertViewHas('activeTab', 'history')
+            ->assertSee('No events match this filter.');
+        $this->get($hostedUrl)->assertOk()->assertViewHas('activeTab', 'event')
+            ->assertSee('No events shared yet.');
+        $this->actingAs($viewer)->get(route('profile.show', $owner->id))
+            ->assertOk()->assertDontSee('href="'.$joinedUrl.'"', false)
+            ->assertSee('href="'.$hostedUrl.'"', false);
+    }
+
+    public function test_empty_feed_links_to_searchable_people_excluding_self_and_blocks(): void
+    {
+        $viewer = User::factory()->create();
+        $person = User::factory()->create(['name' => str_repeat('LongName', 20), 'username' => 'discover_me']);
+        $blocked = User::factory()->create();
+        \App\Models\UserBlock::block($blocked->id, $viewer->id);
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'feed']))
+            ->assertOk()->assertSee('Follow people to see their public posts here.')->assertSee('Find people');
+        $url = route('profile.show', ['id' => $viewer->id, 'connections' => 'people', 'tab' => 'feed']);
+        $this->get($url)->assertOk()->assertViewHas('connections', fn ($people) => $people->total() === 1 && $people->first()->id === $person->id);
+        $data = ['connections_owner' => $viewer->id, 'tab' => 'feed', 'connections' => 'people'];
+        $this->post(route('profile.follow', $person), $data)->assertRedirect($url);
+        $this->get($url)->assertOk()->assertViewHas('user', fn ($user) => $user->following_count === 1)
+            ->assertViewHas('connections', fn ($people) => $people->first()->followed_by_viewer);
+        $this->delete(route('profile.unfollow', $person), $data)->assertRedirect($url);
+        $this->get($url)->assertOk()->assertViewHas('user', fn ($user) => $user->following_count === 0)
+            ->assertViewHas('connections', fn ($people) => !$people->first()->followed_by_viewer);
+    }
+
+    public function test_unfollowing_last_person_on_last_page_returns_to_valid_page(): void
+    {
+        $viewer = User::factory()->create();
+        $people = User::factory()->count(21)->create();
+        $viewer->following()->attach($people->pluck('id'), ['created_at' => now()]);
+        $url = route('profile.show', ['id' => $viewer->id, 'connections' => 'following', 'connections_page' => 2]);
+        $response = $this->actingAs($viewer)->get($url)->assertOk();
+        $person = $response->viewData('connections')->first();
+        $this->delete(route('profile.unfollow', $person), ['connections_owner' => $viewer->id, 'connections' => 'following', 'connections_page' => 2])->assertRedirect();
+        $this->get($url)->assertRedirect(route('profile.show', ['id' => $viewer->id, 'tab' => 'event', 'connections' => 'following', 'connection_search' => '', 'connections_page' => 1]));
+        $this->get(route('profile.show', ['id' => $viewer->id, 'connections' => 'following']))
+            ->assertOk()->assertViewHas('user', fn ($user) => $user->following_count === 20)
+            ->assertViewHas('connections', fn ($users) => $users->total() === 20);
+    }
+
+    public function test_connections_search_relationships_and_follow_return_to_modal(): void
+    {
+        $viewer = User::factory()->create();
+        $person = User::factory()->create(['name' => 'Searchable Friend', 'username' => 'find_friend']);
+        $person->profile()->create(['bio' => 'Enjoys coffee and hiking.']);
+        $viewer->followers()->attach($person->id, ['created_at' => now()]);
+        $url = route('profile.show', ['id' => $viewer->id, 'connections' => 'followers', 'connection_search' => 'find_friend', 'tab' => 'event']);
+        $this->actingAs($viewer)->get($url)->assertOk()->assertSee('Follows you')->assertDontSee('Enjoys coffee and hiking.')
+            ->assertViewHas('connections', fn ($users) => $users->total() === 1 && !$users->first()->followed_by_viewer && $users->first()->follows_viewer);
+        $data = ['connections_owner' => $viewer->id, 'connections' => 'followers', 'connection_search' => 'find_friend', 'tab' => 'event'];
+        $this->post(route('profile.follow', $person), $data)->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee('Mutual')->assertSee('Unfollow');
+        $this->delete(route('profile.unfollow', $person), $data)->assertRedirect($url);
+        $this->get(route('profile.show', ['id' => $viewer->id, 'connections' => 'followers', 'connection_search' => 'nobody matches']))
+            ->assertOk()->assertSee('No users found.')->assertViewHas('connections', fn ($users) => $users->total() === 0);
+    }
+
+    public function test_other_profiles_hide_sidebar_and_show_their_own_sections(): void
+    {
+        $viewer = User::factory()->create();
+        $owner = User::factory()->create();
+        $this->actingAs($viewer)->get(route('profile.show', $owner))
+            ->assertOk()->assertViewHas('activeTab', 'event')
+            ->assertDontSee('aria-label="Personal navigation"', false)
+            ->assertSee('profile-visitor')
+            ->assertSee(route('profile.show', ['id' => $owner->id, 'tab' => 'review']))
+            ->assertSee('User profile sections')->assertDontSee('Block list')
+            ->assertDontSee('data-profile-panel="history"', false)
+            ->assertDontSee('data-profile-panel="bookmark"', false);
+        $this->get(route('profile.show', ['id' => $owner->id, 'tab' => 'feed']))
+            ->assertRedirect(route('profile.show', ['id' => $viewer->id, 'tab' => 'feed']));
+        $this->get(route('profile.show', $viewer))
+            ->assertOk()->assertSee('aria-label="Personal navigation"', false)
+            ->assertDontSee('profile-visitor');
+    }
+
+    public function test_profile_feed_shows_public_posts_from_followed_users_only(): void
+    {
+        $viewer = User::factory()->create();
+        $follower = User::factory()->create();
+        $followed = User::factory()->create();
+        $viewer->followers()->attach($follower->id, ['created_at' => now()]);
+        $viewer->following()->attach($followed->id, ['created_at' => now()]);
+        $attributes = ['start_at' => now()->addDay(), 'end_at' => now()->addDays(2), 'join_till' => now()];
+        foreach ([[$follower, 'public', 'published'], [$follower, 'private', 'published'], [$follower, 'public', 'draft'], [$followed, 'public', 'published']] as [$owner, $visibility, $status]) {
+            Event::create($attributes + ['owner_id' => $owner->id, 'title' => 'Feed post', 'visibility' => $visibility, 'status' => $status]);
+        }
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'profile']))
+            ->assertOk()->assertSee('Posts from people you follow')
+            ->assertViewHas('followingEvents', fn ($events) => $events->total() === 1 && $events->first()->owner_id === $followed->id);
+        $this->get(route('profile.show', $followed))
+            ->assertOk()->assertViewHas('followingEvents', fn ($events) => $events->total() === 1 && $events->first()->owner_id === $followed->id);
+    }
+
+    public function test_editor_block_list_only_shows_current_users_active_blocks_and_can_unblock(): void
+    {
+        $viewer = User::factory()->create();
+        $blocked = User::factory()->create(['name' => 'Blocked Person']);
+        $other = User::factory()->create(['name' => 'Other Private Block']);
+        $expired = User::factory()->create(['name' => 'Expired Block']);
+        \App\Models\UserBlock::block($blocked->id, $viewer->id);
+        \App\Models\UserBlock::block($other->id, $blocked->id);
+        \App\Models\UserBlock::block($expired->id, $viewer->id)->update(['expires_at' => now()->subDay()]);
+
+        $url = route('profile.edit', ['tab' => 'blocked']);
+        $this->get($url)->assertRedirect(route('login'));
+        $this->actingAs($viewer)->get(route('profile.edit'))->assertOk()->assertSee('Block list');
+        $this->get($url)->assertOk()->assertSee('Blocked Person')->assertSee('Unblock')
+            ->assertDontSee('Other Private Block')->assertDontSee('Expired Block')
+            ->assertViewHas('blockedUsers', fn ($blocks) => $blocks->total() === 1);
+        $this->from($url)->delete(route('messages.unblock', $blocked))->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee("You haven't blocked anyone.", false);
+        $this->assertDatabaseHas('user_blocks', ['blocked_by' => $blocked->id, 'user_id' => $other->id]);
+        $this->get(route('profile.show', $viewer))->assertOk()->assertDontSee('Block list');
+    }
+
     public function test_community_tab_lists_approved_memberships_and_hides_private_communities_from_others(): void
     {
         $owner = User::factory()->create();
@@ -34,6 +188,61 @@ class ProfileTest extends TestCase
         $this->get(route('profile.show', $viewer->id))->assertOk()->assertSee('No joined communities yet.');
     }
 
+    public function test_hosted_filters_and_bookmark_sorting_respect_visibility_and_dates(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        foreach ([['Later', 5, 'published', 'public'], ['Soon', 1, 'published', 'public'],
+            ['Past', -3, 'published', 'public'], ['Draft', 2, 'draft', 'public'],
+            ['Private', 4, 'published', 'private']] as [$title, $days, $status, $visibility]) {
+            $event = Event::create(['owner_id' => $owner->id, 'title' => $title, 'status' => $status, 'visibility' => $visibility,
+                'start_at' => now()->addDays($days), 'end_at' => now()->addDays($days)->addHour(), 'join_till' => now()->subWeek()]);
+            if ($visibility === 'public' && $status === 'published') {
+                $owner->bookmarkedEvents()->attach($event, ['created_at' => now()->addDays($days)]);
+            }
+        }
+        $url = route('profile.show', ['id' => $owner->id, 'tab' => 'event']);
+        $this->actingAs($owner)->get($url.'&event_filter=draft')->assertOk()
+            ->assertViewHas('events', fn ($events) => $events->pluck('title')->all() === ['Draft']);
+        $this->get($url.'&event_filter=past')->assertOk()
+            ->assertViewHas('events', fn ($events) => $events->pluck('title')->all() === ['Past']);
+        $this->actingAs($viewer)->get($url.'&event_filter=upcoming')->assertOk()
+            ->assertViewHas('events', fn ($events) => $events->pluck('title')->all() === ['Soon', 'Later']);
+        $this->get($url.'&event_filter=draft')->assertOk()->assertViewHas('eventFilter', 'all')
+            ->assertViewHas('events', fn ($events) => $events->count() === 3);
+        $url = route('profile.show', ['id' => $owner->id, 'tab' => 'bookmark']);
+        $this->actingAs($owner)->get($url)->assertOk()
+            ->assertViewHas('bookmarkedEvents', fn ($events) => $events->pluck('title')->all() === ['Later', 'Soon']);
+        $this->get($url.'&bookmark_filter=all&bookmark_sort=nearest')->assertOk()
+            ->assertViewHas('bookmarkedEvents', fn ($events) => $events->pluck('title')->all() === ['Soon', 'Later', 'Past']);
+        $this->get($url.'&bookmark_filter=invalid&bookmark_sort=invalid')->assertOk()
+            ->assertViewHas('bookmarkFilter', 'upcoming')->assertViewHas('bookmarkSort', 'saved');
+    }
+
+    public function test_history_filters_and_sorts_participation(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        $viewer = User::factory()->create();
+        $host = User::factory()->create();
+        foreach ([['Later', 5, 'approved'], ['Soon', 1, 'approved'], ['Past', -2, 'approved'],
+            ['Waiting', 2, 'pending'], ['Rejected', 3, 'rejected']] as [$title, $days, $status]) {
+            $event = Event::create(['owner_id' => $host->id, 'title' => $title,
+                'start_at' => now()->addDays($days), 'end_at' => now()->addDays($days)->addHour(), 'join_till' => now()->subWeek()]);
+            $viewer->attendingEvents()->attach($event, ['status' => $status]);
+        }
+        $url = route('profile.show', ['id' => $viewer->id, 'tab' => 'history']);
+        $this->actingAs($viewer)->get($url)->assertOk()
+            ->assertViewHas('historyEvents', fn ($events) => $events->pluck('title')->all() === ['Soon', 'Later']);
+        foreach (['pending' => ['Waiting'], 'past' => ['Past'], 'all' => ['Soon', 'Waiting', 'Later', 'Past']] as $filter => $titles) {
+            $this->get($url.'&history_filter='.$filter)->assertOk()
+                ->assertViewHas('historyEvents', fn ($events) => $events->pluck('title')->all() === $titles);
+        }
+        $this->get($url.'&history_filter=all&history_sort=oldest')->assertOk()
+            ->assertViewHas('historyEvents', fn ($events) => $events->pluck('title')->all() === ['Past', 'Soon', 'Waiting', 'Later']);
+        $this->get($url.'&history_filter=invalid&history_sort=invalid')->assertOk()
+            ->assertViewHas('historyFilter', 'upcoming')->assertViewHas('historySort', 'nearest');
+    }
+
     public function test_history_lists_the_owners_joined_and_pending_events(): void
     {
         $viewer = User::factory()->create();
@@ -49,16 +258,16 @@ class ProfileTest extends TestCase
             }
         }
 
-        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_filter' => 'all', 'history_sort' => 'newest']))
             ->assertOk()->assertSee('History approved')->assertSee('History pending')->assertSee('Pending approval')
             ->assertDontSee('History rejected')
+            ->assertViewHas('user', fn ($user) => $user->attending_events_count === 2)
             ->assertViewHas('historyEvents', fn ($events) => $events->total() === 2
                 && (bool) $events->firstWhere('title', 'History approved')->is_bookmarked);
-        $this->actingAs($host)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
-            ->assertOk()->assertDontSee('History approved')->assertSee('Event history is private.')
-            ->assertViewHas('historyEvents', null);
+        $this->actingAs($host)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_filter' => 'all', 'history_sort' => 'newest']))
+            ->assertRedirect(route('profile.show', ['id' => $host->id, 'tab' => 'history']));
         $this->get(route('profile.show', ['id' => $host->id, 'tab' => 'history']))
-            ->assertOk()->assertSee('No joined events yet.');
+            ->assertOk()->assertSee('No events match this filter.');
     }
 
     public function test_history_pagination_preserves_the_history_tab_and_date_order(): void
@@ -73,11 +282,11 @@ class ProfileTest extends TestCase
             ]);
             $viewer->attendingEvents()->attach($event, ['status' => 'approved']);
         }
-        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history']))
-            ->assertOk()->assertSee('tab=history', false)
+        $this->actingAs($viewer)->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_filter' => 'all', 'history_sort' => 'newest']))
+            ->assertOk()->assertSee('tab=history', false)->assertSee('history_filter=all', false)->assertSee('history_sort=newest', false)
             ->assertViewHas('historyEvents', fn ($events) => $events->total() === 13
                 && $events->count() === 12 && $events->first()->title === 'Joined event 0');
-        $this->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_page' => 2]))
+        $this->get(route('profile.show', ['id' => $viewer->id, 'tab' => 'history', 'history_page' => 2, 'history_filter' => 'all', 'history_sort' => 'newest']))
             ->assertOk()->assertSee('Joined event 12')
             ->assertViewHas('historyEvents', fn ($events) => $events->count() === 1);
     }
@@ -91,12 +300,14 @@ class ProfileTest extends TestCase
     public function test_profile_displays_saved_details_and_owner_edit_link(): void
     {
         $user = User::factory()->create(['username' => 'surfer']);
-        $user->profile()->create(['bio' => 'Enjoying surfing in Cebu.', 'avatar' => 'avatars/surfer.jpg']);
+        $user->profile()->create(['bio' => 'Enjoying surfing in Cebu.', 'avatar' => 'avatars/surfer.jpg',
+            'region' => 'Cebu', 'country' => 'Philippines', 'occupation' => 'Web Developer']);
 
         $this->actingAs($user)->get(route('profile.show', $user->id))
             ->assertOk()
             ->assertSee('@surfer')
             ->assertSee('Enjoying surfing in Cebu.')
+            ->assertSee('Cebu, Philippines')->assertSee('Web Developer')
             ->assertSee(asset('storage/avatars/surfer.jpg'))
             ->assertSee('Edit Profile')
             ->assertSee('Events Hosted');
@@ -112,7 +323,8 @@ class ProfileTest extends TestCase
             ->assertSee($owner->name)
             ->assertDontSee('Edit Profile')
             ->assertSee('No events shared yet.')
-            ->assertDontSee('Surfing by the ocean');
+            ->assertDontSee('Surfing by the ocean')
+            ->assertDontSee('class="profile-basic-info"', false);
 
         $this->get(route('profile.show', 99999))->assertNotFound();
     }
@@ -293,7 +505,7 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)->get(route('profile.edit'))
             ->assertOk()
-            ->assertSee('src="'.asset('storage/avatars/navbar.jpg').'" alt="'.$user->name.'"', false);
+            ->assertSee('src="'.asset('storage/avatars/navbar.jpg').'" alt="'.e($user->username).'"', false);
     }
 
     public function test_saved_hearts_appear_only_in_the_owners_profile_bookmarks(): void
@@ -313,7 +525,7 @@ class ProfileTest extends TestCase
 
         $this->actingAs($host)->get(route('profile.show', $viewer->id))
             ->assertOk()->assertDontSee('Saved heart event')
-            ->assertSee('Bookmarks are private.')
+            ->assertDontSee('Bookmarks are private.')
             ->assertViewHas('bookmarkedEvents', null);
 
         $this->actingAs($viewer)->delete(route('bookmarks.destroy', $event))->assertRedirect();
@@ -347,7 +559,7 @@ class ProfileTest extends TestCase
         $viewer = User::factory()->create();
         $owner = User::factory()->create();
         $this->actingAs($viewer)->get(route('profile.show', $owner))
-            ->assertOk()->assertSee('Follow</button>', false);
+            ->assertOk()->assertSee('<span>Follow</span>', false);
         $this->post(route('profile.follow', $owner))->assertRedirect(route('profile.show', $owner));
         $this->post(route('profile.follow', $owner))->assertRedirect();
         $this->assertDatabaseCount('follows', 1);
@@ -372,7 +584,8 @@ class ProfileTest extends TestCase
         foreach ([[$owner->id, $viewer->id], [$viewer->id, $owner->id]] as [$target, $blocker]) {
             \App\Models\UserBlock::block($target, $blocker);
             $this->post(route('profile.follow', $owner))->assertForbidden();
-            $this->get(route('profile.show', $owner))->assertOk()->assertDontSee('Follow</button>', false);
+            $response = $this->get(route('profile.show', $owner))->assertOk();
+            $this->assertMatchesRegularExpression('/<button\b[^>]*\bdisabled\b[^>]*><i\b[^>]*><\/i><span>Follow<\/span><\/button>/', $response->getContent());
             \App\Models\UserBlock::unblock($target, $blocker);
         }
         $this->assertDatabaseCount('follows', 0);

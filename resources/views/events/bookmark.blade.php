@@ -9,9 +9,10 @@
         /* 全体の幅を持たせつつ、右側のスカスカ感をなくすコンパクト設計 */
         .events-main-wrapper {
             width: 100%;
-            max-width: 1240px;
+            max-width: none;
             margin: 0 auto;
             min-width: 0;
+            background-color: #F7F7F5
         }
 
         /* イベントカードの3列グリッド（適度な余白） */
@@ -21,11 +22,12 @@
             gap: 24px;
             width: 100%;
             box-sizing: border-box;
+            margin-top: 24px;
         }
 
         /* カード全体のスタイル（完成イメージの上質な比率） */
         .event-card {
-            background: #ffffff;
+            background: #F7F7F5;
             border: 1px solid #e5e7eb;
             border-radius: 16px;
             overflow: hidden;
@@ -34,6 +36,7 @@
             width: 100%;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
         }
 
         .event-card:hover {
@@ -152,6 +155,27 @@
             text-decoration: none;
         }
 
+        .event-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+
+            display: flex;
+            gap: 8px;
+        }
+
+        .event-actions .btn {
+            white-space: nowrap;
+        }
+
+        .no-events-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 0;
+            width: 100%;
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 1100px) {
             .event-grid {
@@ -166,25 +190,35 @@
         }
     </style>
 
-    <div class="events-main-wrapper px-3 py-3 mx-0">
-        {{-- 検索・フィルター部分 --}}
-        @include('events.partials.filter')
+    <div class="container-fluid pe-0">
+        <div class="row g-4">
+            <aside class="col-12 col-lg-3 col-xl-2">
+                @include('events.partials.sidebar')
+            </aside>
+            <div class="col-12 col-lg-9 col-xl-10">
+                <div class="events-main-wrapper px-3 py-3 mx-0">
+                    {{-- 検索・フィルター部分 --}}
+                    @include('events.partials.filter')
 
-        <h1>Bookmark</h1>
+                    <h1>Bookmark</h1>
 
-        {{-- イベント一覧グリッド --}}
-        <div class="event-grid">
-            @forelse ($events as $event)
-                @include('events.partials.card', ['event' => $event])
-            @empty
-                <p>Not bookmarked events.</p>
-            @endforelse
-        </div>
+                    {{-- イベント一覧グリッド --}}
+                    <div class="event-grid">
+                        @forelse ($events as $event)
+                            @include('events.partials.card', ['event' => $event])
+                        @empty
+                            <p>Not bookmarked events.</p>
+                        @endforelse
+                    </div>
 
-        @if ($events instanceof \Illuminate\Pagination\LengthAwarePaginator)
-            <div class="mt-4">
-                {{ $events->withQueryString()->links() }}
+                    @if ($events instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                        <div class="mt-4">
+                            {{ $events->withQueryString()->links() }}
+                        </div>
+                    @endif
+                </div>
             </div>
-        @endif
+        </div>
     </div>
+
 @endsection
