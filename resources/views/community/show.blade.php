@@ -61,6 +61,19 @@
                             @method('DELETE')
                             <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Leave</button>
                         </form>
+                    @elseif ($membershipStatus === 'invited')
+                        {{-- オーナーから招待されている人: 承諾すると参加、断ると招待が消える --}}
+                        <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-envelope-open-text me-1"></i> You're invited</span>
+                        <form action="{{ route('community.invitations.accept', $community->id) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3">Accept invitation</button>
+                        </form>
+                        <form action="{{ route('community.leave', $community->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Decline</button>
+                        </form>
                     @elseif ($membershipStatus === 'pending')
                         <span class="badge rounded-pill bg-light text-secondary border px-3 py-2">Request pending</span>
                         <form action="{{ route('community.leave', $community->id) }}" method="POST">
@@ -209,7 +222,8 @@
             <div class="card bg-white border shadow-sm rounded-3 overflow-hidden community-chat"
                 data-chat-url="{{ route('community.chat.index', $community->id) }}"
                 data-unread-url="{{ route('community.chat.unread', $community->id) }}"
-                data-read-url="{{ route('community.chat.read', $community->id) }}">
+                data-read-url="{{ route('community.chat.read', $community->id) }}"
+                data-community-id="{{ $community->id }}">
                 <div class="community-chat-body">
                     <ol class="community-chat-list" aria-live="polite"></ol>
                     <div class="community-chat-empty">Loading messages...</div>
@@ -234,6 +248,46 @@
 
     <!-- Members タブ: オーナー + 承認済みメンバー -->
     <div class="tab-pane fade" id="members" role="tabpanel" aria-labelledby="members-tab">
+        {{-- 招待（オーナーだけに表示）: ユーザー名で招待し、承諾待ちの人を取り消せる --}}
+        @if (auth()->id() === $community->owner_id)
+            <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-invite">
+                <h6 class="fw-bold text-dark mb-1">Invite members</h6>
+                <p class="text-muted small mb-2">
+                    {{ $community->visibility === 'private'
+                        ? 'This community is invite only. Only people you invite can join.'
+                        : 'Invited people can join right away without sending a request.' }}
+                </p>
+                <form action="{{ route('community.invitations.store', $community->id) }}" method="POST" class="d-flex gap-2">
+                    @csrf
+                    <div class="flex-grow-1">
+                        <label for="invite-username" class="visually-hidden">Username</label>
+                        <input type="text" id="invite-username" name="username" value="{{ old('username') }}" maxlength="255" required
+                            placeholder="Username" autocomplete="off"
+                            class="form-control form-control-sm @error('username', 'invite') is-invalid @enderror">
+                        @error('username', 'invite')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3 align-self-start">Invite</button>
+                </form>
+
+                @if ($invitedMembers->isNotEmpty())
+                    <h6 class="fw-bold text-dark small mt-3 mb-1">Waiting for a reply <span class="badge rounded-pill community-joined-badge">{{ $invitedMembers->count() }}</span></h6>
+                    @foreach ($invitedMembers as $invitee)
+                        <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                            <x-avatar :user="$invitee" />
+                            <strong class="text-dark small flex-grow-1">{{ $invitee->username ?: $invitee->name }}</strong>
+                            <form action="{{ route('community.members.remove', [$community->id, $invitee->id]) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel invite</button>
+                            </form>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        @endif
+
         {{-- 参加申請（オーナーだけに表示） --}}
         @if ($pendingMembers->isNotEmpty())
             <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-requests">
@@ -971,8 +1025,34 @@
                 if (!response.ok) {
                     throw new Error();
                 }
+                updateNavbarNotifications((await response.json()).community_notification_count);
             } catch {
                 readId = 0;
+            }
+        };
+
+        // 既読にしたら、ナビバーのコミュニティ通知の数字とこのコミュニティのチャット通知を再読み込みなしで消す
+        const updateNavbarNotifications = (count) => {
+            if (typeof count !== 'number') {
+                return;
+            }
+            document.querySelectorAll(`[data-community-chat-notification="${chat.dataset.communityId}"]`)
+                .forEach((item) => item.remove());
+
+            const badge = document.querySelector('.js-community-notification-badge');
+            if (badge && count > 0) {
+                badge.textContent = count;
+            } else {
+                badge?.remove();
+            }
+
+            const notificationList = document.querySelector('.js-community-notification-list');
+            if (notificationList && !notificationList.querySelector('.dropdown-content')
+                && !notificationList.querySelector('.js-community-notification-empty')) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'js-community-notification-empty';
+                emptyItem.innerHTML = '<span class="dropdown-item-text text-muted">No new community notifications</span>';
+                notificationList.lastElementChild.before(emptyItem);
             }
         };
 

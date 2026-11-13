@@ -121,6 +121,8 @@ Route::group(['middleware' => 'auth'], function () {
     // コミュニティへの参加・退会・参加申請の承認
     Route::post('/community/{id}/join', [CommunityMembershipController::class, 'join'])->name('community.join');
     Route::delete('/community/{id}/leave', [CommunityMembershipController::class, 'leave'])->name('community.leave');
+    Route::post('/community/{id}/invitations', [CommunityMembershipController::class, 'invite'])->name('community.invitations.store');
+    Route::patch('/community/{id}/invitations/accept', [CommunityMembershipController::class, 'accept'])->name('community.invitations.accept');
     Route::patch('/community/{id}/members/{user}', [CommunityMembershipController::class, 'approve'])->name('community.members.approve');
     Route::delete('/community/{id}/members/{user}', [CommunityMembershipController::class, 'remove'])->name('community.members.remove');
 

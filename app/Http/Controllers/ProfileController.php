@@ -37,6 +37,7 @@ class ProfileController extends Controller
         $user = $this->user->with('profile')->withCount([
             'attendingEvents' => fn ($query) => $query->whereIn('event_participants.status', ['approved', 'pending']),
             'eventsOwned' => function ($query) use ($id) {
+                $query->visibleTo(Auth::user());
                 if ((int) Auth::id() !== (int) $id) {
                     $query->where('visibility', 'public')->where('status', 'published');
                 }
@@ -49,7 +50,9 @@ class ProfileController extends Controller
         if (!in_array($eventFilter, $allowedEventFilters, true)) {
             $eventFilter = 'all';
         }
+        // 招待のみのコミュニティのイベントは、そのコミュニティが見えない人のプロフィール表示には出さない
         $events = $user->eventsOwned()
+            ->visibleTo(Auth::user())
             ->with('categories')
             ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
             ->when(Auth::id() !== $user->id, function ($query) {
@@ -90,7 +93,8 @@ class ProfileController extends Controller
         $eventReviews = null;
         $hostReviews = null;
         $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
-            $query->where('owner_id', $user->id);
+            // 招待のみのコミュニティのイベントの評価は、そのコミュニティが見えない人には集計・表示しない
+            $query->where('owner_id', $user->id)->visibleTo(Auth::user());
             if (!$isOwnProfile) {
                 $query->where('visibility', 'public')->where('status', 'published');
             }
@@ -132,6 +136,7 @@ class ProfileController extends Controller
         }
         $bookmarkedEvents = Auth::id() === $user->id
             ? $user->bookmarkedEvents()
+                ->visibleTo(Auth::user())
                 ->with('categories')
                 ->when($bookmarkFilter === 'upcoming', fn ($query) => $query->where('events.end_at', '>=', $profileNow))
                 ->when($bookmarkSort === 'nearest', fn ($query) => $query

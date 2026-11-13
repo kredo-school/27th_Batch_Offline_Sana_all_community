@@ -94,7 +94,8 @@ class AppServiceProvider extends ServiceProvider
             $notifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
-                    ->whereNotIn('type', ['community_message', 'event_comment', 'admin_contact'])
+                    // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
+                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -104,7 +105,8 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereNotIn('type', ['community_message', 'event_comment', 'admin_contact'])
+                    // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
+                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
                     ->count()
                 : 0;
             $unreadMessagesCount = $currentUserId
@@ -147,13 +149,15 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', ['community_message', 'community_join_request', 'community_join_approved'])
+                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
                     ->count()
                 : 0;
+            // 確認済み（既読）の通知はコミュニティ通知欄から消す（過去の分は Show All で見られる）
             $communityNotifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
-                    ->whereIn('type', ['community_message', 'community_join_request', 'community_join_approved'])
+                    ->whereNull('read_at')
+                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
                     ->with('related')
                     ->latest()
                     ->limit(5)

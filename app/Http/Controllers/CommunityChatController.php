@@ -192,7 +192,29 @@ class CommunityChatController extends Controller
             ->where('last_read_message_id', '<', $lastReadId)
             ->update(['last_read_message_id' => $lastReadId]);
 
-        return response()->json(['unread' => $community->unreadMessagesCountFor($request->user())]);
+        // チャット通知も既読にして、ナビバーのコミュニティ通知欄から消す
+        // 未読が残っていなければ全部（削除されたメッセージの通知も含む）、残っていれば読んだメッセージまでの分だけ
+        $unread = $community->unreadMessagesCountFor($request->user());
+        $readUpTo = $community->messages()->withTrashed()->whereKey($lastReadId)->value('created_at');
+        if ($unread === 0 || $readUpTo) {
+            UserNotification::query()
+                ->where('user_id', $userId)
+                ->where('type', 'community_message')
+                ->where('related_id', $community->id)
+                ->whereNull('read_at')
+                ->when($unread > 0, fn ($query) => $query->where('created_at', '<=', $readUpTo))
+                ->update(['read_at' => now()]);
+        }
+
+        return response()->json([
+            'unread' => $unread,
+            // ナビバーのコミュニティ通知の数字を、ページを再読み込みせずに更新するため
+            'community_notification_count' => UserNotification::query()
+                ->where('user_id', $userId)
+                ->whereNull('read_at')
+                ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                ->count(),
+        ]);
     }
 
     /**
