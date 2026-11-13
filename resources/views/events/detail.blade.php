@@ -178,7 +178,10 @@
             ($event->start_at->isSameDay($event->end_at)
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
-        $priceText = (float) $event->price == 0 ? 'Free' : number_format((float) $event->price) . ' PHP';
+        // 参加費の表示（Tom さんのコミット 134477d の内容。main のマージで消えていた $hasPrice と $feeNote を戻した）
+        $hasPrice = (float) $event->price > 0;
+        $priceText = $hasPrice ? number_format((float) $event->price) . ' PHP / person' : ($event->fee_note ?: 'Free');
+        $feeNote = $hasPrice ? $event->fee_note : null;
         $isCancelled = $event->status === 'cancelled';
         $hasEnded = $event->end_at->isPast();
         $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;
