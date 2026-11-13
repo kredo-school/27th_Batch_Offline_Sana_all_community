@@ -18,7 +18,11 @@ class NotificationController extends Controller
             ->where('user_id', Auth::id())
             ->when(
                 $type === 'community',
-                fn ($query) => $query->whereIn('type', ['community_message', 'community_join_request'])
+                fn ($query) => $query->whereIn('type', [
+                    'community_message',
+                    'community_join_request',
+                    'community_join_approved',
+                ])
             )
             ->when(
                 in_array($type, ['general', 'maintenance'], true),
@@ -88,7 +92,31 @@ class NotificationController extends Controller
             $notification->update(['read_at' => now()]);
         }
 
-        if (in_array($notification->type, ['community_message', 'community_join_request'], true)
+        if ($notification->type === 'admin_contact' && $notification->related_id !== null) {
+            UserNotification::query()
+                ->where('type', 'admin_contact')
+                ->where('related_id', $notification->related_id)
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            if (Auth::user()->role === 'admin') {
+                return redirect()->route('admin.contacts.show', $notification->related_id);
+            }
+        }
+
+        if ($notification->type === 'event_join_request' && $notification->related_id !== null) {
+            return redirect()->route('events.participants', $notification->related_id);
+        }
+
+        if ($notification->type === 'event_comment' && $notification->related_id !== null) {
+            return redirect()->route('events.show', $notification->related_id);
+        }
+
+        if (in_array($notification->type, [
+            'community_message',
+            'community_join_request',
+            'community_join_approved',
+        ], true)
             && $notification->related_id !== null) {
             return redirect()->route('notifications.index', [
                 'type' => 'community',

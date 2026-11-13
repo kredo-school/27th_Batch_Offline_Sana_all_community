@@ -65,11 +65,21 @@ class CommunityMembershipController extends Controller
         $community = Community::findOrFail($id);
         abort_unless($community->owner_id === $request->user()->id, 403);
 
-        $community->memberships()
+        $membership = $community->memberships()
             ->where('user_id', $userId)
             ->where('status', 'pending')
-            ->firstOrFail()
-            ->update(['status' => 'approved', 'joined_at' => now()]);
+            ->firstOrFail();
+        $membership->update(['status' => 'approved', 'joined_at' => now()]);
+
+        UserNotification::create([
+            'user_id' => $membership->user_id,
+            'sender_name' => $request->user()->username ?: $request->user()->name,
+            'type' => 'community_join_approved',
+            'title' => 'Community join request approved',
+            'message' => "Your request to join '{$community->name}' was approved.",
+            'related_type' => Community::class,
+            'related_id' => $community->id,
+        ]);
 
         return redirect()->to(route('community.show', $community->id) . '#members');
     }

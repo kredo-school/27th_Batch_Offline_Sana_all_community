@@ -84,10 +84,10 @@
             <!-- タブナビゲーション (Home, Events, Chat, Members, About) -->
             <ul class="nav nav-tabs border-bottom-0 mt-4" id="communityTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active text-muted border-0 px-3 pb-2" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">Home</button>
+                    <button class="nav-link active text-muted border-0 px-3 pb-2" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">{{ __('Community') }}</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">Events <span class="badge bg-light text-dark border rounded-pill">{{ $eventCount }}</span></button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">{{ __('Events') }} <span class="badge bg-light text-dark border rounded-pill">{{ $eventCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Chat

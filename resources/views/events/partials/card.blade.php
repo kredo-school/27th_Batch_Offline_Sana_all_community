@@ -252,13 +252,13 @@
                     @endif
 
                     <button type="submit" class="favorite-button {{ $isBookmarked ? 'active' : '' }}"
-                        aria-label="{{ $isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks' }}"
+                        aria-label="{{ $isBookmarked ? __('Remove from bookmarks') : __('Add to bookmarks') }}"
                         aria-pressed="{{ $isBookmarked ? 'true' : 'false' }}">
                         {{ $isBookmarked ? '♥' : '♡' }}
                     </button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="favorite-button" aria-label="Please log in to bookmark this">
+                <a href="{{ route('login') }}" class="favorite-button" aria-label="{{ __('Please log in to bookmark this') }}">
                     ♡
                 </a>
             @endauth
@@ -268,7 +268,7 @@
     <div class="event-card-body">
         <div class="event-card-badges">
             @foreach ($event->categories as $event_category)
-                <span class="badge event-category">{{ $event_category->name }}</span>
+                <span class="badge event-category">{{ $event_category->localized_name }}</span>
             @endforeach
 
             @php
@@ -283,10 +283,10 @@
         <p class="event-card-description">{{ $event->description }}</p>
         <div class="event-card-footer">
             <time datetime="{{ $event->start_at?->format('Y-m-d') ?? '' }}">
-                Held on
-                {{ $event->start_at?->format('M d, Y') ?? 'Date TBD' }}
+                {{ __('Held on') }}
+                {{ $event->start_at?->format('M d, Y') ?? __('Date TBD') }}
             </time>
-            <a href="{{ route('events.show', $event->id) }}">View details &gt;</a>
+            <a href="{{ route('events.show', $event->id) }}">{{ __('View details') }} &gt;</a>
         </div>
     </div>
 </article>

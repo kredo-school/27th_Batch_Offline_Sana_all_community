@@ -58,6 +58,7 @@ class CommunityMembershipTest extends TestCase
         $this->actingAs($owner)
             ->get(route('community.show', $community->id))
             ->assertSee('Join requests')
+            ->assertSee('Community join request')
             ->assertSee(route('community.members.approve', [$community->id, $user->id]), false);
 
         $this->actingAs($owner)
@@ -65,6 +66,17 @@ class CommunityMembershipTest extends TestCase
             ->assertRedirect(route('community.show', $community->id) . '#members');
 
         $this->assertSame('approved', $this->membershipStatus($community, $user));
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $user->id,
+            'type' => 'community_join_approved',
+            'title' => 'Community join request approved',
+            'related_id' => $community->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('community.show', $community->id))
+            ->assertSee('Community join request approved')
+            ->assertSee('Your request to join');
     }
 
     public function test_owner_can_decline_request_and_remove_member(): void

@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JoinedCommunityController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\UsersController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\CommunitiesController;
 use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\CommunityMembershipController;
@@ -37,6 +39,7 @@ Route::get('/categories/create', [CategoryController::class, 'create'])->name('c
 Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
 Route::get('/search', [HomeController::class, 'search'])->name('search');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
 
 // Login User Middleware (Daichi)
 
@@ -57,6 +60,7 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('messages.update');
     Route::post('/messages/{user}/block', [MessageController::class, 'block'])
         ->name('messages.block');
+    Route::post('/users/{user}/report', [ContactController::class, 'report'])->name('users.report');
     Route::delete('/messages/{user}/block', [MessageController::class, 'unblock'])
         ->name('messages.unblock');
     Route::delete('/messages/{message}', [MessageController::class, 'destroy'])
@@ -132,6 +136,8 @@ Route::group(['middleware' => 'auth'], function () {
 
         Route::get('/users', [UsersController::class, 'index'])->name('users');
         Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics');
+        Route::get('/settings', [SiteSettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('/settings', [SiteSettingsController::class, 'update'])->name('settings.update');
         Route::delete('/users/{id}/deactivate', [UsersController::class, 'deactivate'])->name('users.deactivate');
         Route::patch('/users/{id}/activate', [UsersController::class, 'activate'])->name('users.activate');
         Route::patch('/users/{id}/role', [UsersController::class, 'changeRole'])->name('users.role');

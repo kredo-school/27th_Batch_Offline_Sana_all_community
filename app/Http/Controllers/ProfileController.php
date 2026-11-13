@@ -181,7 +181,9 @@ class ProfileController extends Controller
             ->paginate(12, ['communities.*'], 'communities_page')
             ->appends(['tab' => 'community']);
 
-        $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
+        $isFollowing = Auth::check() && Follow::where('follower_id', Auth::id())
+            ->where('following_id', $user->id)
+            ->exists();
         $followingEvents = Event::query()
             ->whereIn('owner_id', Auth::user()->following()->select('users.id'))
             ->where('visibility', 'public')
@@ -313,7 +315,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:1|max:255',
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore(Auth::id())],
-            'preferred_language' => ['required', Rule::in(['en', 'ja'])],
+            'preferred_language' => ['required', Rule::in(array_keys(config('app.supported_locales')))],
             'email' => [
                 'sometimes',
                 'required',

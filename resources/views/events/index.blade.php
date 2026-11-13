@@ -200,7 +200,7 @@
                 @include('events.partials.card', ['event' => $event])
             @empty
                 <div class="no-events-container">
-                    <h3 class="text-muted text-center mb-0">Not Event Yet</h3>
+                    <h3 class="text-muted text-center mb-0">{{ __('No events shared yet.') }}</h3>
                 </div>
             @endforelse
             <div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel"
@@ -209,7 +209,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="deleteEventModalLabel">
-                                Are you sure delete this event?
+                                {{ __('Are you sure you want to delete this event?') }}
                             </h5>
 
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
@@ -217,17 +217,17 @@
 
                         <div class="modal-body">
                             <p>
-                                Delete "<span id="deleteEventName"></span>".
+                                {{ __('Delete') }} "<span id="deleteEventName"></span>".
                             </p>
 
                             <p class="text-danger mb-0">
-                                This action cannot be undone.
+                                {{ __('This action cannot be undone.') }}
                             </p>
                         </div>
 
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                Cancel
+                                {{ __('Cancel') }}
                             </button>
 
                             <form id="deleteEventForm" method="POST">
@@ -235,7 +235,7 @@
                                 @method('DELETE')
 
                                 <button type="submit" class="btn btn-danger">
-                                    Delete
+                                    {{ __('Delete') }}
                                 </button>
                             </form>
                         </div>

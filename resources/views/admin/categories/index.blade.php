@@ -292,6 +292,7 @@
                 <tr>
                     <th>ID</th>
                     <th>NAME</th>
+                    <th>JAPANESE NAME</th>
                     <th></th>
                 </tr>
             </thead>
@@ -301,6 +302,7 @@
             <tr>
                 <td>{{ $category->id }}</td>
                 <td>{{ $category->name }}</td>
+                <td>{{ $category->japanese_name }}</td>
                 <td>
                     {{-- Edit --}}
                     <a href="{{ route('admin.categories.edit', $category->id) }}"

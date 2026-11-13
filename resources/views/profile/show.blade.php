@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Profile · '.$user->name)
+@section('title', __('Profile').' · '.$user->name)
 
 @section('content')
     @php
@@ -23,12 +23,12 @@
                 <div class="alert alert-success" role="status">{{ session('status') }}</div>
             @endif
             <section class="profile-card" aria-label="{{ $user->name }}'s profile">
-                <img class="profile-cover" src="{{ $cover }}" alt="Profile cover">
+                <img class="profile-cover" src="{{ $cover }}" alt="{{ __('Profile cover') }}">
                 <div class="profile-details">
                     <div class="profile-avatar-wrap">
                         <img class="profile-avatar" src="{{ $avatar }}" alt="{{ $user->name }}">
                         @if (auth()->id() === $user->id)
-                            <a class="profile-camera" href="{{ route('profile.edit') }}" aria-label="Change profile photo"><i class="fa-solid fa-camera" aria-hidden="true"></i></a>
+                            <a class="profile-camera" href="{{ route('profile.edit') }}" aria-label="{{ __('Change profile photo') }}"><i class="fa-solid fa-camera" aria-hidden="true"></i></a>
                         @endif
                     </div>
                     <div class="profile-identity">
@@ -82,12 +82,12 @@
                                 <form action="{{ route('messages.unblock', $user) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="dropdown-item"><i class="fa-solid fa-unlock" aria-hidden="true"></i>Unblock user</button>
+                                    <button type="submit" class="dropdown-item"><i class="fa-solid fa-unlock" aria-hidden="true"></i>{{ __('Unblock user') }}</button>
                                 </form>
                             @else
                                 <form action="{{ route('messages.block', $user) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-ban" aria-hidden="true"></i>Block user</button>
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-ban" aria-hidden="true"></i>{{ __('Block user') }}</button>
                                 </form>
                                 @endif
                                 </div>
@@ -96,7 +96,7 @@
                     </div>
                         </div>
                         </div>
-                        <p class="profile-bio">{{ $user->profile?->bio ?: 'Welcome to my profile!' }}</p>
+                        <p class="profile-bio">{{ $user->profile?->bio ?: __('Welcome to my profile!') }}</p>
                         @php
                             $isProfileOwner = (int) auth()->id() === (int) $user->id;
                             $canSeeLocation = $isProfileOwner || ($user->profile?->show_location ?? true);
@@ -142,8 +142,8 @@
             @if ($connections !== null)
                 <dialog class="profile-connections" id="profile-connections-dialog" aria-labelledby="profile-connections-title">
                     <div class="profile-feed-heading">
-                        <h2 id="profile-connections-title">{{ $connectionType === 'people' ? 'Find people' : ucfirst($connectionType) }} ({{ $connections->total() }})</h2>
-                        <form method="dialog"><button type="submit" class="btn-close" aria-label="Close list"></button></form>
+                        <h2 id="profile-connections-title">{{ $connectionType === 'people' ? __('Find people') : ucfirst($connectionType) }} ({{ $connections->total() }})</h2>
+                        <form method="dialog"><button type="submit" class="btn-close" aria-label="{{ __('Close list') }}"></button></form>
                     </div>
                     <form method="GET" action="{{ route('profile.show', $user->id) }}" class="profile-connection-search">
                         <input type="hidden" name="connections" value="{{ $connectionType }}">
@@ -176,7 +176,7 @@
                             @endif
                             </li>
                         @empty
-                            <li>{{ $connectionSearch !== '' ? 'No users found.' : 'No '.$connectionType.' yet.' }}</li>
+                            <li>{{ $connectionSearch !== '' ? __('No users found.') : __('No :type yet.', ['type' => $connectionType]) }}</li>
                         @endforelse
                     </ul>
                     {{ $connections->links() }}
@@ -235,8 +235,8 @@
                 <div data-profile-panel="event" @if($activeTab !== 'event') hidden @endif>
                     <div class="profile-hosted-header">
                         <div class="profile-feed-heading">
-                            <h2>Hosted events</h2>
-                            <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? 'event' : 'events' }}</span>
+                            <h2>{{ __('Hosted events') }}</h2>
+                            <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? __('event') : __('events') }}</span>
                         </div>
                         <nav class="profile-history-filters" aria-label="Filter hosted events">
                             @foreach (['all' => 'All', 'upcoming' => 'Upcoming', 'past' => 'Past'] + ((int) auth()->id() === (int) $user->id ? ['draft' => 'Drafts'] : []) as $value => $label)
@@ -250,13 +250,13 @@
                                 @include('events.partials.card', ['event' => $event])
                             </div>
                         @empty
-                            <p class="profile-events-empty">No events shared yet.</p>
+                            <p class="profile-events-empty">{{ __('No events shared yet.') }}</p>
                         @endforelse
                     </div>
                 </div>
                 @if ((int) auth()->id() === (int) $user->id)
                 <div data-profile-panel="bookmark" @if($activeTab !== 'bookmark') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Bookmarks</h2><span class="profile-history-count">{{ $bookmarkedEvents?->total() ?? 0 }} events</span></div>
+                    <div class="profile-feed-heading"><h2>{{ __('Bookmarks') }}</h2><span class="profile-history-count">{{ $bookmarkedEvents?->total() ?? 0 }} events</span></div>
                     @if ($bookmarkedEvents !== null)
                         <div class="profile-history-toolbar">
                             <nav class="profile-history-filters" aria-label="Filter bookmarked events">
@@ -282,16 +282,16 @@
                                 @php $event->is_bookmarked = true; @endphp
                                 @include('events.partials.card', ['event' => $event])
                             @empty
-                                <p class="profile-events-empty">No bookmarked events yet. Tap the heart on an event to save it here.</p>
+                                <p class="profile-events-empty">{{ __('No bookmarked events yet. Tap the heart on an event to save it here.') }}</p>
                             @endforelse
                         </div>
                         {{ $bookmarkedEvents->links() }}
                     @else
-                        <p class="profile-events-empty">Bookmarks are private.</p>
+                        <p class="profile-events-empty">{{ __('Bookmarks are private.') }}</p>
                     @endif
                 </div>
                 <div data-profile-panel="history" @if($activeTab !== 'history') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Joined events</h2><span class="profile-history-count">{{ $historyEvents?->total() ?? 0 }} events</span></div>
+                    <div class="profile-feed-heading"><h2>{{ __('Joined events') }}</h2><span class="profile-history-count">{{ $historyEvents?->total() ?? 0 }} events</span></div>
                     @if ($historyEvents !== null)
                         <div class="profile-history-toolbar">
                             <nav class="profile-history-filters" aria-label="Filter joined events">
@@ -319,17 +319,17 @@
                                     @include('events.partials.card', ['event' => $event])
                                 </div>
                             @empty
-                                <p class="profile-events-empty">No events match this filter.</p>
+                                <p class="profile-events-empty">{{ __('No events match this filter.') }}</p>
                             @endforelse
                         </div>
                         {{ $historyEvents->links() }}
                     @else
-                        <p class="profile-events-empty">Event history is private.</p>
+                    <p class="profile-events-empty">{{ __('Event history is private.') }}</p>
                     @endif
                 </div>
                 @endif
                 <div data-profile-panel="community" @if($activeTab !== 'community') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Joined communities</h2><span>{{ $joinedCommunities->total() }}</span></div>
+                    <div class="profile-feed-heading"><h2>{{ __('Joined communities') }}</h2><span>{{ $joinedCommunities->total() }}</span></div>
                     <div class="event-grid profile-bookmark-grid">
                         @forelse ($joinedCommunities as $community)
                             <article class="card h-100 overflow-hidden profile-community-card">
@@ -339,11 +339,11 @@
                                 <div class="card-body">
                                     <h3 class="h5"><a href="{{ route('community.show', $community->id) }}">{{ $community->name }}</a></h3>
                                     <p>{{ \Illuminate\Support\Str::limit($community->description, 150) }}</p>
-                                    <a class="profile-community-link" href="{{ route('community.show', $community->id) }}">View community <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+                                    <a class="profile-community-link" href="{{ route('community.show', $community->id) }}">{{ __('View community') }} <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
                                 </div>
                             </article>
                         @empty
-                            <p class="profile-events-empty">No joined communities yet.</p>
+                            <p class="profile-events-empty">{{ __('No joined communities yet.') }}</p>
                         @endforelse
                     </div>
                     {{ $joinedCommunities->links() }}

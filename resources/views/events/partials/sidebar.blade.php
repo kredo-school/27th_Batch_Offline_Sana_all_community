@@ -137,7 +137,7 @@
     @isset($calendarDays)
     <section class="calendar-box">
         <div class="calendar-header">
-            <a href="{{ $previousMonthUrl }}" class="calendar-month-button" aria-label="Previous month">
+            <a href="{{ $previousMonthUrl }}" class="calendar-month-button" aria-label="{{ __('Previous month') }}">
                 &lt;
             </a>
 
@@ -145,7 +145,7 @@
                 {{ $displayMonth }}
             </h2>
 
-            <a href="{{ $nextMonthUrl }}" class="calendar-month-button" aria-label="Next month">
+            <a href="{{ $nextMonthUrl }}" class="calendar-month-button" aria-label="{{ __('Next month') }}">
                 &gt;
             </a>
         </div>
@@ -190,29 +190,29 @@
             !request()->boolean('my_event')
                 ? 'active'
                 : '' }}">
-            Top Page
+            {{ __('Top Page') }}
         </a>
 
 
         <a href="{{ route('events.index', ['bookmark' => 1]) }}"
             class="{{ request()->boolean('bookmark') ? 'active' : '' }}">
-            Bookmark
+            {{ __('Bookmark') }}
         </a>
 
         <a href="{{ route('events.index', ['registered' => 1]) }}"
             class="{{ request()->boolean('registered') ? 'active' : '' }}">
-            Already Register
+            {{ __('Already Register') }}
         </a>
 
         <a href="{{ route('events.index', ['confirmed' => 1]) }}"
             class="{{ request()->boolean('confirmed') ? 'active' : '' }}">
-            Confirmed Event
+            {{ __('Confirmed Event') }}
         </a>
 
         @if ($hasMyEvents)
             <a href="{{ route('events.index', ['my_event' => 1]) }}"
                 class="{{ request()->boolean('my_event') ? 'active' : '' }}">
-                My Event
+                {{ __('My Event') }}
             </a>
         @endif
     </nav>
