@@ -37,6 +37,7 @@ class ProfileController extends Controller
         $user = $this->user->with('profile')->withCount([
             'attendingEvents' => fn ($query) => $query->whereIn('event_participants.status', ['approved', 'pending']),
             'eventsOwned' => function ($query) use ($id) {
+                $query->visibleTo(Auth::user());
                 if ((int) Auth::id() !== (int) $id) {
                     $query->where('visibility', 'public')->where('status', 'published');
                 }
@@ -49,7 +50,9 @@ class ProfileController extends Controller
         if (!in_array($eventFilter, $allowedEventFilters, true)) {
             $eventFilter = 'all';
         }
+        // 招待のみのコミュニティのイベントは、そのコミュニティが見えない人のプロフィール表示には出さない
         $events = $user->eventsOwned()
+            ->visibleTo(Auth::user())
             ->with('categories')
             ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())])
             ->when(Auth::id() !== $user->id, function ($query) {
@@ -62,11 +65,36 @@ class ProfileController extends Controller
             ->latest()
             ->orderByDesc('id')
             ->get();
-        $reviewType = $request->query('review_type') === 'host' ? 'host' : 'event';
+        $reviewType = $request->query('review_type', 'event');
+        if (!in_array($reviewType, ['event', 'host', 'written'], true)) {
+            $reviewType = 'event';
+        }
+        abort_if($activeTab === 'review' && $reviewType === 'written' && !$isOwnProfile, 403);
+        $writtenType = $request->query('written_type', 'all');
+        if (!in_array($writtenType, ['all', 'event', 'host'], true)) {
+            $writtenType = 'all';
+        }
+        $writtenReviews = null;
+        if ($activeTab === 'review' && $reviewType === 'written') {
+            $eventQuery = EventReview::query()->where('user_id', Auth::id())
+                ->select(['id', 'event_id', 'rating', 'comment', 'created_at'])->selectRaw("'event' as review_kind");
+            $hostQuery = UserReview::query()->where('user_id', Auth::id())
+                ->select(['id', 'event_id', 'rating', 'comment', 'created_at'])->selectRaw("'host' as review_kind");
+            $writtenReviews = DB::query()->fromSub($eventQuery->toBase()->unionAll($hostQuery->toBase()), 'written_reviews')
+                ->when($writtenType !== 'all', fn ($query) => $query->where('review_kind', $writtenType))
+                ->orderByDesc('created_at')->orderByDesc('id')->orderBy('review_kind')
+                ->paginate(10, ['*'], 'written_reviews_page')
+                ->appends(['tab' => 'review', 'review_type' => 'written', 'written_type' => $writtenType]);
+            $reviewEvents = Event::with('owner')->whereIn('id', $writtenReviews->pluck('event_id'))->get()->keyBy('id');
+            $writtenReviews->getCollection()->each(function ($review) use ($reviewEvents) {
+                $review->event = $reviewEvents->get($review->event_id);
+            });
+        }
         $eventReviews = null;
         $hostReviews = null;
         $visibleHostedEvent = function ($query) use ($user, $isOwnProfile) {
-            $query->where('owner_id', $user->id);
+            // 招待のみのコミュニティのイベントの評価は、そのコミュニティが見えない人には集計・表示しない
+            $query->where('owner_id', $user->id)->visibleTo(Auth::user());
             if (!$isOwnProfile) {
                 $query->where('visibility', 'public')->where('status', 'published');
             }
@@ -75,7 +103,7 @@ class ProfileController extends Controller
             ->whereHas('event', $visibleHostedEvent)
             ->selectRaw('COUNT(*) as review_count, AVG(rating) as average_rating')
             ->first();
-        if ($activeTab === 'review') {
+        if ($activeTab === 'review' && $reviewType !== 'written') {
             $eventReviews = EventReview::query()
                 ->whereHas('event', $visibleHostedEvent)
                 ->with(['user', 'event'])
@@ -108,6 +136,7 @@ class ProfileController extends Controller
         }
         $bookmarkedEvents = Auth::id() === $user->id
             ? $user->bookmarkedEvents()
+                ->visibleTo(Auth::user())
                 ->with('categories')
                 ->when($bookmarkFilter === 'upcoming', fn ($query) => $query->where('events.end_at', '>=', $profileNow))
                 ->when($bookmarkSort === 'nearest', fn ($query) => $query
@@ -157,7 +186,9 @@ class ProfileController extends Controller
             ->paginate(12, ['communities.*'], 'communities_page')
             ->appends(['tab' => 'community']);
 
-        $isFollowing = Auth::user()->following()->where('users.id', $user->id)->exists();
+        $isFollowing = Auth::check() && Follow::where('follower_id', Auth::id())
+            ->where('following_id', $user->id)
+            ->exists();
         $followingEvents = Event::query()
             ->whereIn('owner_id', Auth::user()->following()->select('users.id'))
             ->where('visibility', 'public')
@@ -208,7 +239,7 @@ class ProfileController extends Controller
             ->where(fn ($query) => $query->where('blocked_by', Auth::id())->orWhere('user_id', Auth::id()))
             ->get()->map(fn ($block) => (int) $block->blocked_by === (int) Auth::id() ? (int) $block->user_id : (int) $block->blocked_by)->all();
 
-        return view('profile.show', compact('eventFilter', 'bookmarkFilter', 'bookmarkSort', 'historyFilter', 'historySort', 'historyNow', 'hostRatingSummary', 'user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
+        return view('profile.show', compact('writtenType', 'writtenReviews', 'eventFilter', 'bookmarkFilter', 'bookmarkSort', 'historyFilter', 'historySort', 'historyNow', 'hostRatingSummary', 'user', 'events', 'eventReviews', 'hostReviews', 'reviewType', 'isBlockedByViewer', 'bookmarkedEvents', 'historyEvents',
             'isFollowing', 'followBlocked', 'connectionType', 'connections', 'joinedCommunities', 'followingEvents', 'activeTab', 'connectionSearch', 'connectionBlockedIds'));
 
     }
@@ -289,7 +320,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|min:1|max:255',
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore(Auth::id())],
-            'preferred_language' => ['required', Rule::in(['en', 'ja'])],
+            'preferred_language' => ['required', Rule::in(array_keys(config('app.supported_locales')))],
             'email' => [
                 'sometimes',
                 'required',
@@ -316,6 +347,8 @@ class ProfileController extends Controller
             'gender' => 'nullable|in:male,female,other',
             'birthday' => 'nullable|date|before_or_equal:today',
             'occupation' => 'nullable|string|max:100',
+            'show_location' => 'sometimes|required|boolean',
+            'show_occupation' => 'sometimes|required|boolean',
         ]);
 
         try {
@@ -330,7 +363,7 @@ class ProfileController extends Controller
                 $profile = $user->profile()->firstOrCreate([]);
                 $profile->bio = $validated['bio'] ?? null;
                 $profile->country = $validated['country'] ?? null;
-                foreach (['region', 'gender', 'birthday', 'occupation'] as $field) {
+                foreach (['region', 'gender', 'birthday', 'occupation', 'show_location', 'show_occupation'] as $field) {
                     if (array_key_exists($field, $validated)) {
                         $profile->$field = $validated[$field];
                     }

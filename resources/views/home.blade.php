@@ -77,25 +77,53 @@
   }
 }
 </style>
-     
-    <section class="home-back">
-      <img class="img-fluid w-100" src="{{ asset('images/TopPicture.png') }}" alt="Sana All Community">
-      <div class="home-controls">
-        <form class="toolbar home-search" method="GET" action="#">
-          <div class="search">
-            <label class="visually-hidden" for="search">Search</label>
-            <input class="form-control" id="search" type="search" name="search" value="{{ request('search') }}"
-              placeholder="Search">
-            <button type="submit" aria-label="Search" title="Search" class="btn btn-primary">
-              <i class="fa-solid fa-magnifying-glass text-white bg-primary"></i>
-            </button>
+
+    @php($backgroundUrl = $homeBackground ? '/storage/' . ltrim($homeBackground, '/') : asset('images/TopPicture.png'))
+    @switch('__translation_driven_home__')
+        @case('ja')
+        <section class="home-back">
+          <img class="img-fluid w-100" src="{{ $backgroundUrl }}" alt="Sana All Community">
+          <div class="home-controls">
+            <form class="toolbar home-search" method="GET" action="{{ route('search') }}">
+              <div class="search">
+                <label class="visually-hidden" for="search">検索</label>
+                <input class="form-control" id="search" type="search" name="search" value="{{ request('search') }}"
+                  placeholder="Search">
+                <button type="submit" aria-label="Search" title="Search" class="btn btn-primary">
+                  <i class="fa-solid fa-magnifying-glass text-white bg-primary"></i>
+                </button>
+              </div>
+            </form>
+            <div class="home-actions">
+              <a href="{{ route('events.index')}}" class="btn btn-act text-white home-action border border-radius rounded-white">アクティビティ</a>
+              <a href="{{ route('community.index')}}" class="btn btn-com text-white home-action border border-radius rounded-white">コミュニティ</a>
+            </div>
           </div>
-        </form>
-        <div class="home-actions">
-          <a href="{{ route('events.index')}}" class="btn btn-act text-white home-action border border-radius rounded-white">ACTIVITY</a>
-          <a href="{{ route('community.index')}}" class="btn btn-com text-white home-action border border-radius rounded-white">COMMUNITY</a>
-        </div>
-      </div>
-    </section>
+        </section>
+             
+             @break
+         @default
+             <section class="home-back">
+              <img class="img-fluid w-100" src="{{ $backgroundUrl }}" alt="Sana All Community">
+              <div class="home-controls">
+                <form class="toolbar home-search" method="GET" action="{{ route('search') }}">
+                  <div class="search">
+                    <label class="visually-hidden" for="search">Search</label>
+                    <input class="form-control" id="search" type="search" name="search" value="{{ request('search') }}"
+                      placeholder="{{ __('Search') }}">
+                    <button type="submit" aria-label="{{ __('Search') }}" title="{{ __('Search') }}" class="btn btn-primary">
+                      <i class="fa-solid fa-magnifying-glass text-white bg-primary"></i>
+                    </button>
+                  </div>
+                </form>
+                <div class="home-actions">
+                  <a href="{{ route('events.index')}}" class="btn btn-act text-white home-action border border-radius rounded-white">{{ __('Activity') }}</a>
+                  <a href="{{ route('community.index')}}" class="btn btn-com text-white home-action border border-radius rounded-white">{{ __('Community') }}</a>
+                </div>
+              </div>
+            </section>
+             @break
+     @endswitch
+    
 
 @endsection

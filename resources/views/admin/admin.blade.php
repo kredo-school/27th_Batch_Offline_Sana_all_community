@@ -316,6 +316,8 @@
             .admin-sort {
                 justify-content: space-between;
             }
+
+
         }
     </style>
 
@@ -325,8 +327,8 @@
         <section class="admin-main">
             <header class="admin-heading">
                 <div>
-                    <p class="admin-eyebrow">Admin console</p>
-                    <h1>User management</h1>
+                    <p class="text-uppercase small fw-bold text-success mb-1">Admin console</p>
+                    <h1 class="h3 mb-0 fw-medium">User Management</h1>
                 </div>
                 <span class="admin-count">{{ $all_users->total() }} users</span>
             </header>

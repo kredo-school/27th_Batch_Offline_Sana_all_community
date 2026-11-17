@@ -298,7 +298,7 @@
         <form action="{{ route('community.index') }}" method="GET" class="event-search-form">
             <div class="search-input-wrapper">
                 <span class="search-icon">⌕</span>
-                <input type="search" name="search" value="{{ $keyword }}" placeholder="Search communities"
+                <input type="search" name="search" value="{{ $keyword }}" placeholder="{{ __('Search') }} {{ strtolower(__('Communities')) }}"
                     aria-label="search-community">
             </div>
 
@@ -307,7 +307,7 @@
             @endif
             <input type="hidden" name="sort" value="{{ $sort }}">
 
-            <button type="submit" class="btn btn-primary search-button">Search</button>
+            <button type="submit" class="btn btn-primary search-button">{{ __('Search') }}</button>
         </form>
 
         <div class="event-action">
@@ -328,7 +328,7 @@
                 </ul>
             </div>
 
-            <a href="{{ route('community.create') }}" class="btn btn-primary create-event-button">+ Create community</a>
+            <a href="{{ route('community.create') }}" class="btn btn-primary create-event-button">+ {{ __('Create').' '.__('Community') }}</a>
         </div>
     </section>
 
@@ -339,26 +339,26 @@
         @empty
             <div class="no-events-container">
                 <h3 class="text-muted text-center mb-3">
-                    {{ $keyword !== '' ? 'No communities match "' . $keyword . '"' : 'No Community Yet' }}
+                    {{ $keyword !== '' ? __('No communities match') . ' "' . $keyword . '"' : __('No communities yet') }}
                 </h3>
                 @if ($keyword === '' && $filter !== 'joined')
-                    <a href="{{ route('community.create') }}" class="btn btn-primary">+ Create community</a>
+                    <a href="{{ route('community.create') }}" class="btn btn-primary">+ {{ __('Create').' '.__('Community') }}</a>
                 @endif
             </div>
         @endforelse
     </div>
 
     {{-- コミュニティのイベント --}}
-    <h2 class="community-section-heading">Upcoming community events</h2>
+    <h2 class="community-section-heading">{{ __('Upcoming community events') }}</h2>
 
     <div class="event-card mt-3">
         <div class="list-group list-group-flush">
             @forelse ($upcomingEvents as $event)
                 <x-event-row :event="$event" show-community class="list-group-item py-3 px-4">
-                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm">View details &gt;</a>
+                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm">{{ __('View details') }} &gt;</a>
                 </x-event-row>
             @empty
-                <p class="text-muted text-center py-4 mb-0">There are no upcoming community events yet.</p>
+                <p class="text-muted text-center py-4 mb-0">{{ __('There are no upcoming community events yet.') }}</p>
             @endforelse
         </div>
     </div>

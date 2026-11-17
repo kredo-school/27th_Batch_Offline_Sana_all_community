@@ -94,7 +94,7 @@
 
     {{-- title --}}
     <p class="{{ $community ? 'community-accent' : 'text-primary' }} fw-semibold small mb-1">New event</p>
-    <h1 class="fw-normal mb-1">Make your event.</h1>
+    <h1 class="fw-normal mb-1">{{ __('Make your event.') }}</h1>
     <p class="event-form-help mb-4">
         {{ $community ? "Fill in the details below to publish your event in {$community->name}." : 'Fill in the details below to publish your event.' }}
     </p>
@@ -135,7 +135,7 @@
                         <option value="" hidden>Select category</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>
-                                {{ $category->name }}
+                                {{ $category->localized_name }}
                             </option>
                         @endforeach
                     </select>
@@ -279,14 +279,12 @@
             </div>
 
             <div class="d-grid gap-2">
-                <label class="event-option">
-                    <input type="radio" name="language" value="en" class="form-check-input me-2" @checked(old('language', 'en') === 'en')>
-                    English
-                </label>
-                <label class="event-option">
-                    <input type="radio" name="language" value="ja" class="form-check-input me-2" @checked(old('language') === 'ja')>
-                    Japanese
-                </label>
+                @foreach (config('app.supported_locales') as $code => $label)
+                    <label class="event-option">
+                        <input type="radio" name="language" value="{{ $code }}" class="form-check-input me-2" @checked(old('language', 'en') === $code)>
+                        {{ $label }}
+                    </label>
+                @endforeach
             </div>
             @error('language') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
@@ -349,8 +347,8 @@
 
         {{-- button --}}
         <div class="d-flex justify-content-end gap-2">
-            <a href="{{ $community ? route('community.show', $community->id) : route('events.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4">Create event</button>
+            <a href="{{ $community ? route('community.show', $community->id) : route('events.index') }}" class="btn btn-outline-secondary px-4">{{ __('Cancel') }}</a>
+            <button type="submit" class="btn btn-primary px-4">{{ __('Create Event') }}</button>
         </div>
     </form>
 </div>

@@ -12,10 +12,27 @@ class Community extends Model
     // 作成フォームと一覧の絞り込みで使うカテゴリー
     public const CATEGORIES = ['Creative', 'Technology', 'Outdoors', 'Learning', 'Wellness', 'Other'];
 
+    private const LOCALIZED_CATEGORIES = [
+        'ja' => ['Creative' => 'クリエイティブ', 'Technology' => 'テクノロジー', 'Outdoors' => 'アウトドア', 'Learning' => '学習', 'Wellness' => 'ウェルネス', 'Other' => 'その他'],
+        'es' => ['Creative' => 'Creatividad', 'Technology' => 'Tecnología', 'Outdoors' => 'Aire libre', 'Learning' => 'Aprendizaje', 'Wellness' => 'Bienestar', 'Other' => 'Otros'],
+        'pt' => ['Creative' => 'Criatividade', 'Technology' => 'Tecnologia', 'Outdoors' => 'Ar livre', 'Learning' => 'Aprendizagem', 'Wellness' => 'Bem-estar', 'Other' => 'Outro'],
+        'ru' => ['Creative' => 'Творчество', 'Technology' => 'Технологии', 'Outdoors' => 'Активный отдых', 'Learning' => 'Обучение', 'Wellness' => 'Здоровье', 'Other' => 'Другое'],
+        'ar' => ['Creative' => 'الإبداع', 'Technology' => 'التقنية', 'Outdoors' => 'الأنشطة الخارجية', 'Learning' => 'التعلم', 'Wellness' => 'العافية', 'Other' => 'أخرى'],
+        'ko' => ['Creative' => '창작', 'Technology' => '기술', 'Outdoors' => '야외 활동', 'Learning' => '학습', 'Wellness' => '웰니스', 'Other' => '기타'],
+        'zh' => ['Creative' => '创意', 'Technology' => '科技', 'Outdoors' => '户外', 'Learning' => '学习', 'Wellness' => '健康', 'Other' => '其他'],
+        'vi' => ['Creative' => 'Sáng tạo', 'Technology' => 'Công nghệ', 'Outdoors' => 'Ngoài trời', 'Learning' => 'Học tập', 'Wellness' => 'Sức khỏe', 'Other' => 'Khác'],
+        'th' => ['Creative' => 'สร้างสรรค์', 'Technology' => 'เทคโนโลยี', 'Outdoors' => 'กิจกรรมกลางแจ้ง', 'Learning' => 'การเรียนรู้', 'Wellness' => 'สุขภาพ', 'Other' => 'อื่นๆ'],
+    ];
+
     protected $fillable = [
         'owner_id', 'name', 'description', 'category', 'location', 'guidelines',
         'image', 'icon', 'visibility', 'language',
     ];
+
+    public static function getLocalizedCategoryName(string $category): string
+    {
+        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? $category;
+    }
 
     public function owner()
     {
@@ -76,6 +93,33 @@ class Community extends Model
         return $this->messages()
             ->where('id', '>', $lastReadId)
             ->where('user_id', '!=', $user->id);
+    }
+
+    // 招待のみ（private）のコミュニティは、オーナー・メンバー・招待中の人にしか見せない
+    public function scopeVisibleTo($query, ?User $user)
+    {
+        return $query->where(function ($query) use ($user) {
+            $query->where('visibility', '!=', 'private');
+            if ($user) {
+                $query->orWhere('owner_id', $user->id)
+                    ->orWhereHas('memberships', fn ($query) => $query
+                        ->where('user_id', $user->id)
+                        ->whereIn('status', ['approved', 'invited']));
+            }
+        });
+    }
+
+    public function isVisibleTo(?User $user): bool
+    {
+        if ($this->visibility !== 'private') {
+            return true;
+        }
+        if (! $user) {
+            return false;
+        }
+
+        return $this->owner_id === $user->id
+            || $this->memberships()->where('user_id', $user->id)->whereIn('status', ['approved', 'invited'])->exists();
     }
 
     // オーナーか承認済みメンバーならチャットに参加できる

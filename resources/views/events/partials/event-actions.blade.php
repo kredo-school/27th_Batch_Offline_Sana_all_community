@@ -7,7 +7,7 @@
     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventMenu{{ $event->id }}">
         <li>
             <a href="{{ route('events.edit', ['event' => $event->id]) }}" class="dropdown-item">
-                Edit
+                {{ __('Edit') }}
             </a>
         </li>
 
@@ -18,7 +18,7 @@
         <li>
             <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
                 data-bs-target="#deleteEventModal{{ $event->id }}">
-                Delete
+                {{ __('Delete') }}
             </button>
         </li>
     </ul>

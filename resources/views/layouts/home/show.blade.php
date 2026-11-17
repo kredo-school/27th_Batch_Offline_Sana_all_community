@@ -149,8 +149,214 @@
             }
         }
     </style>
+@switch('__translation_driven_show_page__')
+        @case('ja')
+            @php
+                $isCommunityNotifications = $title === 'Notifications' && request('type') === 'community';
+            @endphp
+            <div class="show-section-layout">
+        @include('layouts.home.partials.top-sidebar')
 
-    <div class="show-section-layout">
+        <section class="show-section-main">
+            <header class="mb-4">
+                <p class="text-uppercase small fw-bold text-success mb-1">すべてを表示</p>
+                @switch($title)
+                    @case($isCommunityNotifications)
+                    @php
+                        $title = 'コミュニティ';
+                    @endphp
+                        <h1 class="h3 mb-0">{{ $title }}</h1>
+                        @break
+                    @case('Notifications')
+                    @php
+                        $title = 'お知らせ';
+                    @endphp
+                        <h1 class="h3 mb-0">{{ $title }}</h1>
+                        @break
+                    @case('Messages')
+                    @php
+                        $title = 'メッセージ';
+                    @endphp
+                        <h1 class="h3 mb-0">{{ $title }}</h1>    
+                        @break
+
+                    @default
+                        
+                @endswitch
+                
+                @if (!$isCommunityNotifications)
+                    <p class="text-secondary small mt-2 mb-0">{{ $records->total() }} 履歴</p>
+                @endif
+            </header>
+            @if (session('status'))
+                <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
+            @endif
+            @if ($isCommunityNotifications || $title === 'Notifications')
+            @if ($isCommunityNotifications)
+                <div class="community-summary-list">
+                    @foreach ([['title' => '自分のコミュニティ', 'communities' => $ownedCommunities], ['title' => '参加済コミュニティ', 'communities' => $joinedCommunities]] as $section)
+                        <section class="community-summary-section mb-4" aria-labelledby="{{ str($section['title'])->slug() }}-title">
+                            <h2 id="{{ str($section['title'])->slug() }}-title" class="h5 mb-3">{{ $section['title'] }}</h2>
+                            @forelse ($section['communities'] as $community)
+                                <a href="{{ route('community.show', $community->id) }}#chat"
+                                    class="community-summary-row d-flex align-items-center justify-content-between gap-3 p-3 mb-2 text-decoration-none {{ $community->unread_chat_messages > 0 ? 'community-summary-row--unread' : '' }}">
+                                    <span class="fw-semibold">{{ $community->name }}</span>
+                                    <span class="d-flex flex-wrap justify-content-end gap-2 small text-nowrap">
+                                        <span>{{ $community->total_chat_messages }} 全チャット</span>
+                                        <span class="{{ $community->unread_chat_messages > 0 ? 'fw-bold text-danger' : 'text-muted' }}">
+                                            {{ $community->unread_chat_messages }} 未読チャット
+                                        </span>
+                                    </span>
+                                </a>
+                            @empty
+                                <p class="text-secondary small">You have no {{ strtolower($section['title']) }}.</p>
+                            @endforelse
+                        </section>
+                    @endforeach
+                </div>
+            @else
+            <ul class="mb-3">
+                <a href="{{ route('notifications.index') }}" class="btn btn-white text-danger border-danger rounded me-0 ms-0 btn-noti btn-outline-danger btn-custom-outline">すべて</a>
+                <a href="{{ route('notifications.index', ['type' => 'general']) }}" class="btn btn-white text-primary border-primary rounded me-0 ms-0 btn-noti btn-outline-primary btn-custom-outline">一般</a>
+                <a href="{{ route('notifications.index', ['type' => 'maintenance']) }}" class="btn btn-white text-warning border-warning rounded me-0 ms-0 btn-noti btn-outline-warning btn-custom-outline">メンテナンス</a>
+                <a href="{{ route('notifications.index', ['type' => 'community']) }}" class="btn btn-white text-success border-success rounded ms-0 btn-noti btn-outline-success btn-custom-outline fs-6">コミュニティ</a>
+            </ul>
+            @endif
+            @elseif($title === 'Messages')
+                    <button type="button" class="btn btn-outline-primary btn-white text-primary btn-custom-outline mb-3 ms-4 btn-noti" data-bs-toggle="modal"
+                        data-bs-target="#create-message-modal">メッセージ作成</button>
+                    
+            @endif
+            @if (!$isCommunityNotifications)
+            <div class="show-section-table-wrap">
+                <table class="table show-section-table align-middle table-hover">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th></th>
+                            @foreach ($columns as $label => $key)
+                                <th>{{ $label }}</th>
+                            @endforeach
+                           
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($records as $record)
+                            @php
+                                $chatParticipant = $title === 'Messages'
+                                    ? ((int) $record->sender_id === (int) Auth::id() ? $record->receiver : $record->sender)
+                                    : null;
+                                $isUnread = $title === 'Notifications'
+                                    ? $record->read_at === null
+                                    : $chatParticipant !== null
+                                        && in_array((int) $chatParticipant->id, $unreadMessageSenderIds ?? [], true);
+                            @endphp
+                                @php
+                                        $showUrl = match ($title) {
+                                            'Notifications' => route('notifications.show', $record),
+                                           
+                                            // 'Messages' => route('messages.show', $record),
+                                            
+                                            default => null,
+                                        };
+                                @endphp
+                            <tr class="{{ $isUnread ? 'unread-row' : '' }}"
+                                @if ($chatParticipant)
+                                    class="js-open-message-chat message-list-row"
+                                    data-message-chat-url="{{ route('messages.conversation', $chatParticipant->id) }}"
+                                    data-message-chat-send-url="{{ route('messages.send', $chatParticipant->id) }}"
+                                    data-message-chat-name="{{ $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user') }}"
+                                    role="button" tabindex="0"
+                                @elseif ($showUrl)
+                                    style="cursor: pointer;"
+                                    onclick="if(event.target.closest('a, button, form, input')) return; window.location.href='{{ $showUrl }}';"
+                                @endif>
+                                @if ($chatParticipant)
+                                    @php
+                                        $participantName = $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user');
+                                        $participantAvatar = $chatParticipant->profile?->avatar;
+                                    @endphp
+                                    <td>
+                                        <span class="message-chat-avatar" aria-label="{{ $participantName }}">
+                                            @if ($participantAvatar)
+                                                @php
+                                                    $participantAvatarUrl = str_starts_with($participantAvatar, 'https://') || str_starts_with($participantAvatar, 'http://')
+                                                        ? $participantAvatar
+                                                        : asset('storage/' . ltrim($participantAvatar, '/'));
+                                                @endphp
+                                                <img src="{{ $participantAvatarUrl }}" alt="{{ $participantName }} avatar">
+                                            @else
+                                                {{ strtoupper(substr($participantName, 0, 1)) }}
+                                            @endif
+                                        </span>
+                                    </td>
+                                @else
+                                    <td></td>
+                                @endif
+                                @foreach ($columns as $key)
+                                    @php
+                                        $value = data_get($record, $key);
+                                    @endphp
+                                    @if ($title === 'Notifications' && $key === 'title')
+                                        <td><a href="{{ route('notifications.show', $record) }}" class="text-decoration-none text-dark">{{ $value ?: '-' }}</a></td>
+                                    @else
+                                    <td>{{ $value instanceof \DateTimeInterface ? $value->format('M d, Y H:i') : (is_string($value) ? \Illuminate\Support\Str::limit($value, 120) : ($value ?? '-')) }}</td>
+                                    @endif
+                                @endforeach
+                                @if ($chatParticipant)
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (in_array((int) $chatParticipant->id, $blockedUserIds ?? [], true))
+                                                <form action="{{ route('messages.unblock', $chatParticipant) }}" method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-success btn-sm"><i class="fa-regular fa-square-plus"></i></button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('messages.block', $chatParticipant) }}" method="POST"
+                                                    data-confirm="true"
+                                                    data-confirm-message="Block this user? You will not be able to message each other.">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-warning btn-sm btn-custom-outline">
+                                                        <i class="fa-solid fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form action="{{ route('messages.destroy', $record) }}" method="POST"
+                                                data-confirm="true"
+                                                data-confirm-message="Delete this message?">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                @endif
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="{{ count($columns) + ($title === 'Messages' ? 1 : 0) }}" class="text-center text-secondary py-4">
+                                    No {{ strtolower($title) }} to display.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            @if (!($title === 'Notifications' && request('type') === 'community'))
+                <div class="d-flex justify-content-center align-items-center gap-3 mt-3 flex-wrap">
+                    {{ $records->withQueryString()->links() }}
+                </div>
+            @endif
+        </section>
+    </div>
+        
+        @break
+    @default
+        <div class="show-section-layout">
         @include('layouts.home.partials.top-sidebar')
 
         <section class="show-section-main">
@@ -326,4 +532,184 @@
             @endif
         </section>
     </div>
+
+        @break
+@endswitch
 @endsection
+    {{-- <div class="show-section-layout">
+        @include('layouts.home.partials.top-sidebar')
+
+        <section class="show-section-main">
+            <header class="mb-4">
+                <p class="text-uppercase small fw-bold text-success mb-1">View All</p>
+                <h1 class="h3 mb-0">{{ $title }}</h1>
+                @if (!($title === 'Notifications' && request('type') === 'community'))
+                    <p class="text-secondary small mt-2 mb-0">{{ $records->total() }} records</p>
+                @endif
+            </header>
+            @if (session('status'))
+                <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
+            @endif
+            @if ($title === 'Notifications')
+            @if (request('type') === 'community')
+                <div class="community-summary-list">
+                    @foreach ([['title' => 'Owned Communities', 'communities' => $ownedCommunities], ['title' => 'Joined Communities', 'communities' => $joinedCommunities]] as $section)
+                        <section class="community-summary-section mb-4" aria-labelledby="{{ str($section['title'])->slug() }}-title">
+                            <h2 id="{{ str($section['title'])->slug() }}-title" class="h5 mb-3">{{ $section['title'] }}</h2>
+                            @forelse ($section['communities'] as $community)
+                                <a href="{{ route('community.show', $community->id) }}#chat"
+                                    class="community-summary-row d-flex align-items-center justify-content-between gap-3 p-3 mb-2 text-decoration-none {{ $community->unread_chat_messages > 0 ? 'community-summary-row--unread' : '' }}">
+                                    <span class="fw-semibold">{{ $community->name }}</span>
+                                    <span class="d-flex flex-wrap justify-content-end gap-2 small text-nowrap">
+                                        <span>{{ $community->total_chat_messages }} chat messages</span>
+                                        <span class="{{ $community->unread_chat_messages > 0 ? 'fw-bold text-danger' : 'text-muted' }}">
+                                            {{ $community->unread_chat_messages }} unread chats
+                                        </span>
+                                    </span>
+                                </a>
+                            @empty
+                                <p class="text-secondary small">You have no {{ strtolower($section['title']) }}.</p>
+                            @endforelse
+                        </section>
+                    @endforeach
+                </div>
+            @else
+            <ul class="mb-3">
+                <a href="{{ route('notifications.index') }}" class="btn btn-white text-danger border-danger rounded me-0 ms-0 btn-noti btn-outline-danger btn-custom-outline">All</a>
+                <a href="{{ route('notifications.index', ['type' => 'general']) }}" class="btn btn-white text-primary border-primary rounded me-0 ms-0 btn-noti btn-outline-primary btn-custom-outline">General</a>
+                <a href="{{ route('notifications.index', ['type' => 'maintenance']) }}" class="btn btn-white text-warning border-warning rounded me-0 ms-0 btn-noti btn-outline-warning btn-custom-outline">Maintenance</a>
+                <a href="{{ route('notifications.index', ['type' => 'community']) }}" class="btn btn-white text-success border-success rounded ms-0 btn-noti btn-outline-success btn-custom-outline fs-6">Communities</a>
+            </ul>
+            @endif
+            @elseif($title === 'Messages')
+                    <button type="button" class="btn btn-outline-primary btn-white text-primary btn-custom-outline mb-3 ms-4 btn-noti" data-bs-toggle="modal"
+                        data-bs-target="#create-message-modal">Create Message</button>
+                    
+            @endif
+            @if (!($title === 'Notifications' && request('type') === 'community'))
+            <div class="show-section-table-wrap">
+                <table class="table show-section-table align-middle table-hover">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th></th>
+                            @foreach ($columns as $label => $key)
+                                <th>{{ $label }}</th>
+                            @endforeach
+                           
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($records as $record)
+                            @php
+                                $chatParticipant = $title === 'Messages'
+                                    ? ((int) $record->sender_id === (int) Auth::id() ? $record->receiver : $record->sender)
+                                    : null;
+                                $isUnread = $title === 'Notifications'
+                                    ? $record->read_at === null
+                                    : $chatParticipant !== null
+                                        && in_array((int) $chatParticipant->id, $unreadMessageSenderIds ?? [], true);
+                            @endphp
+                                @php
+                                        $showUrl = match ($title) {
+                                            'Notifications' => route('notifications.show', $record),
+                                           
+                                            // 'Messages' => route('messages.show', $record),
+                                            
+                                            default => null,
+                                        };
+                                @endphp
+                            <tr class="{{ $isUnread ? 'unread-row' : '' }}"
+                                @if ($chatParticipant)
+                                    class="js-open-message-chat message-list-row"
+                                    data-message-chat-url="{{ route('messages.conversation', $chatParticipant->id) }}"
+                                    data-message-chat-send-url="{{ route('messages.send', $chatParticipant->id) }}"
+                                    data-message-chat-name="{{ $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user') }}"
+                                    role="button" tabindex="0"
+                                @elseif ($showUrl)
+                                    style="cursor: pointer;"
+                                    onclick="if(event.target.closest('a, button, form, input')) return; window.location.href='{{ $showUrl }}';"
+                                @endif>
+                                @if ($chatParticipant)
+                                    @php
+                                        $participantName = $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user');
+                                        $participantAvatar = $chatParticipant->profile?->avatar;
+                                    @endphp
+                                    <td>
+                                        <span class="message-chat-avatar" aria-label="{{ $participantName }}">
+                                            @if ($participantAvatar)
+                                                @php
+                                                    $participantAvatarUrl = str_starts_with($participantAvatar, 'https://') || str_starts_with($participantAvatar, 'http://')
+                                                        ? $participantAvatar
+                                                        : asset('storage/' . ltrim($participantAvatar, '/'));
+                                                @endphp
+                                                <img src="{{ $participantAvatarUrl }}" alt="{{ $participantName }} avatar">
+                                            @else
+                                                {{ strtoupper(substr($participantName, 0, 1)) }}
+                                            @endif
+                                        </span>
+                                    </td>
+                                @else
+                                    <td></td>
+                                @endif
+                                @foreach ($columns as $key)
+                                    @php
+                                        $value = data_get($record, $key);
+                                    @endphp
+                                    @if ($title === 'Notifications' && $key === 'title')
+                                        <td><a href="{{ route('notifications.show', $record) }}" class="text-decoration-none text-dark">{{ $value ?: '-' }}</a></td>
+                                    @else
+                                    <td>{{ $value instanceof \DateTimeInterface ? $value->format('M d, Y H:i') : (is_string($value) ? \Illuminate\Support\Str::limit($value, 120) : ($value ?? '-')) }}</td>
+                                    @endif
+                                @endforeach
+                                @if ($chatParticipant)
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (in_array((int) $chatParticipant->id, $blockedUserIds ?? [], true))
+                                                <form action="{{ route('messages.unblock', $chatParticipant) }}" method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-success btn-sm"><i class="fa-regular fa-square-plus"></i></button>
+                                                </form>
+                                            @else
+                                                <form action="{{ route('messages.block', $chatParticipant) }}" method="POST"
+                                                    data-confirm="true"
+                                                    data-confirm-message="Block this user? You will not be able to message each other.">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-warning btn-sm btn-custom-outline">
+                                                        <i class="fa-solid fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form action="{{ route('messages.destroy', $record) }}" method="POST"
+                                                data-confirm="true"
+                                                data-confirm-message="Delete this message?">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                @endif
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="{{ count($columns) + ($title === 'Messages' ? 1 : 0) }}" class="text-center text-secondary py-4">
+                                    No {{ strtolower($title) }} to display.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            @if (!($title === 'Notifications' && request('type') === 'community'))
+                <div class="d-flex justify-content-center align-items-center gap-3 mt-3 flex-wrap">
+                    {{ $records->withQueryString()->links() }}
+                </div>
+            @endif
+        </section>
+    </div>
+@endsection --}}

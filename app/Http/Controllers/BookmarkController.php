@@ -14,6 +14,7 @@ class BookmarkController extends Controller
     {
         $events = $request->user()
             ->bookmarkedEvents()
+            ->visibleTo($request->user())
             ->latest('events.created_at')
             ->paginate(12);
 
@@ -24,6 +25,9 @@ class BookmarkController extends Controller
         Request $request,
         Event $event
     ): RedirectResponse {
+        // 招待のみのコミュニティのイベントは、関係ない人にはブックマークさせない
+        abort_unless($event->isVisibleTo($request->user()), 404);
+
         Bookmark::firstOrCreate([
             'user_id' => $request->user()->id,
             'event_id' => $event->id,

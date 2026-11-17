@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_p2p']))
+                        <p>{!! nl2br(e($siteSettings['policy_p2p'])) !!}</p>
+                    @else
                     <p>
                         <strong>個人間取引ポリシー</strong> <br>
                         <strong>Peer-to-Peer Transaction Policy</strong> <br>
@@ -123,6 +126,7 @@ clause does not exclude liability that cannot legally be excluded.<br>
 Transaction reports / 取引に関する通報： XXXXXXXX
 Email： XXXXXXXX
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

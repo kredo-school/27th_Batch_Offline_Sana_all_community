@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bookmark;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Comment;
@@ -11,15 +12,14 @@ use App\Models\Community;
 use App\Models\Event;
 use App\Models\EventCategory;
 use App\Models\EventParticipant;
+use App\Models\UserNotification;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
 use App\Models\UserReview;
-use App\Models\UserNotification;
 use App\Jobs\NotifyEventParticipantsOnUpdateJob;
-
 class EventController extends Controller
 {
     public function index(Request $request)
@@ -30,7 +30,9 @@ class EventController extends Controller
         // get categories
         $categories = Category::query()
             ->orderBy('name')
-            ->pluck('name', 'id');
+            ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
+            ->get()
+            ->mapWithKeys(fn (Category $category): array => [$category->id => $category->localized_name]);
 
         // search keywords
         $validated = $request->validate([
@@ -181,7 +183,7 @@ class EventController extends Controller
         }
 
         //////////////////////////// Event /////////////////////////////
-        $events = $query->with(['categories'])->paginate(24)->withQueryString();
+        $events = $query->with(['categories.translations'])->paginate(24)->withQueryString();
 
         $hasMyEvents = Auth::check() && Event::where('owner_id', Auth::id())->whereNull('community_id')->exists();
 
@@ -232,17 +234,13 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        // カテゴリがあるイベントだけ閲覧を記録する
-        $categoryId = $event->categories()->value('categories.id');
-        if ($categoryId) {
-            DB::table('category_views')->insert([
-                'user_id'     => Auth::id(),
-                'session_id'  => session()->getId(),
-                'category_id' => $categoryId,
-                'created_at'  => now(),
-            ]);
-        }
-
+        $this->abortUnlessVisible($event);
+         DB::table('category_views')->insert([
+            'user_id'     => Auth::id(),
+            'session_id'  => session()->getId(),
+            'category_id' => $event->categories()->value('categories.id'),
+            'created_at'  => now(),
+        ]);
         $event->load(['owner', 'categories', 'comments.user', 'reviews.user', 'userReviews']);
         $myParticipation = null;
         if (Auth::check()) {
@@ -266,7 +264,7 @@ class EventController extends Controller
     {
         abort_if($community && $community->owner_id !== Auth::id(), 403);
 
-        $categories = Category::all();
+        $categories = Category::with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
 
         return view('events.create', array_merge(compact('categories', 'community'), $this->calendarData()));
     }
@@ -292,7 +290,7 @@ class EventController extends Controller
         // コミュニティ内のイベントはこの3つを選ばず、テーブルの既定値で作る
         if (! $community) {
             $rules += [
-                'language'          => 'required|in:en,ja',
+                'language'          => ['required', Rule::in(array_keys(config('app.supported_locales')))],
                 'visibility'        => 'required|in:public,members,followers',
                 'approval_required' => 'required|boolean',
             ];
@@ -326,7 +324,7 @@ class EventController extends Controller
             abort(403);
         }
 
-        $categories = Category::all();
+        $categories = Category::with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
         $selectedCategoryId = EventCategory::where('event_id', $event->id)->value('category_id');
 
         return view('events.edit', array_merge(compact('event', 'categories', 'selectedCategoryId'), $this->calendarData()));
@@ -351,7 +349,7 @@ class EventController extends Controller
             'description'       => 'required|string|max:500',
             'location'          => 'required|string|max:60',
             'image'             => 'nullable|image|max:2048',
-            'language'          => 'required|in:en,ja',
+            'language'          => ['required', Rule::in(array_keys(config('app.supported_locales')))],
             'visibility'        => 'required|in:public,members,followers',
             'approval_required' => 'required|boolean',
         ]);
@@ -379,6 +377,7 @@ class EventController extends Controller
 
     public function storeComment(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         if ($event->end_at->isPast()) {
             return back()->with('error', 'Comments are closed because this event has ended.');
         }
@@ -392,11 +391,33 @@ class EventController extends Controller
         $comment->content = $request->content;
         $comment->save();
 
+        $commenter = Auth::user();
+        $recipientIds = EventParticipant::query()
+            ->where('event_id', $event->id)
+            ->where('status', 'approved')
+            ->pluck('user_id')
+            ->push($event->owner_id)
+            ->unique()
+            ->reject(fn ($userId): bool => (int) $userId === (int) $commenter->id);
+
+        foreach ($recipientIds as $recipientId) {
+            UserNotification::create([
+                'user_id' => $recipientId,
+                'sender_name' => $commenter->username ?: $commenter->name,
+                'type' => 'event_comment',
+                'title' => 'New event comment',
+                'message' => "{$commenter->name} commented on '{$event->title}'.",
+                'related_type' => Event::class,
+                'related_id' => $event->id,
+            ]);
+        }
+
         return redirect()->route('events.show', $event);
     }
 
     public function requestJoin(Event $event)
     {
+        $this->abortUnlessVisible($event);
         if ($event->status === 'cancelled') {
             return back()->with('error', 'This event has been cancelled.');
         }
@@ -427,6 +448,19 @@ class EventController extends Controller
             $participant->responded_at = now();
         }
         $participant->save();
+
+        if ($event->approval_required) {
+            $user = Auth::user();
+            UserNotification::create([
+                'user_id' => $event->owner_id,
+                'sender_name' => $user->username ?: $user->name,
+                'type' => 'event_join_request',
+                'title' => 'Event registration request',
+                'message' => "{$user->name} requested to join '{$event->title}'.",
+                'related_type' => Event::class,
+                'related_id' => $event->id,
+            ]);
+        }
 
         return redirect()->route('events.show', $event);
     }
@@ -490,6 +524,16 @@ class EventController extends Controller
         $participant->responded_at = now();
         $participant->save();
 
+        UserNotification::create([
+            'user_id' => $participant->user_id,
+            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'type' => 'event_join_approved',
+            'title' => 'Event registration approved',
+            'message' => "Your registration for '{$event->title}' was approved.",
+            'related_type' => Event::class,
+            'related_id' => $event->id,
+        ]);
+
         return back();
     }
 
@@ -535,15 +579,38 @@ class EventController extends Controller
             'cancel_reason' => 'required|string|max:500',
         ]);
 
-        $event->status = 'cancelled';
-        $event->cancel_reason = $request->cancel_reason;
-        $event->save();
+        DB::transaction(function () use ($request, $event): void {
+            $event->status = 'cancelled';
+            $event->cancel_reason = $request->cancel_reason;
+            $event->save();
+
+            // コミュニティ内のイベントだけ、参加確定・申請中の人に中止になったことと理由を知らせる
+            if (! $event->community_id) {
+                return;
+            }
+            $owner = $request->user();
+            $event->participants()
+                ->whereIn('status', ['approved', 'pending'])
+                ->where('user_id', '!=', $event->owner_id)
+                ->pluck('user_id')
+                ->unique()
+                ->each(fn ($userId) => UserNotification::create([
+                    'user_id' => $userId,
+                    'sender_name' => $owner->username ?: $owner->name,
+                    'type' => 'event_cancelled',
+                    'title' => 'Event cancelled',
+                    'message' => "The event '{$event->title}' has been cancelled.\nReason: {$event->cancel_reason}",
+                    'related_type' => Event::class,
+                    'related_id' => $event->id,
+                ]));
+        });
 
         return redirect()->route('events.show', $event);
     }
 
     public function storeReview(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         // イベントが終わっていなければ止める
         if (! $event->end_at->isPast()) {
             return back()->with('error', 'You can write a review after the event ends.');
@@ -588,6 +655,7 @@ class EventController extends Controller
 
     public function storeHostReview(Request $request, Event $event)
     {
+        $this->abortUnlessVisible($event);
         if (! $event->end_at->isPast()) {
             return back()->with('error', 'You can review the host after the event ends.');
         }
@@ -725,9 +793,16 @@ class EventController extends Controller
         return redirect()->route('events.index');
     }
 
+    // 招待のみのコミュニティのイベントは、そのコミュニティが見えない人には存在しないものとして扱う
+    private function abortUnlessVisible(Event $event): void
+    {
+        abort_unless($event->isVisibleTo(Auth::user()), 404);
+    }
+
     /////////// Bookmark /////////////////////
     public function addBookmark(Event $event)
     {
+        $this->abortUnlessVisible($event);
         Bookmark::firstOrCreate([
             'user_id' => Auth::id(),
             'event_id' => $event->id,
@@ -761,6 +836,7 @@ class EventController extends Controller
                     ->where('user_id', Auth::id())
                     ->select('event_id')
             )
+            ->visibleTo(Auth::user())
             ->with(['categories'])
             ->orderBy('start_at')
             ->paginate(10);

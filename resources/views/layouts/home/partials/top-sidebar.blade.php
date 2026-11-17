@@ -73,32 +73,66 @@
         }
     }
 </style>
-
-<aside class="communication-sidebar">
-    <p class="communication-sidebar-title">User Notification</p>
-    <nav class="communication-sidebar-nav" aria-label="Community navigation">
-        <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}"
-            href="{{ route('notifications.index') }}" @if (request()->routeIs('notifications.index')) aria-current="page" @endif>
-            <i class="fa-solid fa-bell" aria-hidden="true"></i>
-            <span>Notifications</span>
-        </a>
-        <a class="communication-sidebar-link {{ request()->routeIs('messages.index') ? 'active' : '' }}"
-            href="{{ route('messages.index') }}" @if (request()->routeIs('messages.index')) aria-current="page" @endif>
-            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-            <span>Messages</span>
-        </a>
-        <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') && request('type') === 'community' ? 'active' : '' }}"
-            href="{{ route('notifications.index', ['type' => 'community']) }}"
-            @if (request()->routeIs('notifications.index') && request('type') === 'community') aria-current="page" @endif>
-            <i class="fa-solid fa-people-group" aria-hidden="true"></i>
-            <span>Communities</span>
-        </a>
-        {{-- @if (Auth::user()->role === 'admin')
-            <a class="communication-sidebar-link {{ request()->routeIs('admin.contacts*') ? 'active' : '' }}"
-            href="{{ route('admin.contacts') }}" @if (request()->routeIs('admin.contacts*')) aria-current="page" @endif>
-            <i class="fa-solid fa-user-group" aria-hidden="true"></i>
-            <span>Contact From User</span>
-        </a>
-        @endif --}}
-    </nav>
-</aside>
+@switch('__translation_driven_sidebar__')
+        @case('ja')
+            <aside class="communication-sidebar">
+                <p class="communication-sidebar-title">ユーザーへのお知らせ</p>
+                <nav class="communication-sidebar-nav" aria-label="Community navigation">
+                    <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}"
+                        href="{{ route('notifications.index') }}" @if (request()->routeIs('notifications.index')) aria-current="page" @endif>
+                        <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                        <span>お知らせ</span>
+                    </a>
+                    <a class="communication-sidebar-link {{ request()->routeIs('messages.index') ? 'active' : '' }}"
+                        href="{{ route('messages.index') }}" @if (request()->routeIs('messages.index')) aria-current="page" @endif>
+                        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                        <span>メッセージ</span>
+                    </a>
+                    <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') && request('type') === 'community' ? 'active' : '' }}"
+                        href="{{ route('notifications.index', ['type' => 'community']) }}"
+                        @if (request()->routeIs('notifications.index') && request('type') === 'community') aria-current="page" @endif>
+                        <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+                        <span>コミュニティ</span>
+                    </a>
+                    {{-- @if (Auth::user()->role === 'admin')
+                        <a class="communication-sidebar-link {{ request()->routeIs('admin.contacts*') ? 'active' : '' }}"
+                        href="{{ route('admin.contacts') }}" @if (request()->routeIs('admin.contacts*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                        <span>Contact From User</span>
+                    </a>
+                    @endif --}}
+                </nav>
+            </aside>
+        
+        @break
+    @default
+        <aside class="communication-sidebar">
+                <p class="communication-sidebar-title">{{ __('User Notification') }}</p>
+            <nav class="communication-sidebar-nav" aria-label="Community navigation">
+                <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}"
+                    href="{{ route('notifications.index') }}" @if (request()->routeIs('notifications.index')) aria-current="page" @endif>
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                        <span>{{ __('Notifications') }}</span>
+                </a>
+                <a class="communication-sidebar-link {{ request()->routeIs('messages.index') ? 'active' : '' }}"
+                    href="{{ route('messages.index') }}" @if (request()->routeIs('messages.index')) aria-current="page" @endif>
+                    <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                        <span>{{ __('Messages') }}</span>
+                </a>
+                <a class="communication-sidebar-link {{ request()->routeIs('notifications.index') && request('type') === 'community' ? 'active' : '' }}"
+                    href="{{ route('notifications.index', ['type' => 'community']) }}"
+                    @if (request()->routeIs('notifications.index') && request('type') === 'community') aria-current="page" @endif>
+                    <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+                        <span>{{ __('Communities') }}</span>
+                </a>
+                {{-- @if (Auth::user()->role === 'admin')
+                    <a class="communication-sidebar-link {{ request()->routeIs('admin.contacts*') ? 'active' : '' }}"
+                    href="{{ route('admin.contacts') }}" @if (request()->routeIs('admin.contacts*')) aria-current="page" @endif>
+                    <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                    <span>Contact From User</span>
+                </a>
+                @endif --}}
+            </nav>
+        </aside>
+        @break
+@endswitch

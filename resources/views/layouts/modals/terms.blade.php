@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_terms']))
+                        <p>{!! nl2br(e($siteSettings['policy_terms'])) !!}</p>
+                    @else
                     <p>
                         <strong>TERMS OF USE </strong> <br>
                         <strong>1. 利用規約</strong> <br>
@@ -353,6 +356,7 @@ Email： XXXXXXXX<br>
 Operator / 運営者： XXXXXXXX<br> 
 Location / 所在地： Philippines<br> 
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

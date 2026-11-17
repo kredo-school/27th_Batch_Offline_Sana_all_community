@@ -44,7 +44,7 @@ class SidebarLayoutTest extends TestCase
             $this->actingAs($owner)->get($url)
                 ->assertOk()
                 ->assertSee('event-sidebar-col', false)
-                ->assertSee('community-sidebar', false);
+                ->assertSee('<aside class="community-sidebar">', false);
         }
     }
 
@@ -62,7 +62,7 @@ class SidebarLayoutTest extends TestCase
             $this->actingAs($owner)->get($url)
                 ->assertOk()
                 ->assertSee('event-sidebar-col', false)
-                ->assertDontSee('community-sidebar', false);
+                ->assertDontSee('<aside class="community-sidebar">', false);
         }
     }
 
@@ -75,7 +75,7 @@ class SidebarLayoutTest extends TestCase
         foreach ([route('events.show', $event->id), route('events.edit', $event->id)] as $url) {
             $this->actingAs($owner)->get($url)
                 ->assertOk()
-                ->assertSee('community-sidebar', false);
+                ->assertSee('<aside class="community-sidebar">', false);
         }
     }
 
@@ -86,5 +86,35 @@ class SidebarLayoutTest extends TestCase
         $this->actingAs($user)->get(route('profile.show', $user->id))
             ->assertOk()
             ->assertDontSee('event-sidebar-col', false);
+    }
+
+    public function test_community_sidebar_links_to_the_chats_page_with_the_unread_count(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $community = $owner->communitiesOwned()->create(['name' => 'Chat Club', 'description' => 'Talks.']);
+        $community->members()->attach($member->id, ['role' => 'member', 'status' => 'approved', 'joined_at' => now()]);
+
+        // 未読がなければ数字は出ない
+        $this->actingAs($owner)
+            ->get(route('community.index'))
+            ->assertSee('href="' . route('community.chats') . '"', false)
+            ->assertDontSee('sidebar-chat-unread">', false);
+
+        // メンバーが 2 件送ると、オーナーのサイドバーに 2 と出る
+        foreach (['Hi', 'Anyone here?'] as $message) {
+            $this->actingAs($member)->postJson(route('community.chat.store', $community->id), ['message' => $message]);
+        }
+        $this->actingAs($owner)
+            ->get(route('community.index'))
+            ->assertSee('<span class="badge rounded-pill sidebar-chat-unread">2', false);
+
+        // チャット一覧ページでもコミュニティのサイドバーが出て、Chats が選択状態になる
+        $this->actingAs($owner)
+            ->get(route('community.chats'))
+            ->assertOk()
+            ->assertSee('<aside class="community-sidebar">', false)
+            ->assertSee('class="sidebar-chat-link active"', false)
+            ->assertSee('Chat Club');
     }
 }

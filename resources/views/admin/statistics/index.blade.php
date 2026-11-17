@@ -85,8 +85,8 @@
         <main class="admin-main">
             <header class="admin-heading">
                 <div>
-                    <p class="admin-eyebrow">Admin console</p>
-                    <h1>Statistics</h1>
+                    <p class="text-uppercase small fw-bold text-success mb-1">Admin console</p>
+                    <h1 class="mb-0 fw-medium">Statistics</h1>
                 </div>
             </header>
 

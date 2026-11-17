@@ -1,38 +1,79 @@
-<div class="modal fade" id="modal-calendar" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-success">
-                <div class="modal-header border-success bg-danger">
-                    <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-calendar-title">
-                        Activity Calendar
-                    </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-prev" aria-label="Previous month">
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </button>
-                        <h2 class="h5 mb-0" id="cal-title"></h2>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-next" aria-label="Next month">
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
+ @switch(auth()->user()?->preferred_language ?? app()->getLocale())
+        @case('ja')
+        <div class="modal fade" id="modal-calendar" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-success">
+                    <div class="modal-header border-success bg-danger">
+                        <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-calendar-title">
+                            アクティビティカレンダー
+                        </h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <table class="table table-bordered text-center mb-0">
-                        <thead>
-                            <tr class="table-light">
-                                <th class="text-danger">Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cal-body"></tbody>
-                    </table>
-                </div>
-                <div class="modal-footer border-0 justify-content-between">
-                    <button type="button" class="btn btn-outline-success btn-sm" id="cal-today">Today</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <div class="modal-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-prev" aria-label="Previous month">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <h2 class="h5 mb-0" id="cal-title"></h2>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-next" aria-label="Next month">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <table class="table table-bordered text-center mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th class="text-danger">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cal-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-between">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="cal-today">今日</button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">閉じる</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+                @break
+            @default
+                <div class="modal fade" id="modal-calendar" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-success">
+                            <div class="modal-header border-success bg-danger">
+                                <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-calendar-title">
+                                    Activity Calendar
+                                </h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-prev" aria-label="Previous month">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <h2 class="h5 mb-0" id="cal-title"></h2>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="cal-next" aria-label="Next month">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <table class="table table-bordered text-center mb-0">
+                                    <thead>
+                                        <tr class="table-light">
+                                            <th class="text-danger">Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cal-body"></tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-between">
+                                <button type="button" class="btn btn-outline-success btn-sm" id="cal-today">Today</button>
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @break
+        @endswitch
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {

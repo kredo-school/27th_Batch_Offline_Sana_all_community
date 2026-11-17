@@ -3,7 +3,7 @@
 @section('title', 'register')
 
 @section('content')
-<div class="container">
+<div class="auth-main container">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
@@ -46,8 +46,9 @@
                             <div class="col-md-6">
                                 <select id="preferred_language" name="preferred_language"
                                     class="form-select @error('preferred_language') is-invalid @enderror" required>
-                                    <option value="en" @selected(old('preferred_language', 'en') === 'en')>English</option>
-                                    <option value="ja" @selected(old('preferred_language') === 'ja')>Japanese</option>
+                                    @foreach (config('app.supported_locales') as $code => $label)
+                                        <option value="{{ $code }}" @selected(old('preferred_language', 'en') === $code)>{{ $label }}</option>
+                                    @endforeach
                                 </select>
 
                                 @error('preferred_language')

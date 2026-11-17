@@ -8,6 +8,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
+                    @if (!empty($siteSettings['policy_job']))
+                        <p>{!! nl2br(e($siteSettings['policy_job'])) !!}</p>
+                    @else
                     <p>
                         <strong>求人掲載ポリシー</strong> <br>
                         <strong>Job Posting Policy</strong> <br>
@@ -108,6 +111,7 @@ Job listing reports / 求人通報： XXXXXXXX
 Email： XXXXXXXX
 
                     </p>
+                    @endif
                 </div>
                 <div class="modal-footer border-0">
                     {{-- <form action="#" method="post">

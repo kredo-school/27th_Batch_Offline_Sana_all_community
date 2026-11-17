@@ -70,7 +70,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="language" class="form-label">Language</label>
                             <select id="language" name="language" class="form-select @error('language') is-invalid @enderror" required>
-                                @foreach (['en' => 'English', 'ja' => 'Japanese'] as $value => $label)
+                                @foreach (config('app.supported_locales') as $value => $label)
                                     <option value="{{ $value }}" @selected(old('language', $event->language) === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -119,7 +119,7 @@
                                     <label class="form-check">
                                         <input class="form-check-input" type="checkbox" name="categories[]"
                                             value="{{ $category->id }}" @checked(in_array($category->id, $selectedCategories))>
-                                        <span class="form-check-label">{{ $category->name }}</span>
+                                        <span class="form-check-label">{{ $category->localized_name }}</span>
                                     </label>
                                 </div>
                             @endforeach

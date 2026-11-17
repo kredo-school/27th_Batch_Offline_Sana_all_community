@@ -2,7 +2,7 @@
 
 @section('sidebar', 'community')
 
-@section('title', $title ?? 'Create Community')
+@section('title', $title ?? __('Create Community'))
 
 @section('content')
 @php
@@ -81,7 +81,7 @@
 
     {{-- title --}}
     <p class="community-accent fw-semibold small mb-1">{{ $editing ? 'Community settings' : 'New community' }}</p>
-    <h1 class="fw-normal mb-1">{{ $editing ? 'Edit your community.' : 'Make your community.' }}</h1>
+    <h1 class="fw-normal mb-1">{{ $editing ? __('Edit').' '.__('Community') : __('Create Community') }}</h1>
     <p class="event-form-help mb-4">
         {{ $editing ? 'Update the details below. Changes are visible to all members immediately.' : 'Fill in the details below to start your community. You will become the organizer.' }}
     </p>
@@ -125,7 +125,7 @@
                         <option value="" hidden>Select category</option>
                         @foreach (\App\Models\Community::CATEGORIES as $category)
                             <option value="{{ $category }}" @selected(old('category', $community->category ?? '') === $category)>
-                                {{ $category }}
+                                {{ \App\Models\Community::getLocalizedCategoryName($category) }}
                             </option>
                         @endforeach
                     </select>
@@ -251,8 +251,8 @@
 
         {{-- button --}}
         <div class="d-flex justify-content-end gap-2">
-            <a href="{{ $editing ? route('community.show', $community->id) : route('community.index') }}" class="btn btn-outline-secondary px-4">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4">{{ $editing ? 'Save changes' : 'Create community' }}</button>
+            <a href="{{ $editing ? route('community.show', $community->id) : route('community.index') }}" class="btn btn-outline-secondary px-4">{{ __('Cancel') }}</a>
+            <button type="submit" class="btn btn-primary px-4">{{ $editing ? __('Save') : __('Create Community') }}</button>
         </div>
     </form>
 
