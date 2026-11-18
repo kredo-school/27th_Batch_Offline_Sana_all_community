@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\EventReview;
 use App\Models\UserReview;
 use App\Jobs\NotifyEventParticipantsOnUpdateJob;
+
 class EventController extends Controller
 {
     public function index(Request $request)
@@ -30,9 +31,9 @@ class EventController extends Controller
         // get categories
         $categories = Category::query()
             ->orderBy('name')
-            ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
+            ->with(['translations' => fn($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
             ->get()
-            ->mapWithKeys(fn (Category $category): array => [$category->id => $category->localized_name]);
+            ->mapWithKeys(fn(Category $category): array => [$category->id => $category->localized_name]);
 
         // search keywords
         $validated = $request->validate([
@@ -235,7 +236,7 @@ class EventController extends Controller
     public function show(Event $event)
     {
         $this->abortUnlessVisible($event);
-         DB::table('category_views')->insert([
+        DB::table('category_views')->insert([
             'user_id'     => Auth::id(),
             'session_id'  => session()->getId(),
             'category_id' => $event->categories()->value('categories.id'),
@@ -264,7 +265,7 @@ class EventController extends Controller
     {
         abort_if($community && $community->owner_id !== Auth::id(), 403);
 
-        $categories = Category::with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
+        $categories = Category::with(['translations' => fn($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
 
         return view('events.create', array_merge(compact('categories', 'community'), $this->calendarData()));
     }
@@ -324,7 +325,7 @@ class EventController extends Controller
             abort(403);
         }
 
-        $categories = Category::with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
+        $categories = Category::with(['translations' => fn($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])->get();
         $selectedCategoryId = EventCategory::where('event_id', $event->id)->value('category_id');
 
         return view('events.edit', array_merge(compact('event', 'categories', 'selectedCategoryId'), $this->calendarData()));
@@ -398,7 +399,7 @@ class EventController extends Controller
             ->pluck('user_id')
             ->push($event->owner_id)
             ->unique()
-            ->reject(fn ($userId): bool => (int) $userId === (int) $commenter->id);
+            ->reject(fn($userId): bool => (int) $userId === (int) $commenter->id);
 
         foreach ($recipientIds as $recipientId) {
             UserNotification::create([
@@ -547,6 +548,16 @@ class EventController extends Controller
         $participant->responded_at = now();
         $participant->save();
 
+        UserNotification::create([
+            'user_id' => $participant->user_id,
+            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'type' => 'event_join_rejected',
+            'title' => 'Event registration declined',
+            'message' => "Your registration for '{$event->title}' was not accepted.",
+            'related_type' => Event::class,
+            'related_id' => $event->id,
+        ]);
+
         return back();
     }
 
@@ -594,7 +605,7 @@ class EventController extends Controller
                 ->where('user_id', '!=', $event->owner_id)
                 ->pluck('user_id')
                 ->unique()
-                ->each(fn ($userId) => UserNotification::create([
+                ->each(fn($userId) => UserNotification::create([
                     'user_id' => $userId,
                     'sender_name' => $owner->username ?: $owner->name,
                     'type' => 'event_cancelled',
