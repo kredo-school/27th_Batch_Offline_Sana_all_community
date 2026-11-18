@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\Event;
 
@@ -65,9 +67,29 @@ class CommunityController extends Controller
      */
     public function create()
     {
-    $editing = false;
-    $title = 'Create Community';
-    return view('community.create', compact('editing', 'title'));
+        $editing = false;
+        $title = 'Create Community';
+        $categoryOptions = $this->categoryOptions();
+
+        return view('community.create', compact('editing', 'title', 'categoryOptions'));
+    }
+
+    /**
+     * カテゴリーの選択肢（管理画面で作ったカテゴリー。値は名前、表示は今の言語）
+     * 編集のときは、管理画面に無い今のカテゴリー（以前の固定の 6 つなど）も残して、そのまま保存できるようにする
+     */
+    private function categoryOptions(?Community $community = null)
+    {
+        $options = Category::query()
+            ->orderBy('name')
+            ->get()
+            ->mapWithKeys(fn (Category $category) => [$category->name => $category->localized_name]);
+
+        if ($community?->category && ! $options->has($community->category)) {
+            $options->put($community->category, Community::getLocalizedCategoryName($community->category));
+        }
+
+        return $options;
     }
 
     /**
@@ -77,7 +99,8 @@ class CommunityController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
+            // 管理画面で作ったカテゴリーだけ選べる
+            'category' => ['required', 'string', 'max:100', Rule::in($this->categoryOptions()->keys()->all())],
             'location' => 'nullable|string|max:255',
             'description' => 'required|string',
             'visibility' => 'required|in:public,approval,private',
@@ -126,7 +149,14 @@ class CommunityController extends Controller
             ->where('start_at', '>=', now())
             ->orderBy('start_at')
             ->get();
-        $eventCount = $community->events()->count();
+        // 終了・中止したイベントは Events タブの下の欄に新しい順で出す（下書きは出さない）
+        $pastEvents = $community->events()
+            ->where(fn ($query) => $query->where('status', 'cancelled')
+                ->orWhere(fn ($query) => $query->where('status', 'published')->where('start_at', '<', now())))
+            ->orderByDesc('start_at')
+            ->get();
+        // タブの横の数字は、画面に出しているイベントの合計にする
+        $eventCount = $allEvents->count() + $pastEvents->count();
         $memberCount = $community->memberships()->where('status', 'approved')->count();
         if (! $community->memberships()->where('user_id', $community->owner_id)->where('status', 'approved')->exists()) {
             $memberCount++;
@@ -137,8 +167,9 @@ class CommunityController extends Controller
         $unreadSenders = $canChat ? $community->unreadSenderNamesFor($request->user()) : [];
         // 自分の参加状況（null: 未参加 / pending: 申請中 / approved: 参加中）
         $membershipStatus = $community->memberships()->where('user_id', $request->user()->id)->value('status');
-        // オーナーだけに見せる参加申請の一覧
-        $pendingMembers = $request->user()->id === $community->owner_id
+        // オーナーと副管理者に見せる参加申請の一覧
+        $canManage = $community->canManage($request->user());
+        $pendingMembers = $canManage
             ? $community->members()->wherePivot('status', 'pending')->with('profile')->get()
             : collect();
         // オーナーだけに見せる、承諾待ちの招待の一覧
@@ -147,7 +178,7 @@ class CommunityController extends Controller
             : collect();
 
         return view('community.show', compact(
-            'community', 'allEvents', 'eventCount', 'memberCount', 'canChat', 'unreadCount', 'unreadSenders', 'membershipStatus', 'pendingMembers', 'invitedMembers'
+            'community', 'allEvents', 'pastEvents', 'eventCount', 'memberCount', 'canChat', 'unreadCount', 'unreadSenders', 'membershipStatus', 'pendingMembers', 'invitedMembers', 'canManage'
         ));
     }
 
@@ -161,7 +192,9 @@ class CommunityController extends Controller
         $community = Community::findOrFail($id);
         abort_unless($community->owner_id === Auth::id(), 403);
 
-        return view('community.create', compact('editing', 'title', 'community'));
+        $categoryOptions = $this->categoryOptions($community);
+
+        return view('community.create', compact('editing', 'title', 'community', 'categoryOptions'));
     }
 
     /**
@@ -174,7 +207,8 @@ class CommunityController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
+            // 管理画面のカテゴリーに加えて、今のカテゴリーのままでも保存できる
+            'category' => ['required', 'string', 'max:100', Rule::in($this->categoryOptions($community)->keys()->all())],
             'location' => 'nullable|string|max:255',
             'description' => 'required|string',
             'visibility' => 'required|in:public,approval,private',

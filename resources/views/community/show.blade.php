@@ -39,7 +39,9 @@
                         <x-icon :community="$community" class="w-100 h-100 rounded-2 fs-3" />
                     </div>
                     <div class="mb-1">
-                        <span class="badge bg-light text-secondary border mb-1">{{ $community->category }}</span>
+                        @if ($community->category)
+                            <span class="badge bg-light text-secondary border mb-1">{{ $community->localized_category }}</span>
+                        @endif
                         <h2 class="fw-bold text-dark mb-1 h3">{{ $community->name }}</h2>
                         <p class="text-muted small mb-0">{{ $community->description }}</p>
                     </div>
@@ -55,6 +57,9 @@
                         <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ Post an event</a>
                     @elseif ($membershipStatus === 'approved')
                         <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-check me-1"></i> Joined</span>
+                        @if ($canManage)
+                            <span class="badge rounded-pill community-moderator-badge px-3 py-2"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>Moderator</span>
+                        @endif
                         <form action="{{ route('community.leave', $community->id) }}" method="POST"
                             data-confirm="true" data-confirm-message="Leave this community?">
                             @csrf
@@ -175,7 +180,7 @@
                     @endif
                     <div class="d-flex justify-content-between text-muted">
                         <span><i class="fa-solid fa-lock me-2"></i> Access</span>
-                        <strong class="text-dark">{{ ['public' => 'Public', 'approval' => 'Approval required', 'private' => 'Private'][$community->visibility] ?? 'Public' }}</strong>
+                        <strong class="text-dark">{{ $community->visibility_label }}</strong>
                     </div>
                 </div>
                 @if ($community->guidelines)
@@ -198,6 +203,16 @@
                         </div>
                     </a>
                 @endif
+                {{-- 副管理者もオーガナイザーとして並べる --}}
+                @foreach ($community->members->filter(fn ($member) => $member->id !== $community->owner_id && $member->pivot->role === 'moderator') as $moderator)
+                    <a href="{{ route('profile.show', $moderator->id) }}" class="d-flex align-items-center gap-3 community-profile-link mt-3">
+                        <x-avatar :user="$moderator" />
+                        <div>
+                            <strong class="d-block text-dark small">{{ $moderator->name }}</strong>
+                            <small class="text-muted" style="font-size: 0.75rem;">Moderator</small>
+                        </div>
+                    </a>
+                @endforeach
             </div>
         </div>
     </div>
@@ -214,6 +229,25 @@
                 <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
             @endforelse
         </div>
+
+        {{-- 終了・中止したイベント（タブの横の数字に含まれているイベントは、どこかに必ず出す） --}}
+        @if ($pastEvents->isNotEmpty())
+            <h6 class="fw-bold text-dark mt-4 mb-2">Past &amp; cancelled events</h6>
+            <div class="card bg-white border shadow-sm rounded-3 p-3">
+                @foreach ($pastEvents as $event)
+                    <x-event-row :event="$event" class="py-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            @if ($event->status === 'cancelled')
+                                <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis border border-danger-subtle">Cancelled</span>
+                            @else
+                                <span class="badge rounded-pill bg-light text-secondary border">Ended</span>
+                            @endif
+                            <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
+                        </div>
+                    </x-event-row>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     <!-- Chat タブ: オーナーと承認済みメンバーだけが使える -->
@@ -229,9 +263,22 @@
                     <div class="community-chat-empty">Loading messages...</div>
                 </div>
                 <div class="community-chat-status" role="status" aria-live="polite"></div>
-                <form action="{{ route('community.chat.store', $community->id) }}" method="POST" class="community-chat-form">
+                {{-- 送る前に選んだ画像を確認できる（× で取り消し） --}}
+                <div class="community-chat-attachment" hidden>
+                    <img alt="Selected photo">
+                    <span class="community-chat-attachment-name"></span>
+                    <button type="button" class="community-chat-attachment-remove" aria-label="Remove photo" title="Remove photo">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <form action="{{ route('community.chat.store', $community->id) }}" method="POST" enctype="multipart/form-data" class="community-chat-form">
                     @csrf
-                    <textarea name="message" class="form-control" rows="1" maxlength="2000" required
+                    <label class="btn community-chat-attach" title="Attach a photo">
+                        <i class="fa-regular fa-image" aria-hidden="true"></i>
+                        <span class="visually-hidden">Attach a photo</span>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                    </label>
+                    <textarea name="message" class="form-control" rows="1" maxlength="2000"
                         placeholder="Write a message..." aria-label="Write a message"></textarea>
                     <button type="submit" class="btn community-chat-send" aria-label="Send message">
                         <i class="fa-solid fa-paper-plane"></i>
@@ -318,18 +365,59 @@
                         <x-avatar :user="$member" />
                         <div>
                             <strong class="d-block text-dark small">{{ $member->name }}</strong>
-                            <small class="text-muted" style="font-size: 0.75rem;">
-                                {{ $member->id === $community->owner_id ? 'Community organizer' : ucfirst($member->pivot->role ?? 'member') }}
-                            </small>
+                            @if ($member->id === $community->owner_id)
+                                <small class="text-muted" style="font-size: 0.75rem;">Community organizer</small>
+                            @elseif (($member->pivot->role ?? 'member') === 'moderator')
+                                <span class="badge rounded-pill community-moderator-badge"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>Moderator</span>
+                            @else
+                                <small class="text-muted" style="font-size: 0.75rem;">Member</small>
+                            @endif
                         </div>
                     </a>
+                    {{-- オーナーだけ: 副管理者にする・外す、オーナーを渡す、メンバーから外す --}}
                     @if (auth()->id() === $community->owner_id && $member->id !== $community->owner_id)
-                        <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
-                            data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-link btn-sm text-muted text-decoration-none">Remove</button>
-                        </form>
+                        @php($isModerator = ($member->pivot->role ?? 'member') === 'moderator')
+                        <div class="dropdown">
+                            {{-- 気づきやすいように、文字付きの枠のボタンにする --}}
+                            <button class="btn btn-sm community-member-menu dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Manage {{ $member->name }}">
+                                <i class="fa-solid fa-user-gear me-1" aria-hidden="true"></i>Manage
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form action="{{ route('community.members.role', [$community->id, $member->id]) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="role" value="{{ $isModerator ? 'member' : 'moderator' }}">
+                                        <button type="submit" class="dropdown-item small">
+                                            <i class="fa-solid fa-shield-halved me-2 text-muted" aria-hidden="true"></i>{{ $isModerator ? 'Remove moderator' : 'Make moderator' }}
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="{{ route('community.owner.transfer', $community->id) }}" method="POST"
+                                        data-confirm="true" data-confirm-message="Make {{ $member->name }} the owner of this community? You will stay as a regular member and can no longer edit the community.">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="user_id" value="{{ $member->id }}">
+                                        <button type="submit" class="dropdown-item small">
+                                            <i class="fa-solid fa-crown me-2 text-muted" aria-hidden="true"></i>Make owner
+                                        </button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
+                                        data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="dropdown-item small text-danger">
+                                            <i class="fa-solid fa-user-minus me-2" aria-hidden="true"></i>Remove from community
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     @endif
                 </div>
             @endforeach
@@ -664,6 +752,91 @@
         color: #fff;
     }
 
+    /* 画像を添付するボタン */
+    .community-chat-attach {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        place-items: center;
+        padding: 0;
+        border: 1px solid #dee2e6;
+        border-radius: 50%;
+        color: #6c757d;
+        font-size: 1.05rem;
+    }
+
+    .community-chat-attach:hover,
+    .community-chat-attach:focus-within {
+        border-color: #F58634;
+        color: #F58634;
+    }
+
+    /* 送る前の画像の確認 */
+    .community-chat-attachment {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 16px 0;
+        padding: 8px 10px;
+        border: 1px solid #fbd3b4;
+        border-radius: 12px;
+        background: #fff8f2;
+        font-size: 0.82rem;
+    }
+
+    .community-chat-attachment[hidden] {
+        display: none;
+    }
+
+    .community-chat-attachment img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    .community-chat-attachment-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        color: #495057;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .community-chat-attachment-remove {
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+    }
+
+    .community-chat-attachment-remove:hover {
+        color: #dc3545;
+    }
+
+    .community-chat-attachment:not([hidden]) + .community-chat-form {
+        border-top: 0;
+    }
+
+    /* チャットの中の画像（押すと元の大きさで開く） */
+    .community-chat-image {
+        display: block;
+        max-width: min(280px, 100%);
+    }
+
+    .community-chat-image img {
+        display: block;
+        max-width: 100%;
+        max-height: 260px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
+    .community-chat-image + p {
+        margin-top: 6px !important;
+    }
+
     .community-chat-hint {
         padding: 0 16px 10px 32px;
         color: #6c757d;
@@ -691,6 +864,35 @@
     .community-joined-badge {
         background: #fdebdc;
         color: #F58634;
+    }
+
+    /* 副管理者（モデレーター）の印 */
+    .community-moderator-badge {
+        background: #e7f1ff;
+        color: #0a58ca;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    /* メンバーの管理ボタン（オーナーだけに表示）: オレンジの枠で目立たせる */
+    /* Bootstrap のボタンの変数で色を決める（押したとき・メニューを開いたときも同じ色にそろう） */
+    .community-member-menu {
+        --bs-btn-padding-x: 12px;
+        --bs-btn-padding-y: 4px;
+        --bs-btn-font-size: 0.8rem;
+        --bs-btn-font-weight: 600;
+        --bs-btn-border-radius: 999px;
+        --bs-btn-color: #d96a1c;
+        --bs-btn-bg: #fff;
+        --bs-btn-border-color: #F58634;
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: #F58634;
+        --bs-btn-hover-border-color: #F58634;
+        --bs-btn-active-color: #fff;
+        --bs-btn-active-bg: #F58634;
+        --bs-btn-active-border-color: #F58634;
+        --bs-btn-focus-shadow-rgb: 245, 134, 52;
+        white-space: nowrap;
     }
 </style>
 
@@ -816,9 +1018,31 @@
             row.className = 'community-chat-row';
             const bubble = document.createElement('div');
             bubble.className = 'community-chat-bubble';
-            const body = document.createElement('p');
-            body.textContent = message.body;
-            bubble.append(body);
+            // 画像は押すと別のタブで元の大きさのまま開く
+            if (message.image_url) {
+                const imageLink = document.createElement('a');
+                imageLink.className = 'community-chat-image';
+                imageLink.href = message.image_url;
+                imageLink.target = '_blank';
+                imageLink.rel = 'noopener';
+                const image = document.createElement('img');
+                image.src = message.image_url;
+                image.alt = `Photo from ${message.sender.name}`;
+                image.loading = 'lazy';
+                // 画像が読み込まれて高さが変わっても、一番下を見ていたら一番下のままにする
+                image.addEventListener('load', () => {
+                    if (list.scrollHeight - list.scrollTop - list.clientHeight < image.height + 60) {
+                        list.scrollTop = list.scrollHeight;
+                    }
+                }, { once: true });
+                imageLink.append(image);
+                bubble.append(imageLink);
+            }
+            if (message.body) {
+                const body = document.createElement('p');
+                body.textContent = message.body;
+                bubble.append(body);
+            }
 
             const side = document.createElement('div');
             side.className = 'community-chat-side';
@@ -945,7 +1169,8 @@
         const saveEdit = async (editor) => {
             const message = messages.find((candidate) => candidate.id === editing.id);
             const body = editor.querySelector('textarea').value.trim();
-            if (!body) {
+            // 画像付きのメッセージは文字を空にしてもよい
+            if (!body && !message.image_url) {
                 status.textContent = 'A message cannot be empty.';
                 return;
             }
@@ -1093,11 +1318,62 @@
             }
         };
 
+        // 画像の添付（選んだら送る前に小さく表示し、× で取り消せる）
+        const fileInput = form.querySelector('input[type="file"]');
+        const attachment = chat.querySelector('.community-chat-attachment');
+        const maxImageSize = 5 * 1024 * 1024;
+        let previewUrl = null;
+        const clearAttachment = () => {
+            fileInput.value = '';
+            attachment.hidden = true;
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+        };
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                clearAttachment();
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                clearAttachment();
+                status.textContent = 'Please choose an image file.';
+                return;
+            }
+            if (file.size > maxImageSize) {
+                clearAttachment();
+                status.textContent = 'Photos must be 5 MB or smaller.';
+                return;
+            }
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            previewUrl = URL.createObjectURL(file);
+            attachment.querySelector('img').src = previewUrl;
+            attachment.querySelector('.community-chat-attachment-name').textContent = file.name;
+            attachment.hidden = false;
+            status.textContent = '';
+            input.focus();
+        });
+        attachment.querySelector('.community-chat-attachment-remove').addEventListener('click', () => {
+            clearAttachment();
+            input.focus();
+        });
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const message = input.value.trim();
-            if (!message) {
+            const image = fileInput.files[0];
+            if (!message && !image) {
                 return;
+            }
+            // 画像があるときはファイルごと送れる FormData で送る
+            const payload = new FormData();
+            payload.append('message', message);
+            if (image) {
+                payload.append('image', image);
             }
             button.disabled = true;
             try {
@@ -1106,15 +1382,16 @@
                     credentials: 'same-origin',
                     headers: {
                         Accept: 'application/json',
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({ message }),
+                    body: payload,
                 });
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data.message);
+                    // 入力の確認で弾かれたときは、最初のエラーの文を出す
+                    throw new Error(Object.values(data.errors ?? {}).flat()[0] ?? data.message);
                 }
+                clearAttachment();
                 // 送信の間に届いた他の人のメッセージを先に取り込んでから自分の分を足す
                 await loadMessages();
                 appendMessage(data.message);

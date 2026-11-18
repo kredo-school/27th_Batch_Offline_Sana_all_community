@@ -111,7 +111,7 @@ class NotificationController extends Controller
 
         // 招待・参加申請の結果のお知らせは、そのコミュニティのページを開く
         // （招待が取り消されて見られなくなっていたら、コミュニティの通知一覧へ）
-        if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined'], true)) {
+        if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined', 'community_moderator_added', 'community_ownership_transferred'], true)) {
             $community = Community::find($notification->related_id);
 
             return $community && $community->isVisibleTo(Auth::user())

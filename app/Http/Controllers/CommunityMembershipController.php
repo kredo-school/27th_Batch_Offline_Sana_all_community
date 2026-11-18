@@ -6,6 +6,7 @@ use App\Models\Community;
 use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 // コミュニティへの参加・退会、オーナーによる参加申請の承認と招待
 class CommunityMembershipController extends Controller
@@ -81,7 +82,7 @@ class CommunityMembershipController extends Controller
         return redirect()->route('community.show', $community->id);
     }
 
-    // 参加申請の結果（承認・却下）を申請者に知らせ、オーナー側に残っている申請の通知を片付ける
+    // 参加申請の結果（承認・却下）を申請者に知らせ、オーナー・副管理者に残っている申請の通知を片付ける
     private function notifyRequestResult(Community $community, User $requester, User $owner, bool $approved): void
     {
         UserNotification::create([
@@ -97,7 +98,7 @@ class CommunityMembershipController extends Controller
         ]);
 
         UserNotification::query()
-            ->where('user_id', $community->owner_id)
+            ->whereIn('user_id', $community->managerIds())
             ->where('type', 'community_join_request')
             ->where('related_id', $community->id)
             ->where('sender_name', $requester->username ?: $requester->name)
@@ -138,9 +139,10 @@ class CommunityMembershipController extends Controller
             'joined_at' => $approved ? now() : null,
         ])->save();
 
-        if (! $approved) {
+        // 参加申請はオーナーと副管理者の全員に知らせる（誰か 1 人が承認・却下すればよい）
+        foreach ($approved ? [] : $community->managerIds() as $managerId) {
             UserNotification::create([
-                'user_id' => $community->owner_id,
+                'user_id' => $managerId,
                 'sender_name' => $user->username ?: $user->name,
                 'type' => 'community_join_request',
                 'title' => 'Community join request',
@@ -171,12 +173,12 @@ class CommunityMembershipController extends Controller
     }
 
     /**
-     * オーナーが参加申請を承認する
+     * オーナーか副管理者が参加申請を承認する
      */
     public function approve(Request $request, $id, $userId)
     {
         $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === $request->user()->id, 403);
+        abort_unless($community->canManage($request->user()), 403);
 
         $membership = $community->memberships()
             ->where('user_id', $userId)
@@ -190,14 +192,15 @@ class CommunityMembershipController extends Controller
     }
 
     /**
-     * オーナーが参加申請を断る、招待を取り消す、またはメンバーを外す
+     * 参加申請を断る（オーナー・副管理者）、招待を取り消す・メンバーを外す（オーナーだけ）
      */
     public function remove(Request $request, $id, $userId)
     {
         $community = Community::findOrFail($id);
-        abort_unless($community->owner_id === $request->user()->id, 403);
-
         $membership = $community->memberships()->where('user_id', $userId)->firstOrFail();
+        abort_unless($membership->status === 'pending'
+            ? $community->canManage($request->user())
+            : $community->owner_id === $request->user()->id, 403);
         $membership->delete();
         // 参加申請を断ったら申請者に知らせる
         if ($membership->status === 'pending') {
@@ -205,6 +208,86 @@ class CommunityMembershipController extends Controller
         }
         // 招待を取り消したら、相手に残っている招待の通知も消す
         $this->markInvitationRead($community, (int) $userId);
+
+        return redirect()->to(route('community.show', $community->id) . '#members');
+    }
+
+    /**
+     * オーナーが参加中のメンバーを副管理者にする、または副管理者から外す
+     */
+    public function updateRole(Request $request, $id, $userId)
+    {
+        $community = Community::findOrFail($id);
+        abort_unless($community->owner_id === $request->user()->id, 403);
+
+        $validated = $request->validate([
+            'role' => 'required|in:member,moderator',
+        ]);
+        $membership = $community->memberships()
+            ->where('user_id', $userId)
+            ->where('status', 'approved')
+            ->firstOrFail();
+
+        if ($membership->role !== $validated['role']) {
+            $membership->update(['role' => $validated['role']]);
+
+            // 副管理者になった人には、できるようになったことを知らせる
+            if ($validated['role'] === 'moderator') {
+                $owner = $request->user();
+                UserNotification::create([
+                    'user_id' => $membership->user_id,
+                    'sender_name' => $owner->username ?: $owner->name,
+                    'type' => 'community_moderator_added',
+                    'title' => 'You are now a moderator',
+                    'message' => "You can now approve join requests and delete chat messages in '{$community->name}'.",
+                    'related_type' => Community::class,
+                    'related_id' => $community->id,
+                ]);
+            }
+        }
+
+        return redirect()->to(route('community.show', $community->id) . '#members');
+    }
+
+    /**
+     * オーナーを参加中のメンバーに引き継ぐ（元のオーナーはメンバーとして残る）
+     */
+    public function transferOwnership(Request $request, $id)
+    {
+        $community = Community::findOrFail($id);
+        $oldOwner = $request->user();
+        abort_unless($community->owner_id === $oldOwner->id, 403);
+
+        $validated = $request->validate([
+            'user_id' => 'required|integer',
+        ]);
+        $membership = $community->memberships()
+            ->where('user_id', $validated['user_id'])
+            ->where('status', 'approved')
+            ->firstOrFail();
+        $newOwner = $membership->user;
+
+        DB::transaction(function () use ($community, $oldOwner, $membership) {
+            // オーナーはメンバーの行を持たない形にそろえる（新しいオーナーの行は消す）
+            $membership->delete();
+            $community->update(['owner_id' => $membership->user_id]);
+
+            // 元のオーナーは普通のメンバーとして残る（抜けたいときは Leave で抜けられる）
+            $community->memberships()->updateOrCreate(
+                ['user_id' => $oldOwner->id],
+                ['role' => 'member', 'status' => 'approved', 'joined_at' => now()],
+            );
+        });
+
+        UserNotification::create([
+            'user_id' => $newOwner->id,
+            'sender_name' => $oldOwner->username ?: $oldOwner->name,
+            'type' => 'community_ownership_transferred',
+            'title' => 'You are now the community owner',
+            'message' => ($oldOwner->username ?: $oldOwner->name) . " made you the owner of '{$community->name}'.",
+            'related_type' => Community::class,
+            'related_id' => $community->id,
+        ]);
 
         return redirect()->to(route('community.show', $community->id) . '#members');
     }

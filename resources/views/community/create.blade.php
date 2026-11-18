@@ -121,14 +121,19 @@
                         <label for="category" class="event-form-label">Category</label>
                         <span class="event-form-required">REQUIRED</span>
                     </div>
-                    <select name="category" id="category" class="form-select @error('category') is-invalid @enderror" required>
-                        <option value="" hidden>Select category</option>
-                        @foreach (\App\Models\Community::CATEGORIES as $category)
-                            <option value="{{ $category }}" @selected(old('category', $community->category ?? '') === $category)>
-                                {{ \App\Models\Community::getLocalizedCategoryName($category) }}
+                    {{-- 管理画面で作ったカテゴリーだけを選べる --}}
+                    <select name="category" id="category" class="form-select @error('category') is-invalid @enderror" required
+                        @disabled($categoryOptions->isEmpty())>
+                        <option value="" hidden>{{ $categoryOptions->isEmpty() ? 'No categories yet' : 'Select category' }}</option>
+                        @foreach ($categoryOptions as $value => $label)
+                            <option value="{{ $value }}" @selected(old('category', $community->category ?? '') === $value)>
+                                {{ $label }}
                             </option>
                         @endforeach
                     </select>
+                    @if ($categoryOptions->isEmpty())
+                        <div class="event-form-help mt-1">There are no categories yet. An admin needs to add categories first.</div>
+                    @endif
                     @error('category') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 

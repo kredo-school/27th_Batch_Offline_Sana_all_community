@@ -15,6 +15,8 @@ class UserNotification extends Model
         'community_join_approved',
         'community_join_declined',
         'community_invite',
+        'community_moderator_added',
+        'community_ownership_transferred',
         'event_cancelled',
     ];
 

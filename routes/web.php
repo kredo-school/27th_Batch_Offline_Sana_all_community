@@ -125,6 +125,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::patch('/community/{id}/invitations/accept', [CommunityMembershipController::class, 'accept'])->name('community.invitations.accept');
     Route::patch('/community/{id}/members/{user}', [CommunityMembershipController::class, 'approve'])->name('community.members.approve');
     Route::delete('/community/{id}/members/{user}', [CommunityMembershipController::class, 'remove'])->name('community.members.remove');
+    // 副管理者にする・外す、オーナーの引き継ぎ（どちらもオーナーだけ）
+    Route::patch('/community/{id}/members/{user}/role', [CommunityMembershipController::class, 'updateRole'])->name('community.members.role');
+    Route::patch('/community/{id}/owner', [CommunityMembershipController::class, 'transferOwnership'])->name('community.owner.transfer');
 
     // ==========================================================================================
     // ====================================ADMIN ROUTES==========================================

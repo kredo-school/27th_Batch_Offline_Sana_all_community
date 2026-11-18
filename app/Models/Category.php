@@ -131,6 +131,19 @@ class Category extends Model
 
     protected $fillable = ['name', 'description'];
 
+    // 用意してある訳から、カテゴリー名を今の言語にする（データベースに登録されていない名前や、大文字小文字の違いにも対応）
+    public static function localizeName(string $name, ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+        foreach (self::LOCALIZED_NAMES[$locale] ?? [] as $english => $translated) {
+            if (strcasecmp($english, $name) === 0) {
+                return $translated;
+            }
+        }
+
+        return $name;
+    }
+
     public function events()
     {
         return $this->belongsToMany(Event::class, 'event_categories');
@@ -152,7 +165,7 @@ class Category extends Model
                 ->where('field', 'name')
                 ->value('translated_text');
 
-        return $translation ?: self::LOCALIZED_NAMES['ja'][$this->name] ?? $this->name;
+        return $translation ?: self::localizeName($this->name, 'ja');
     }
 
     public function getLocalizedNameAttribute(): string
@@ -175,6 +188,6 @@ class Category extends Model
                 ->where('field', 'name')
                 ->value('translated_text');
 
-        return $translation ?: self::LOCALIZED_NAMES[$locale][$this->name] ?? $this->name;
+        return $translation ?: self::localizeName($this->name, $locale);
     }
 }

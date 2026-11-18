@@ -31,7 +31,24 @@ class Community extends Model
 
     public static function getLocalizedCategoryName(string $category): string
     {
-        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? $category;
+        // 以前の固定カテゴリー（Creative など）に無ければ、管理画面のカテゴリー（Sports など）の訳を使う
+        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? Category::localizeName($category);
+    }
+
+    /**
+     * 今の言語でのカテゴリー名（画面に出すとき用。保存している値は英語のまま）
+     */
+    public function getLocalizedCategoryAttribute(): string
+    {
+        return $this->category ? self::getLocalizedCategoryName($this->category) : "";
+    }
+
+    /**
+     * 今の言語での公開設定の名前（public / approval / private）
+     */
+    public function getVisibilityLabelAttribute(): string
+    {
+        return __(["public" => "Public", "approval" => "Approval required", "private" => "Private"][$this->visibility] ?? "Public");
     }
 
     public function owner()
@@ -120,6 +137,39 @@ class Community extends Model
 
         return $this->owner_id === $user->id
             || $this->memberships()->where('user_id', $user->id)->whereIn('status', ['approved', 'invited'])->exists();
+    }
+
+    // 副管理者（モデレーター）: オーナーが承認済みメンバーの中から選ぶ
+    public function isModerator(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->memberships()
+            ->where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('role', 'moderator')
+            ->exists();
+    }
+
+    // オーナーか副管理者なら、参加申請の承認とチャットの削除ができる
+    public function canManage(?User $user): bool
+    {
+        return $user !== null && ($this->owner_id === $user->id || $this->isModerator($user));
+    }
+
+    // 参加申請の通知を受け取る人（オーナーと副管理者）
+    public function managerIds()
+    {
+        return $this->memberships()
+            ->where('status', 'approved')
+            ->where('role', 'moderator')
+            ->pluck('user_id')
+            ->push($this->owner_id)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
     }
 
     // オーナーか承認済みメンバーならチャットに参加できる

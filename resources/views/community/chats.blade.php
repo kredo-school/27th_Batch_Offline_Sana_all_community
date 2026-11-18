@@ -61,9 +61,10 @@
             display: none;
         }
 
+        /* コミュニティのページなので、ナビバーの Community と同じオレンジにする */
         .community-chat-card-header a:hover,
         .community-chat-card-header summary:hover {
-            color: #126b6b;
+            color: #F58634;
         }
 
         .community-chat-details {
@@ -125,7 +126,8 @@
 
     <main class="community-chats-page">
         <header class="community-chats-header">
-            <p class="text-uppercase small fw-bold text-success mb-1">Communities</p>
+            {{-- コミュニティのページなので、ナビバーの Community と同じオレンジにする --}}
+            <p class="text-uppercase small fw-bold mb-1" style="color: #F58634;">Communities</p>
             <h1 class="h3 mb-2">Community Chats</h1>
             <p class="text-secondary small mb-0">Recent messages from communities you own or have joined.</p>
         </header>
@@ -148,11 +150,13 @@
                                 </summary>
                                 <div class="community-chat-details mt-3">
                                     <div class="d-flex flex-wrap gap-3">
-                                        <span><strong>Category:</strong> {{ $community->category }}</span>
-                                        @if ($community->location)
-                                            <span><strong>Location:</strong> {{ $community->location }}</span>
+                                        @if ($community->category)
+                                            <span><strong>{{ __('Category') }}:</strong> {{ $community->localized_category }}</span>
                                         @endif
-                                        <span><strong>Access:</strong> {{ ucfirst($community->visibility) }}</span>
+                                        @if ($community->location)
+                                            <span><strong>{{ __('Location') }}:</strong> {{ $community->location }}</span>
+                                        @endif
+                                        <span><strong>{{ __('Access') }}:</strong> {{ $community->visibility_label }}</span>
                                     </div>
                                     @if ($community->description)
                                         <p class="mb-0 mt-2">{{ $community->description }}</p>
@@ -166,7 +170,7 @@
                                                 <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: 'Unknown user' }}</span>
                                                 <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
                                             </span>
-                                            <span class="d-block text-break">{{ $message->message }}</span>
+                                            <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>
                                     @endforeach
                                 @endif
@@ -179,7 +183,7 @@
                                                 <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: 'Unknown user' }}</span>
                                                 <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
                                             </span>
-                                            <span class="d-block text-break">{{ $message->message }}</span>
+                                            <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>
                                     @empty
                                         <p class="community-chat-empty mb-0">No messages yet.</p>

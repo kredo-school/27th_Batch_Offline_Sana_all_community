@@ -49,11 +49,18 @@ class AppServiceProvider extends ServiceProvider
                 ->whereIn('name', $categoryOrder)
                 ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
                 ->get()
-                ->keyBy('name');
+                // データベースの名前が小文字（sports など）でも同じカテゴリーとして扱う
+                ->keyBy(fn (Category $category) => mb_strtolower($category->name));
             $categories = collect($categoryOrder)->mapWithKeys(function (string $label) use ($storedCategories): array {
-                $category = $storedCategories->get($label);
+                $category = $storedCategories->get(mb_strtolower($label));
 
-                return [$category?->id ?? $label => $category?->localized_name ?? $label];
+                // データベースに無いカテゴリーも、用意してある訳で今の言語にする
+                // （英語のときは、データベースの表記（sports など）ではなく並び順の設定の表記をそのまま出す）
+                $name = app()->getLocale() === 'en'
+                    ? $label
+                    : ($category?->localized_name ?? Category::localizeName($label));
+
+                return [$category?->id ?? $label => $name];
             });
             $unreadMessageSenderIds = $currentUserId
                 ? Message::query()

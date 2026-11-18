@@ -155,5 +155,13 @@
   "Event Details": "イベント詳細",
   "Edit event": "イベントを編集",
   "No description provided.": "説明はありません。",
-  "Search events, communities, users, and categories": "イベント、コミュニティ、ユーザー、カテゴリーを検索"
+  "Search events, communities, users, and categories": "イベント、コミュニティ、ユーザー、カテゴリーを検索",
+  "Category": "カテゴリー",
+  "Access": "参加方法",
+  "Public": "公開",
+  "Approval required": "承認制",
+  "Private": "招待のみ",
+  "No new community notifications": "新しいコミュニティ通知はありません",
+  "You are now a moderator": "副管理者になりました",
+  "You are now the owner": "オーナーになりました"
 }

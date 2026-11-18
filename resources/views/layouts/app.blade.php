@@ -618,7 +618,7 @@
             vertical-align: -50px;
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 1200px) {
             .all-navbar > .navbar-nav > .category-nav {
                 display: flex;
                 align-items: center;
@@ -626,7 +626,7 @@
             }
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 1200px) {
             .all-navbar > .navbar-nav {
                 flex-wrap: nowrap;
                 align-items: center;
@@ -642,8 +642,29 @@
             }
         }
 
-        /* スマホ幅でハンバーガーメニューを開いたときの並び（パソコン幅の見た目は変えない） */
-        @media (max-width: 767.98px) {
+        /* 1200〜1399px は横一列だとぎりぎり入らないので、文字と間隔を少し詰める */
+        @media (min-width: 1200px) and (max-width: 1399.98px) {
+            .all-navbar .header-list,
+            .all-navbar .header-list-ja {
+                margin-right: 0.35rem !important;
+            }
+
+            .all-navbar .header-list,
+            .all-navbar .header-list-ja,
+            .all-navbar .header-list > a,
+            .all-navbar .category-nav .h6 {
+                font-size: 0.9rem !important;
+            }
+
+            .all-navbar .nav-link {
+                padding-left: 0.35rem;
+                padding-right: 0.35rem;
+            }
+        }
+
+        /* 1200px 未満（スマホ・タブレット・狭いノートPC）でハンバーガーメニューを開いたときの並び。
+           ナビバーの中身は横一列だと約 1200px 必要で、それより狭いとロゴと重なるため折りたたむ */
+        @media (max-width: 1199.98px) {
             .navbar > .container-fluid > .my-auto {
                 width: 100%;
             }
@@ -861,7 +882,7 @@
 <body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
     
             <div id="app">
-        <nav class="navbar navbar-expand-md navbar-light bg-white text-dark">
+        <nav class="navbar navbar-expand-xl navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}">
                     <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;">
@@ -1051,7 +1072,8 @@
                                                         </a>
                                                     </li>
                                                 @empty
-                                                    <li><span class="dropdown-item-text text-muted">{{ __('No notifications') }}</span></li>
+                                                    {{-- 色付きの背景の上だと灰色の文字が読めないので、ほかの通知と同じ白い背景にする --}}
+                                                    <li class="bg-white"><span class="dropdown-item-text d-block text-center text-secondary py-3">{{ __('No notifications') }}</span></li>
                                                 @endforelse
                                                 <li class="bg-white"><a href="{{ route('notifications.index') }}" class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
                                             </ul>
@@ -1124,6 +1146,14 @@
                                                                         <span class="d-block small text-secondary">
                                                                             <i class="fa-solid fa-circle-xmark me-1" aria-hidden="true"></i>{{ __('Your join request was declined') }}
                                                                         </span>
+                                                                    @elseif ($communityNotification->type === 'community_moderator_added')
+                                                                        <span class="d-block small text-primary">
+                                                                            <i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>{{ __('You are now a moderator') }}
+                                                                        </span>
+                                                                    @elseif ($communityNotification->type === 'community_ownership_transferred')
+                                                                        <span class="d-block small text-warning-emphasis">
+                                                                            <i class="fa-solid fa-crown me-1" aria-hidden="true"></i>{{ __('You are now the owner') }}
+                                                                        </span>
                                                                     @else
                                                                         {{-- それ以外の種類は、本文（なければタイトル）をそのまま出す --}}
                                                                         <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($communityNotification->message ?: $communityNotification->title, 100) }}</span>
@@ -1137,7 +1167,8 @@
                                                             </a>
                                                         </li>
                                                     @empty
-                                                        <li><span class="dropdown-item-text text-muted">{{ __('No new community notifications') }}</span></li>
+                                                        {{-- 色付きの背景の上だと灰色の文字が読めないので、ほかの通知と同じ白い背景にする --}}
+                                                    <li class="bg-white"><span class="dropdown-item-text d-block text-center text-secondary py-3">{{ __('No new community notifications') }}</span></li>
                                                     @endforelse
                                                     <li class="bg-white"><a href="{{ route('notifications.index', ['type' => 'community']) }}" class="dropdown-item text-primary">{{ __('Show All') }}</a></li>
                                                 </ul>
