@@ -83,9 +83,25 @@ class SidebarLayoutTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get(route('profile.show', $user->id))
+        // 通知一覧はサイドバーを指定していないので、サイドバーの枠を出さない
+        $this->actingAs($user)->get(route('notifications.index'))
             ->assertOk()
             ->assertDontSee('event-sidebar-col', false);
+    }
+
+    public function test_profile_pages_use_the_same_sidebar_layout_as_communities(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        // 自分のプロフィール・他の人のプロフィール・編集ページのどれも、コミュニティと同じ左サイドバーと container で出す
+        foreach ([route('profile.show', $user->id), route('profile.show', $other->id), route('profile.edit')] as $url) {
+            $this->actingAs($user)->get($url)
+                ->assertOk()
+                ->assertSee('event-sidebar-col--profile', false)
+                ->assertSee('<aside class="profile-layout-sidebar">', false)
+                ->assertSee('<div class="container py-4">', false);
+        }
     }
 
     public function test_community_sidebar_links_to_the_chats_page_with_the_unread_count(): void

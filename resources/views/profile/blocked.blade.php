@@ -1,8 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Block list')
+@section('sidebar', 'profile')
 @section('content')
+<div class="container py-4">
 <div class="profile-page profile-editor">
-    @include('profile.partials.editor-sidebar')
     <div class="profile-blocked-content">
         <header class="profile-editor-heading">
             <h1>Block list</h1>
@@ -40,5 +41,6 @@
             {{ $blockedUsers->links() }}
         </section>
     </div>
+</div>
 </div>
 @endsection

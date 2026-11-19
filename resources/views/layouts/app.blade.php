@@ -3,7 +3,7 @@
 
 <head>
     @php
-        // ページ側で @section('sidebar', 'community' または 'events') を指定するとサイドバーを出す
+        // ページ側で @section('sidebar', 'community'・'events'・'profile') を指定するとサイドバーを出す
         // 指定のない events.* のページはイベント用のサイドバーを出す
         $sidebar = trim($__env->yieldContent('sidebar')) ?: (request()->routeIs('events.*') ? 'events' : '');
         $inCommunity = $sidebar === 'community' || request()->routeIs('community.*');
@@ -1293,7 +1293,11 @@
                 <div class="container-fluid px-0">
                     <div class="row g-0 events-layout">
                         <aside class="col-md-3 col-lg-2 mb-4 mb-md-0 event-sidebar-col event-sidebar-col--{{ $sidebar }}">
-                            @include($sidebar === 'community' ? 'community.partials.sidebar' : 'events.partials.sidebar')
+                            @include(match ($sidebar) {
+                                'community' => 'community.partials.sidebar',
+                                'profile' => 'profile.partials.sidebar',
+                                default => 'events.partials.sidebar',
+                            })
                         </aside>
                         <section class="col-md-9 col-lg-10 px-0 event-content-col">
                             @yield('content')

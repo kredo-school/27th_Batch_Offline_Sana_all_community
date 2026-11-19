@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', __('Edit Profile'))
+@section('sidebar', 'profile')
 @section('content')
 @php
     $imageUrl = fn ($path, $fallback) => $path
@@ -9,8 +10,8 @@
     $cover = $imageUrl(old('remove_cover_image') ? null : $user->profile?->cover_image, $emptyCover);
     $avatar = $imageUrl(old('remove_avatar') ? null : $user->profile?->avatar, $defaultAvatar);
 @endphp
+<div class="container py-4">
 <div class="profile-page profile-editor">
-    @include('profile.partials.editor-sidebar')
     <div class="profile-editor-content">
         <header class="profile-editor-heading">
             <h1>{{ __('Edit Profile') }}</h1>
@@ -160,6 +161,7 @@
             </section>
         </aside>
     </div>
+</div>
 </div>
 <script>
 (() => {

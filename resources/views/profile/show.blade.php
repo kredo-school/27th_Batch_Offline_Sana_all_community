@@ -2,6 +2,9 @@
 
 @section('title', __('Profile').' · '.$user->name)
 
+{{-- コミュニティと同じ大きさにそろえるため、共通レイアウトの左サイドバーにプロフィールのメニューを出す --}}
+@section('sidebar', 'profile')
+
 @section('content')
     @php
         $imageUrl = fn ($path, $fallback) => $path
@@ -10,10 +13,9 @@
         $cover = $imageUrl($user->profile?->cover_image, 'data:image/svg+xml,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="450"></svg>'));
         $avatar = $imageUrl($user->profile?->avatar, asset('images/onlylogo.jpg'));
     @endphp
+    {{-- 中身の幅はコミュニティのページと同じ container にする --}}
+    <div class="container py-4">
     <div class="profile-page profile-overview {{ (int) auth()->id() !== (int) $user->id ? 'profile-visitor' : '' }}">
-        @if ((int) auth()->id() === (int) $user->id)
-            @include('profile.partials.navigation')
-        @endif
 
         <div class="profile-main">
             @if (session('success'))
@@ -409,6 +411,7 @@
                 <p class="profile-feedback" role="status" aria-live="polite"></p>
             </section>
         </div>
+    </div>
     </div>
     <style>
         .profile-review-card { padding: 22px; margin-bottom: 16px; border: 1px solid var(--profile-border); border-radius: 16px; background: #fff; color: var(--profile-ink); font-size: 14px; line-height: 1.7; }

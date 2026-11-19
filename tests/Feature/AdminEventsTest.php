@@ -124,6 +124,37 @@ class AdminEventsTest extends TestCase
             ->assertSee('event_owner');
     }
 
+    public function test_updating_an_event_with_the_database_queue_does_not_touch_the_job_postings_table(): void
+    {
+        // 本番と同じくデータベースのキューを使う（テストの設定はふだん sync）
+        config(['queue.default' => 'database']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $event = $this->makeEvent(User::factory()->create());
+        $category = Category::create(['name' => 'Queue category']);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.events.update', $event), [
+                'title' => 'Renamed event',
+                'description' => 'Original description',
+                'language' => 'en',
+                'location' => 'Tokyo',
+                'start_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
+                'join_till' => now()->addDay()->format('Y-m-d H:i:s'),
+                'end_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
+                'price' => 0,
+                'approval_required' => '0',
+                'visibility' => 'public',
+                'status' => 'published',
+                'categories' => [$category->id],
+            ])
+            ->assertRedirect(route('admin.events.edit', $event));
+
+        // 参加者への通知の仕事はキュー用のテーブルに積まれ、求人の jobs テーブルには入らない
+        $this->assertDatabaseCount('queue_jobs', 1);
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertStringContainsString('NotifyEventParticipantsOnUpdateJob', \DB::table('queue_jobs')->value('payload'));
+    }
+
     private function makeEvent(User $owner): Event
     {
         return Event::create([
