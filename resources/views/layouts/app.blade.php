@@ -875,6 +875,11 @@
                     gap: 6px;
                 }
             }
+
+            .help-active {
+                color: #aec475 !important;
+
+            }
         </style>
     @endif
 </head>
@@ -917,12 +922,28 @@
                                     @endisset
                                 </ul>
                             </li>
+
                             <li class="nav-item category-nav mt-2">
                                 {{-- コミュニティのページにいる間は、黒文字（text-dark）を外してオレンジにする --}}
                                 <a class="nav-link dropdown-item {{ $inCommunity ? 'community-nav-active' : 'text-dark' }}" href="{{ route('community.index', ['type' => 'community']) }}"><span class="h6 fw-bold {{ $inCommunity ? '' : 'text-dark' }}">{{ __('Community') }}</span></a>
                             </li>
                             <li class="nav-item category-nav mt-2">
                                 <a class="nav-link text-dark dropdown-item {{ request()->routeIs('events.index') && !request()->filled('category') ? 'header-list-active' : '' }}" href="{{ route('events.index') }}"><span class="h6 fw-bold text-dark">{{ __('View All') }}</span></a>
+
+                            <li class="nav-item mt-2">
+                                <a class="nav-link text-dark header-list" href="{{ route('helps.index') }}">
+                                    <span class="h5 fw-normal {{ request()->routeIs('helps.*') ? 'help-active' : '' }}">
+                                        Help
+                                    </span>
+                                </a>
+                            </li>
+
+                            <li class="nav-item mt-2">
+                                <a class="nav-link {{ $inCommunity ? 'community-nav-active' : 'text-dark' }} header-list" href="{{ route('community.index', ['type' => 'community']) }}"><span class="h5 fw-normal">Community</span></a>
+                            </li>
+
+                            <li class="nav-item mt-2">
+                                <a class="nav-link text-dark header-list" href="{{ route('events.index') }}"><span class="h5 fw-normal">View All</span></a>
                             </li>
 
                                  <li class="nav-item nav-link dropdown my-auto ms-1 mt-2 category-nav">

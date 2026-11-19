@@ -2,7 +2,7 @@
 
 
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
-use App\Http\Controllers\Admin\JobsController;
+use App\Http\Controllers\Admin\helpsController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
@@ -21,9 +21,13 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\CommunityMembershipController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\JobsController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\HelpApplicationController;
+use App\Http\Controllers\HelpBookmarkController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Auth;
@@ -199,7 +203,6 @@ Route::group(['middleware' => 'auth'], function () {
             Route::patch('/{review}', [AdminReviewController::class, 'update'])->name('update');
             Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->name('destroy');
         });
-
     });
 });
 
@@ -233,3 +236,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'store'])->name('bookmarks.store');
     Route::delete('/events/{event}/bookmark', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 });
+
+// ==========================================================================
+// =============================== Job->Help Routes ===============================
+// ==========================================================================
+Route::get('/helps', [HelpController::class, 'index'])->name('helps.index');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/helps/create', [HelpController::class, 'create'])->name('helps.create');
+    Route::post('/helps', [HelpController::class, 'store'])->name('helps.store');
+    Route::get('/helps/{help}/edit', [HelpController::class, 'edit'])->name('helps.edit');
+    Route::put('/helps/{help}', [HelpController::class, 'update'])->name('helps.update');
+    Route::delete('/helps/{help}', [HelpController::class, 'destroy'])->name('helps.destroy');
+
+    // Application
+    Route::post('/helps/{help}/applications', [HelpApplicationController::class, 'store'])->name('helps.applications.store');
+    Route::get('/helps/{help}/applications', [HelpApplicationController::class, 'index'])->name('helps.applications.index');
+    Route::patch('/helps/{help}/applications/{application}', [HelpApplicationController::class, 'updateStatus'])->name('helps.applications.update-status');
+
+    // Bookmark
+    Route::post('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'store'])->name('helps.bookmarks.store');
+    Route::delete('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'destroy'])->name('helps.bookmarks.destroy');
+});
+
+Route::get('/helps/{help}', [HelpController::class, 'show'])->name('helps.show');
