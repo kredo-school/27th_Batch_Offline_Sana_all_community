@@ -1235,7 +1235,8 @@
                                                     $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                         ? $avatarPath : asset('storage/'.$avatarPath);
                                                 @endphp
-                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                                {{-- 代替テキストは、ナビバーの他のアイコンや「Hello, ○○」と同じユーザー名にする --}}
+                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username ?: Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
                                             @else
                                                 {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                                             @endif
