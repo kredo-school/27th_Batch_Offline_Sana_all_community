@@ -149,9 +149,9 @@ class AdminEventsTest extends TestCase
             ])
             ->assertRedirect(route('admin.events.edit', $event));
 
-        // 参加者への通知の仕事はキュー用のテーブルに積まれ、求人の jobs テーブルには入らない
+        // 参加者への通知の仕事はキュー用のテーブルに積まれ、help（元の求人の jobs）のテーブルには入らない
         $this->assertDatabaseCount('queue_jobs', 1);
-        $this->assertDatabaseCount('jobs', 0);
+        $this->assertDatabaseCount('helps', 0);
         $this->assertStringContainsString('NotifyEventParticipantsOnUpdateJob', \DB::table('queue_jobs')->value('payload'));
     }
 

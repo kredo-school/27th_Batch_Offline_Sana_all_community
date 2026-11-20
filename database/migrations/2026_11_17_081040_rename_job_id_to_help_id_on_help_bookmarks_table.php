@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('help_bookmarks', function (Blueprint $table) {
-            $table->dropForeign('job_bookmarks_job_id_foreign');
-        });
+        if ($this->supportsNamedForeignKeys()) {
+            Schema::table('help_bookmarks', function (Blueprint $table) {
+                $table->dropForeign('job_bookmarks_job_id_foreign');
+            });
+        }
 
         Schema::table('help_bookmarks', function (Blueprint $table) {
             $table->dropUnique('job_bookmarks_job_id_user_id_unique');
@@ -30,15 +32,17 @@ return new class extends Migration
             );
         });
 
-        Schema::table('help_bookmarks', function (Blueprint $table) {
-            $table->foreign(
-                'help_id',
-                'help_bookmarks_help_id_foreign'
-            )
-                ->references('id')
-                ->on('helps')
-                ->cascadeOnDelete();
-        });
+        if ($this->supportsNamedForeignKeys()) {
+            Schema::table('help_bookmarks', function (Blueprint $table) {
+                $table->foreign(
+                    'help_id',
+                    'help_bookmarks_help_id_foreign'
+                )
+                    ->references('id')
+                    ->on('helps')
+                    ->cascadeOnDelete();
+            });
+        }
     }
 
     /**
@@ -46,9 +50,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('help_bookmarks', function (Blueprint $table) {
-            $table->dropForeign('help_bookmarks_help_id_foreign');
-        });
+        if ($this->supportsNamedForeignKeys()) {
+            Schema::table('help_bookmarks', function (Blueprint $table) {
+                $table->dropForeign('help_bookmarks_help_id_foreign');
+            });
+        }
 
         Schema::table('help_bookmarks', function (Blueprint $table) {
             $table->dropUnique('help_bookmarks_help_id_user_id_unique');
@@ -65,14 +71,25 @@ return new class extends Migration
             );
         });
 
-        Schema::table('help_bookmarks', function (Blueprint $table) {
-            $table->foreign(
-                'job_id',
-                'job_bookmarks_job_id_foreign'
-            )
-                ->references('id')
-                ->on('helps')
-                ->cascadeOnDelete();
-        });
+        if ($this->supportsNamedForeignKeys()) {
+            Schema::table('help_bookmarks', function (Blueprint $table) {
+                $table->foreign(
+                    'job_id',
+                    'job_bookmarks_job_id_foreign'
+                )
+                    ->references('id')
+                    ->on('helps')
+                    ->cascadeOnDelete();
+            });
+        }
+    }
+
+    /**
+     * テストで使う SQLite は、名前を指定した外部キーの削除ができない。
+     * SQLite では列の名前を変えても外部キーはそのまま残るので、外部キーの削除・追加は飛ばす。
+     */
+    private function supportsNamedForeignKeys(): bool
+    {
+        return Schema::getConnection()->getDriverName() !== 'sqlite';
     }
 };
