@@ -190,7 +190,7 @@ class ProfileController extends Controller
             ->where('following_id', $user->id)
             ->exists();
         $followingEvents = Event::query()
-            ->whereIn('owner_id', Auth::user()->following()->select('users.id'))
+            ->whereIn('owner_id', Follow::where('follower_id', Auth::id())->select('following_id'))
             ->where('visibility', 'public')
             ->where('status', 'published')
             ->with(['owner.profile', 'categories'])

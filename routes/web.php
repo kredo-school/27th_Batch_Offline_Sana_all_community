@@ -21,6 +21,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\CommunityMembershipController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Admin\JobsController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\BookmarkController;
@@ -162,6 +163,9 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/communities/{community}', [CommunitiesController::class, 'show'])->name('communities.show');
         Route::get('/communities/{community}/edit', [CommunitiesController::class, 'edit'])->name('communities.edit');
         Route::patch('/communities/{community}', [CommunitiesController::class, 'update'])->name('communities.update');
+        Route::patch('/communities/{community}/owner', [CommunitiesController::class, 'replaceOwner'])->name('communities.owner.replace');
+        Route::patch('/communities/{community}/members/{member}/role', [CommunitiesController::class, 'updateMemberRole'])->name('communities.members.role');
+        Route::delete('/communities/{community}/members/{member}', [CommunitiesController::class, 'removeMember'])->name('communities.members.remove');
         Route::delete('/communities/{community}', [CommunitiesController::class, 'destroy'])->name('communities.destroy');
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications');
         Route::get('/notifications/create', [AdminNotificationController::class, 'create'])->name('notifications.create');
@@ -195,6 +199,18 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
         Route::patch('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::get('/languages', [AdminLanguageController::class, 'index'])->name('languages.index');
+        Route::get('/languages/create', [AdminLanguageController::class, 'create'])->name('languages.create');
+        Route::post('/languages', [AdminLanguageController::class, 'store'])->name('languages.store');
+        Route::get('/languages/{locale}/{key}/edit', [AdminLanguageController::class, 'edit'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.edit');
+        Route::patch('/languages/{locale}/{key}', [AdminLanguageController::class, 'update'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.update');
+        Route::delete('/languages/{locale}/{key}', [AdminLanguageController::class, 'destroy'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.destroy');
 
         // Event Review Management Admin(Masa)
         Route::group(['prefix' => 'reviews', 'as' => 'reviews.'], function () {

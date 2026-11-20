@@ -29,21 +29,45 @@
         text-transform: uppercase;
     }
 
-    .admin-nav { display: grid; gap: 4px; }
-    .admin-nav-link {
+    .admin-nav {
+        display: grid;
+        gap: 4px;
+    }
+
+    .admin-nav-link,
+    .admin-nav-disabled {
         display: flex;
         align-items: center;
         gap: 11px;
         min-height: 40px;
         padding: 0 11px;
-        border-radius: 6px;
+        border-radius: 5px;
         color: var(--admin-ink);
+        font-size: 14px;
         text-decoration: none;
-        font-size: 13px;
-        white-space: nowrap;
     }
+
+    .admin-nav-link i,
+    .admin-nav-disabled i {
+        width: 17px;
+        color: #668380;
+        text-align: center;
+    }
+
     .admin-nav-link:hover,
-    .admin-nav-link.active { color: #126b6b; background: #e8f5f1; }
+    .admin-nav-link.active {
+        color: #126b6b;
+        background: #d9f2ef;
+    }
+
+    .admin-nav-link.active {
+        font-weight: 700;
+    }
+
+    .admin-nav-disabled {
+        color: #98a9a7;
+    }
+
     .admin-main { min-width: 0; padding: 28px 22px 40px; }
     .admin-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
     .admin-eyebrow { margin: 0 0 5px; color: #16817e; font-size: 15px; font-weight: 700; text-transform: uppercase; }

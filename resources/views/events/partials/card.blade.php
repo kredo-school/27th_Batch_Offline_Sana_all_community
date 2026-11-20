@@ -276,7 +276,7 @@
             @endphp
 
             <span class="badge event-status {{ $joinTillBadge['class'] }}">
-                {{ $joinTillBadge['label'] }}
+                {{ __($joinTillBadge['label']) }}
             </span>
         </div>
         <h2 class="event-card-title">{{ $event->title }}</h2>

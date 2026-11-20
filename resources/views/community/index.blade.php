@@ -328,11 +328,11 @@
                     <i class="fa-solid fa-sort"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="communitySortMenu">
-                    @foreach (['latest' => 'Latest', 'oldest' => 'Oldest', 'name' => 'Name (A–Z)'] as $value => $label)
+                    @foreach (['latest' => 'Latest', 'oldest' => 'Oldest', 'name' => 'Name A to Z'] as $value => $label)
                         <li>
                             <a class="dropdown-item {{ $sort === $value ? 'active' : '' }}"
                                 href="{{ route('community.index', array_merge(request()->except('page'), ['sort' => $value])) }}">
-                                {{ $label }}
+                                {{ __($label) }}
                             </a>
                         </li>
                     @endforeach

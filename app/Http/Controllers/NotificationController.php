@@ -17,9 +17,10 @@ class NotificationController extends Controller
 
         $records = UserNotification::query()
             ->where('user_id', Auth::id())
+            ->where('type', '!=', 'community_message')
             ->when(
                 $type === 'community',
-                fn ($query) => $query->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                fn ($query) => $query->communityFilter()
             )
             ->when(
                 in_array($type, ['general', 'maintenance'], true),
@@ -66,14 +67,15 @@ class NotificationController extends Controller
                 ->get());
         }
 
+        // Keep canonical titles for view logic; Blade translations handle display.
         $title = 'Notifications';
         $columns = [
-            'From' => 'sender_name',
-            'Type' => 'type',
-            'Title' => 'title',
-            'Notification' => 'message',
-            'Read at' => 'read_at',
-            'Created' => 'created_at',
+            __('From') => 'sender_name',
+            __('Type') => 'type',
+            __('Title') => 'title',
+            __('Notification') => 'message',
+            __('Read at') => 'read_at',
+            __('Created') => 'created_at',
         ];
 
         return view('layouts.home.show', compact(
@@ -111,7 +113,7 @@ class NotificationController extends Controller
 
         // 招待・参加申請の結果のお知らせは、そのコミュニティのページを開く
         // （招待が取り消されて見られなくなっていたら、コミュニティの通知一覧へ）
-        if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined', 'community_moderator_added', 'community_ownership_transferred'], true)) {
+        if (in_array($notification->type, ['community_invite', 'community_join_approved', 'community_join_declined', 'community_moderator_added', 'community_ownership_transferred', 'community_approval'], true)) {
             $community = Community::find($notification->related_id);
 
             return $community && $community->isVisibleTo(Auth::user())
@@ -119,12 +121,12 @@ class NotificationController extends Controller
                 : redirect()->route('notifications.index', ['type' => 'community']);
         }
 
-        if (in_array($notification->type, ['community_message', 'community_join_request'], true)
-            && $notification->related_id !== null) {
-            return redirect()->route('notifications.index', [
-                'type' => 'community',
-                'community' => $notification->related_id,
-            ]);
+        if ($notification->type === 'community_message' && $notification->related_id !== null) {
+            return redirect()->to(route('community.show', $notification->related_id).'#chat');
+        }
+
+        if ($notification->type === 'community_join_request' && $notification->related_id !== null) {
+            return redirect()->route('community.show', $notification->related_id);
         }
 
         // コミュニティのイベントの中止のお知らせは、そのイベントの詳細ページで中止の理由を見せる

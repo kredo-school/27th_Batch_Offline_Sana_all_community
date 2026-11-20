@@ -90,6 +90,13 @@
             padding: 10px 14px;
             background: #174e45;
             color: #fff;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .message-chat-header:active {
+            cursor: grabbing;
         }
 
         .message-chat-header h2 {
@@ -107,6 +114,8 @@
             border-radius: 4px;
             background: transparent;
             color: inherit;
+            cursor: pointer;
+            touch-action: manipulation;
         }
 
         .message-chat-close:hover,
@@ -662,6 +671,12 @@
             }
         }
 
+        /* Cebuano はカテゴリー名が長いので、全部が一画面に収まるように小さくする */
+        .all-navbar .header-list.header-list-compact {
+            font-size: 0.75rem !important;
+            margin-right: 0.5rem !important;
+        }
+
         /* 1200px 未満（スマホ・タブレット・狭いノートPC）でハンバーガーメニューを開いたときの並び。
            ナビバーの中身は横一列だと約 1200px 必要で、それより狭いとロゴと重なるため折りたたむ */
         @media (max-width: 1199.98px) {
@@ -793,15 +808,17 @@
         }
     </style>
 
+    <style>
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1100;
+            background-color: #fff;
+        }
+    </style>
+
     @if ($sidebar !== '')
         <style>
-            /* show nav bar in paticular place */
-            .navbar {
-                position: sticky;
-                top: 0;
-                z-index: 1100;
-                background-color: #fff;
-            }
 
             /* show modal */
             .modal-backdrop {
@@ -825,7 +842,7 @@
                 position: sticky;
                 top: 68px; 
                 height: calc(100vh - 68px); 
-                overflow-y: auto; 
+                overflow: visible;
                 background-color: #fff;
                 z-index: 100;
             }
@@ -907,7 +924,7 @@
                                 <ul class="list-unstyled d-flex flex-wrap align-items-center mb-0 mt-3">
                                     @isset($categories)
                                         @foreach ($categories as $value => $label)
-                                            <li class="me-3 h5 fw-bold header-list">
+                                            <li class="me-3 h5 fw-bold header-list {{ app()->getLocale() === 'ceb' ? 'header-list-compact' : '' }}">
                                                 <a class="dropdown-item nav-link text-dark {{ (string) request('category') === (string) $value ? 'active' : '' }}"
                                                     href="{{ route('events.index', ['category' => $value]) }}">
                                                     {{ $label }}
@@ -1056,7 +1073,7 @@
                                                                 @if ($notification->type === 'community_message')
                                                                     <span class="d-block">{{ $notification->related?->name ?? __('Community') }}</span>
                                                                 @else
-                                                                    <span class="d-block">{{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}</span>
+                                                                    <span class="d-block">{{ $notification->title ?: $notification->type_label }}</span>
                                                                     @if ($notification->sender_name)
                                                                         <span class="d-block small text-muted">{{ __('From') }}: {{ $notification->sender_name }}</span>
                                                                     @endif
@@ -1105,16 +1122,22 @@
                                                         <span class="badge rounded-pill bg-danger position-absolute bottom-0 end-0 js-community-notification-badge">{{ $communityNotificationCount }}</span>
                                                     @endif
                                                 </button>
-                                                <ul class="dropdown-menu dropdown-menu-end border-primary rounded bg-white js-community-notification-list"
-                                                    style="max-height: 24rem; min-width: 20rem; overflow-y: auto;">
-                                                    <li class="bg-primary text-center mb-1"><span class="h5 text-white">{{ __('Community') }}</span></li>
+                                                
+                                                <ul class="dropdown-menu dropdown-menu-end border-primary rounded js-community-notification-list"
+                                                    style="max-height: 24rem; min-width: 18rem; overflow-y: auto; background-color: #F58634;">
+                                                    <li class="text-center mb-1" style="background-color: #F58634;"><span class="h5 text-white">{{ __('Community') }}</span></li>
                                                     @forelse ($communityNotifications as $communityNotification)
                                                         {{-- チャットの通知は、Chat タブで読んだときに画面上からも消せるようにコミュニティの ID を持たせる --}}
+                                                        @php
+                                                            $communityNotificationUrl = $communityNotification->type === 'community_message' && $communityNotification->related_id
+                                                                ? route('community.show', $communityNotification->related_id).'#chat'
+                                                                : (in_array($communityNotification->type, ['community_join_approved', 'community_approval'], true) && $communityNotification->related_id
+                                                                    ? route('community.show', $communityNotification->related_id)
+                                                                    : route('notifications.show', $communityNotification));
+                                                        @endphp
                                                         <li class="dropdown-content bg-white"
                                                             @if ($communityNotification->type === 'community_message') data-community-chat-notification="{{ $communityNotification->related_id }}" @endif>
-                                                            <a href="{{ $communityNotification->type === 'community_message' && $communityNotification->related_id
-                                                                ? route('community.show', $communityNotification->related_id) . '#chat'
-                                                                : route('notifications.show', $communityNotification) }}"
+                                                            <a href="{{ $communityNotificationUrl }}"
                                                                 class="dropdown-item text-wrap border-bottom text-start {{ $communityNotification->read_at ? '' : 'dropdown-item--unread fw-semibold' }}">
                                                                 @if ($communityNotification->type === 'event_cancelled')
                                                                     {{-- コミュニティのイベントの中止: コミュニティ名、イベント名、理由 --}}
@@ -1339,13 +1362,15 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 class="modal-title fs-5" id="action-confirmation-title">Confirm action</h2>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h2 class="modal-title fs-5" id="action-confirmation-title">{{ __('Confirm action') }}</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                     </div>
                     <div class="modal-body" id="action-confirmation-message"></div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="action-confirmation-submit">Continue</button>
+                        <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="button" class="btn btn-primary" id="action-confirmation-submit"
+                            data-delete-label="{{ __('Delete') }}"
+                            data-continue-label="{{ __('Continue') }}">{{ __('Continue') }}</button>
                     </div>
                 </div>
             </div>
@@ -1357,13 +1382,13 @@
                 <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h2 class="modal-title fs-5" id="create-message-title">Create Message</h2>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h2 class="modal-title fs-5" id="create-message-title">{{ __('Create Message') }}</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                         </div>
                         <div class="modal-body p-0">
                             @foreach ([['title' => 'Following', 'users' => $followedMessageRecipients], ['title' => 'Others', 'users' => $otherMessageRecipients]] as $recipientGroup)
                                 <section class="border-bottom last:border-bottom-0">
-                                    <h3 class="px-3 py-2 mb-0 bg-light text-uppercase small fw-bold text-secondary">{{ $recipientGroup['title'] }}</h3>
+                                    <h3 class="px-3 py-2 mb-0 bg-light text-uppercase small fw-bold text-secondary">{{ __($recipientGroup['title']) }}</h3>
                                     <div class="list-group list-group-flush">
                                         @forelse ($recipientGroup['users'] as $recipient)
                                             <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-3"
@@ -1391,7 +1416,7 @@
                                                 </span>
                                             </button>
                                         @empty
-                                            <p class="text-muted text-center my-3">No users in this group.</p>
+                                            <p class="text-muted text-center my-3">{{ __('No users in this group.') }}</p>
                                         @endforelse
                                     </div>
                                 </section>

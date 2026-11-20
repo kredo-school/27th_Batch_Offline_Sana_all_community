@@ -291,8 +291,8 @@
             <thead class="table-success">
                 <tr>
                     <th>ID</th>
-                    <th>NAME</th>
-                    <th>JAPANESE NAME</th>
+                    <th>{{ __('Name') }}</th>
+                    <th>{{ __('Localized category name (:language)', ['language' => \App\Support\LocalizedValue::language(app()->getLocale())]) }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -302,20 +302,21 @@
             <tr>
                 <td>{{ $category->id }}</td>
                 <td>{{ $category->name }}</td>
-                <td>{{ $category->japanese_name }}</td>
+                <td>{{ $category->localized_name }}</td>
                 <td>
                     {{-- Edit --}}
                     <a href="{{ route('admin.categories.edit', $category->id) }}"
-                        class="btn btn-sm btn-primary">
-                        Edit
+                        class="btn btn-sm btn-primary" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
                     </a>
 
                     {{-- Delete --}}
                     <button type="button"
                         class="btn btn-sm btn-danger"
                         data-bs-toggle="modal"
-                        data-bs-target="#deleteCategoryModal{{ $category->id }}">
-                        Delete
+                        data-bs-target="#deleteCategoryModal{{ $category->id }}"
+                        title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
                     </button>
 
                     {{-- Delete Confirmation Modal --}}
@@ -331,18 +332,19 @@
                                 <div class="modal-header">
                                     <h5 class="modal-title"
                                         id="deleteCategoryModalLabel{{ $category->id }}">
-                                        Delete Category
+                                        {{ __('Delete category') }}
                                     </h5>
 
                                     <button type="button"
                                         class="btn-close"
                                         data-bs-dismiss="modal"
-                                        aria-label="Close">
+                                        aria-label="{{ __('Close') }}">
+                                        <span class="visually-hidden">{{ __('Close') }}</span>
                                     </button>
                                 </div>
 
                                 <div class="modal-body">
-                                    Are you sure you want to delete
+                                    {{ __('Are you sure you want to delete') }}
                                     <strong>{{ $category->name }}</strong>?
                                 </div>
 
@@ -351,7 +353,7 @@
                                     <button type="button"
                                         class="btn btn-outline-warning"
                                         data-bs-dismiss="modal">
-                                        Cancel
+                                        {{ __('Cancel') }}
                                     </button>
 
                                     <form action="{{ route('admin.categories.destroy', $category->id) }}"
@@ -362,8 +364,9 @@
                                         @method('DELETE')
 
                                         <button type="submit"
-                                            class="btn btn-danger">
-                                            Delete
+                                            class="btn btn-danger"
+                                            title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}">
+                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                         </button>
 
                                     </form>

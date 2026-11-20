@@ -15,7 +15,7 @@
                         {{ $notification->created_at?->format('M j, Y g:i A') }}
                     </p>
                     <h1 class="h4 mb-3">
-                        {{ $notification->title ?: ucfirst(str_replace('_', ' ', $notification->type)) }}
+                        {{ $notification->title ?: $notification->type_label }}
                     </h1>
 
                     @if ($notification->sender_name)
@@ -33,7 +33,7 @@
                         <a href="{{ route('events.show', $notification->related_id) }}" class="btn btn-primary">
                             {{ __('View event') }}
                         </a>
-                    @elseif (in_array($notification->type, ['community_join_approved'], true)
+                    @elseif (in_array($notification->type, ['community_join_approved', 'community_approval'], true)
                         && $notification->related_id)
                         <a href="{{ route('community.show', $notification->related_id) }}" class="btn btn-primary">
                             {{ __('View community') }}

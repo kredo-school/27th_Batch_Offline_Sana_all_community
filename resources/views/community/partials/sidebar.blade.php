@@ -72,7 +72,7 @@
         {{-- 参加中のコミュニティのチャットをまとめて見るページ --}}
         <a href="{{ route('community.chats') }}"
             class="sidebar-chat-link {{ request()->routeIs('community.chats') ? 'active' : '' }}">
-            <span>Chats</span>
+            <span>{{ __('Chats') }}</span>
             @if ($unreadChatCount > 0)
                 <span class="badge rounded-pill sidebar-chat-unread">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}<span class="visually-hidden"> unread messages</span></span>
             @endif

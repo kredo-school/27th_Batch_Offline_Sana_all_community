@@ -7,6 +7,7 @@ use App\Jobs\NotifyEventParticipantsOnUpdateJob;
 use App\Models\Category;
 use App\Models\Event;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EventsController extends Controller
 {
@@ -74,7 +75,7 @@ class EventsController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
-            'language' => ['required', 'string', 'size:2'],
+            'language' => ['required', Rule::in(array_keys(config('app.supported_locales')))],
             'region' => ['nullable', 'string', 'max:100'],
             'location' => ['nullable', 'string', 'max:255'],
             'start_at' => ['required', 'date'],
@@ -102,13 +103,13 @@ class EventsController extends Controller
         }
 
         return redirect()->route('admin.events.edit', $event)
-            ->with('status', 'Event updated successfully.');
+            ->with('status', __('Event updated successfully.'));
     }
 
     public function destroy(Event $event)
     {
         $event->delete();
 
-        return redirect()->route('admin.events')->with('status', 'Event deleted successfully.');
+        return redirect()->route('admin.events')->with('status', __('Event deleted successfully.'));
     }
 }

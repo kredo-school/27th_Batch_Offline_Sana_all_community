@@ -24,9 +24,9 @@
         <input type="hidden" name="{{ $field }}_crop[{{ $property }}]" value="{{ $crop[$property] ?? ($property === 'zoom' ? 1 : 50) }}">
     @endforeach
     <div class="profile-image-buttons">
-        <button type="button" data-image-adjust @disabled(! $canAdjust || $removed)>Adjust {{ $label }}</button>
-        <button type="button" data-image-remove @disabled(! $savedImage || $removed)>Remove {{ $label }}</button>
-        <button type="button" data-image-undo @if(! $removed) hidden @endif>Undo removal</button>
+        <button type="button" data-image-adjust @disabled(! $canAdjust || $removed)>{{ __('Adjust :label', ['label' => $label]) }}</button>
+        <button type="button" data-image-remove @disabled(! $savedImage || $removed)>{{ __('Remove :label', ['label' => $label]) }}</button>
+        <button type="button" data-image-undo @if(! $removed) hidden @endif>{{ __('Undo removal') }}</button>
     </div>
-    <p class="profile-image-status" role="status" aria-live="polite">{{ $removed ? 'Image removed. Save Changes to confirm.' : ($savedImage && ! $canAdjust ? 'Upload this image again to adjust its position.' : '') }}</p>
+    <p class="profile-image-status" role="status" aria-live="polite">{{ $removed ? __('Image removed. Save Changes to confirm.') : ($savedImage && ! $canAdjust ? __('Upload this image again to adjust its position.') : '') }}</p>
 </div>

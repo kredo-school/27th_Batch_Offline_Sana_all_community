@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Review Details')
+@section('title', __('Review Details'))
 
 @section('content')
 <div class="container py-4" style="max-width: 720px;">
     <a href="{{ route('admin.reviews') }}" class="small text-decoration-none">
-        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>Back to reviews
+        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>{{ __('Back to reviews') }}
     </a>
 
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mt-3 mb-4">
@@ -18,14 +18,17 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('admin.reviews.edit', $review) }}" class="btn btn-outline-primary btn-sm">
-            <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.reviews.edit', $review) }}" class="btn btn-outline-primary btn-sm"
+                title="{{ __('Edit') }}" aria-label="{{ __('Edit review') }}">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </a>
+        </div>
     </div>
 
     <dl class="row">
-        <dt class="col-sm-3">Rating</dt>
-        <dd class="col-sm-9">{{ $review->rating }} / 5</dd>
+        <dt class="col-sm-3">{{ __('Rating') }}</dt>
+        <dd class="col-sm-9">{{ $review->rating_label }} ({{ $review->rating }} / 5)</dd>
         <dt class="col-sm-3">Review</dt>
         <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $review->comment ?: '-' }}</dd>
         <dt class="col-sm-3">Created</dt>

@@ -24,7 +24,7 @@
             @if (session('status'))
                 <div class="alert alert-success" role="status">{{ session('status') }}</div>
             @endif
-            <section class="profile-card" aria-label="{{ $user->name }}'s profile">
+            <section class="profile-card" aria-label="{{ __(':name\'s profile', ['name' => $user->name]) }}">
                 <img class="profile-cover" src="{{ $cover }}" alt="{{ __('Profile cover') }}">
                 <div class="profile-details">
                     <div class="profile-avatar-wrap">
@@ -53,13 +53,13 @@
                     <div class="profile-actions">
                         @if ((int) auth()->id() === (int) $user->id)
                             <div class="dropdown profile-more-actions">
-                                <button type="button" class="profile-more-button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More profile actions">
+                                <button type="button" class="profile-more-button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('More profile actions') }}">
                                     <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end">
-                                    <a href="{{ route('profile.edit') }}" class="dropdown-item"><i class="fa-solid fa-pen" aria-hidden="true"></i>Edit Profile</a>
+                                    <a href="{{ route('profile.edit') }}" class="dropdown-item"><i class="fa-solid fa-pen" aria-hidden="true"></i>{{ __('Edit Profile') }}</a>
                                     <button type="button" class="dropdown-item" data-profile-share data-profile-url="{{ route('profile.show', $user->id) }}">
-                                        <i class="fa-solid fa-link" aria-hidden="true"></i>Copy profile link
+                                        <i class="fa-solid fa-link" aria-hidden="true"></i>{{ __('Copy profile link') }}
                                     </button>
                                 </div>
                             </div>
@@ -69,16 +69,16 @@
                                 @if ($isFollowing) @method('DELETE') @endif
                                 <button type="submit" class="profile-follow-button {{ $isFollowing ? 'is-following' : '' }}"
                                     @disabled(!$isFollowing && $followBlocked)
-                                    @if (!$isFollowing && $followBlocked) title="Following is unavailable while either user has blocked the other." @endif><i class="fa-solid {{ $isFollowing ? 'fa-user-check' : 'fa-user-plus' }}" aria-hidden="true"></i><span>{{ $isFollowing ? 'Unfollow' : 'Follow' }}</span></button>
+                                    @if (!$isFollowing && $followBlocked) title="{{ __('Following is unavailable while either user has blocked the other.') }}" @endif><i class="fa-solid {{ $isFollowing ? 'fa-user-check' : 'fa-user-plus' }}" aria-hidden="true"></i><span>{{ __($isFollowing ? 'Unfollow' : 'Follow') }}</span></button>
                             </form>
                             <div class="dropdown profile-more-actions">
                                 <button type="button" class="profile-more-button" data-bs-toggle="dropdown"
-                                    aria-expanded="false" aria-label="More user actions">
+                                    aria-expanded="false" aria-label="{{ __('More user actions') }}">
                                     <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <button type="button" class="dropdown-item" data-profile-share data-profile-url="{{ route('profile.show', $user->id) }}">
-                                        <i class="fa-solid fa-link" aria-hidden="true"></i>Copy profile link
+                                        <i class="fa-solid fa-link" aria-hidden="true"></i>{{ __('Copy profile link') }}
                                     </button>
                                 @if ($isBlockedByViewer)
                                 <form action="{{ route('messages.unblock', $user) }}" method="POST">
@@ -108,15 +108,15 @@
                             $profileOccupation = $canSeeOccupation ? trim($user->profile?->occupation ?? '') : '';
                         @endphp
                         @if ($profileLocation !== '' || $profileOccupation !== '')
-                            <ul class="profile-basic-info" aria-label="Profile information">
+                            <ul class="profile-basic-info" aria-label="{{ __('Profile information') }}">
                                 @if ($profileLocation !== '')
-                                    <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span><span class="visually-hidden">Location: </span>{{ $profileLocation }}</span>
-                                        @if ($isProfileOwner && !$user->profile->show_location)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>Only you</span>@endif
+                                    <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span><span class="visually-hidden">{{ __('Location:') }} </span>{{ $profileLocation }}</span>
+                                        @if ($isProfileOwner && !$user->profile->show_location)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>{{ __('Only you') }}</span>@endif
                                     </li>
                                 @endif
                                 @if ($profileOccupation !== '')
-                                    <li><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span><span class="visually-hidden">Occupation: </span>{{ $profileOccupation }}</span>
-                                        @if ($isProfileOwner && !$user->profile->show_occupation)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>Only you</span>@endif
+                                    <li><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span><span class="visually-hidden">{{ __('Occupation:') }} </span>{{ $profileOccupation }}</span>
+                                        @if ($isProfileOwner && !$user->profile->show_occupation)<span class="profile-private-label"><i class="fa-solid fa-lock" aria-hidden="true"></i>{{ __('Only you') }}</span>@endif
                                     </li>
                                 @endif
                             </ul>
@@ -133,8 +133,8 @@
                                 };
                             @endphp
                             <div>
-                                <dt>@if ($statUrl)<a href="{{ $statUrl }}">{{ $label }}</a>@else{{ $label }}@endif</dt>
-                                <dd>@if ($statUrl)<a href="{{ $statUrl }}" aria-label="{{ $label }}: {{ $count }}">{{ $count }}</a>@else{{ $count }}@endif</dd>
+                                <dt>@if ($statUrl)<a href="{{ $statUrl }}">{{ __($label) }}</a>@else{{ __($label) }}@endif</dt>
+                                <dd>@if ($statUrl)<a href="{{ $statUrl }}" aria-label="{{ __($label) }}: {{ $count }}">{{ $count }}</a>@else{{ $count }}@endif</dd>
                             </div>
                         @endforeach
                     </dl>
@@ -151,8 +151,8 @@
                         <input type="hidden" name="connections" value="{{ $connectionType }}">
                         <input type="hidden" name="tab" value="{{ $activeTab }}">
                         <label class="visually-hidden" for="connection-search">Search by name or username</label>
-                        <input type="search" id="connection-search" name="connection_search" value="{{ $connectionSearch }}" maxlength="100" placeholder="Search name or username">
-                        <button type="submit">Search</button>
+                        <input type="search" id="connection-search" name="connection_search" value="{{ $connectionSearch }}" maxlength="100" placeholder="{{ __('Search name or username') }}">
+                        <button type="submit">{{ __('Search') }}</button>
                     </form>
                     <ul class="profile-connection-list">
                         @forelse ($connections as $connection)
@@ -160,7 +160,7 @@
                                 <img src="{{ $imageUrl($connection->profile?->avatar, asset('images/onlylogo.jpg')) }}" alt="" width="44" height="44">
                                 <span class="profile-connection-info"><strong>{{ $connection->name }}</strong><span>{{ '@'.($connection->username ?: 'user'.$connection->id) }}</span>
                                     @if ((int) $connection->id !== (int) auth()->id() && $connection->follows_viewer)
-                                        <span class="profile-relationship">{{ $connection->followed_by_viewer ? 'Mutual' : 'Follows you' }}</span>
+                                        <span class="profile-relationship">{{ __($connection->followed_by_viewer ? 'Mutual' : 'Follows you') }}</span>
                                     @endif
                                 </span>
                             </a>
@@ -173,7 +173,7 @@
                                     <input type="hidden" name="connection_search" value="{{ $connectionSearch }}">
                                     <input type="hidden" name="connections_page" value="{{ $connections->currentPage() }}">
                                     <input type="hidden" name="tab" value="{{ $activeTab }}">
-                                    <button type="submit" class="profile-follow-button {{ $connection->followed_by_viewer ? 'is-following' : '' }}" @disabled(!$connection->followed_by_viewer && in_array((int) $connection->id, $connectionBlockedIds, true)) aria-label="{{ ($connection->followed_by_viewer ? 'Unfollow ' : 'Follow ').$connection->name }}">{{ $connection->followed_by_viewer ? 'Unfollow' : 'Follow' }}</button>
+                                    <button type="submit" class="profile-follow-button {{ $connection->followed_by_viewer ? 'is-following' : '' }}" @disabled(!$connection->followed_by_viewer && in_array((int) $connection->id, $connectionBlockedIds, true)) aria-label="{{ __($connection->followed_by_viewer ? 'Unfollow' : 'Follow').' '.$connection->name }}">{{ __($connection->followed_by_viewer ? 'Unfollow' : 'Follow') }}</button>
                                 </form>
                             @endif
                             </li>
@@ -190,31 +190,31 @@
                     @foreach (['event' => 'Events', 'review' => 'Reviews', 'community' => 'Communities'] as $tab => $label)
                         @if ($tab === 'review')
                             <details class="profile-review-menu" id="profile-review-menu">
-                                <summary @if($activeTab === 'review') aria-current="page" @endif>Reviews <i class="fa-solid fa-chevron-down ms-1" aria-hidden="true"></i></summary>
-                                <div class="profile-review-options" aria-label="Review type">
+                                <summary @if($activeTab === 'review') aria-current="page" @endif>{{ __('Reviews') }} <i class="fa-solid fa-chevron-down ms-1" aria-hidden="true"></i></summary>
+                                <div class="profile-review-options" aria-label="{{ __('Review type') }}">
                                     @foreach (['event' => 'Event reviews', 'host' => 'Host reviews'] as $type => $reviewLabel)
                                         <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => $type]) }}#profile-activity"
                                             @if($activeTab === 'review' && $reviewType === $type) aria-current="page" @endif>
                                             <i class="fa-solid {{ $type === 'host' ? 'fa-user' : 'fa-calendar-days' }}" aria-hidden="true"></i>
-                                            {{ $reviewLabel }}
+                                            {{ __($reviewLabel) }}
                                         </a>
                                     @endforeach
                                     @if ((int) auth()->id() === (int) $user->id)
                                         <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'written']) }}#profile-activity" @if($activeTab === 'review' && $reviewType === 'written') aria-current="page" @endif>
-                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>Written reviews
+                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>{{ __('Written reviews') }}
                                         </a>
                                     @endif
                                 </div>
                             </details>
                         @else
-                            <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => $tab]) }}" @if($activeTab === $tab) aria-current="page" @endif>{{ $label }}</a>
+                            <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => $tab]) }}" @if($activeTab === $tab) aria-current="page" @endif>{{ __($label) }}</a>
                         @endif
                     @endforeach
                 </nav>
             @endif
-            <section id="profile-activity" class="profile-feed" aria-label="Profile activity">
+            <section id="profile-activity" class="profile-feed" aria-label="{{ __('Profile activity') }}">
                 <div data-profile-panel="feed" @if($activeTab !== 'feed') hidden @endif>
-                    <div class="profile-feed-heading"><h2>Posts from people you follow</h2></div>
+                    <div class="profile-feed-heading"><h2>{{ __('Posts from people you follow') }}</h2></div>
                     <div class="event-grid profile-bookmark-grid">
                         @forelse ($followingEvents as $event)
                             <div>
@@ -226,9 +226,9 @@
                         @empty
                             <div class="profile-feed-empty">
                                 <i class="fa-solid fa-user-group" aria-hidden="true"></i>
-                                <h3>No posts yet</h3>
-                                <p>Follow people to see their public posts here.</p>
-                                <a class="profile-follow-button" href="{{ route('profile.show', ['id' => auth()->id(), 'tab' => 'feed', 'connections' => 'people']) }}">Find people</a>
+                                <h3>{{ __('No posts yet') }}</h3>
+                                <p>{{ __('Follow people to see their public posts here.') }}</p>
+                                <a class="profile-follow-button" href="{{ route('profile.show', ['id' => auth()->id(), 'tab' => 'feed', 'connections' => 'people']) }}">{{ __('Find people') }}</a>
                             </div>
                         @endforelse
                     </div>
@@ -240,9 +240,9 @@
                             <h2>{{ __('Hosted events') }}</h2>
                             <span class="profile-event-count">{{ $events->count() }} {{ $events->count() === 1 ? __('event') : __('events') }}</span>
                         </div>
-                        <nav class="profile-history-filters" aria-label="Filter hosted events">
+                        <nav class="profile-history-filters" aria-label="{{ __('Filter hosted events') }}">
                             @foreach (['all' => 'All', 'upcoming' => 'Upcoming', 'past' => 'Past'] + ((int) auth()->id() === (int) $user->id ? ['draft' => 'Drafts'] : []) as $value => $label)
-                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'event', 'event_filter' => $value]) }}#profile-activity" @if ($eventFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'event', 'event_filter' => $value]) }}#profile-activity" @if ($eventFilter === $value) aria-current="page" @endif>{{ __($label) }}</a>
                             @endforeach
                         </nav>
                     </div>
@@ -261,22 +261,22 @@
                     <div class="profile-feed-heading"><h2>{{ __('Bookmarks') }}</h2><span class="profile-history-count">{{ $bookmarkedEvents?->total() ?? 0 }} events</span></div>
                     @if ($bookmarkedEvents !== null)
                         <div class="profile-history-toolbar">
-                            <nav class="profile-history-filters" aria-label="Filter bookmarked events">
+                            <nav class="profile-history-filters" aria-label="{{ __('Filter bookmarked events') }}">
                                 @foreach (['upcoming' => 'Upcoming', 'all' => 'All'] as $value => $label)
-                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'bookmark', 'bookmark_filter' => $value, 'bookmark_sort' => $bookmarkSort]) }}#profile-activity" @if ($bookmarkFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'bookmark', 'bookmark_filter' => $value, 'bookmark_sort' => $bookmarkSort]) }}#profile-activity" @if ($bookmarkFilter === $value) aria-current="page" @endif>{{ __($label) }}</a>
                                 @endforeach
                             </nav>
                             <form method="GET" action="{{ route('profile.show', $user->id) }}#profile-activity" class="profile-history-sort">
                                 <input type="hidden" name="tab" value="bookmark">
                                 <input type="hidden" name="bookmark_filter" value="{{ $bookmarkFilter }}">
-                                <label for="bookmark-sort" class="visually-hidden">Sort bookmarked events</label>
+                                <label for="bookmark-sort" class="visually-hidden">{{ __('Sort bookmarked events') }}</label>
                                 <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
                                 <select id="bookmark-sort" name="bookmark_sort" onchange="this.form.requestSubmit()">
                                     @foreach (['saved' => 'Recently saved', 'nearest' => 'Next events first'] as $value => $label)
-                                        <option value="{{ $value }}" @selected($bookmarkSort === $value)>{{ $label }}</option>
+                                        <option value="{{ $value }}" @selected($bookmarkSort === $value)>{{ __($label) }}</option>
                                     @endforeach
                                 </select>
-                                <noscript><button type="submit">Apply</button></noscript>
+                                <noscript><button type="submit">{{ __('Apply') }}</button></noscript>
                             </form>
                         </div>
                         <div class="event-grid profile-bookmark-grid">
@@ -293,31 +293,31 @@
                     @endif
                 </div>
                 <div data-profile-panel="history" @if($activeTab !== 'history') hidden @endif>
-                    <div class="profile-feed-heading"><h2>{{ __('Joined events') }}</h2><span class="profile-history-count">{{ $historyEvents?->total() ?? 0 }} events</span></div>
+                    <div class="profile-feed-heading"><h2>{{ __('Joined events') }}</h2><span class="profile-history-count">{{ $historyEvents?->total() ?? 0 }} {{ __('events') }}</span></div>
                     @if ($historyEvents !== null)
                         <div class="profile-history-toolbar">
-                            <nav class="profile-history-filters" aria-label="Filter joined events">
+                            <nav class="profile-history-filters" aria-label="{{ __('Filter joined events') }}">
                                 @foreach (['upcoming' => 'Upcoming', 'pending' => 'Pending', 'past' => 'Past', 'all' => 'All'] as $value => $label)
-                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'history', 'history_filter' => $value, 'history_sort' => $historySort]) }}#profile-activity" @if ($historyFilter === $value) aria-current="page" @endif>{{ $label }}</a>
+                                    <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'history', 'history_filter' => $value, 'history_sort' => $historySort]) }}#profile-activity" @if ($historyFilter === $value) aria-current="page" @endif>{{ __($label) }}</a>
                                 @endforeach
                             </nav>
                             <form method="GET" action="{{ route('profile.show', $user->id) }}#profile-activity" class="profile-history-sort">
                                 <input type="hidden" name="tab" value="history">
                                 <input type="hidden" name="history_filter" value="{{ $historyFilter }}">
-                                <label for="history-sort" class="visually-hidden">Sort joined events by event date</label>
+                                <label for="history-sort" class="visually-hidden">{{ __('Sort joined events by event date') }}</label>
                                 <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
                                 <select id="history-sort" name="history_sort" onchange="this.form.requestSubmit()">
                                     @foreach (['nearest' => 'Next events first', 'newest' => 'Newest first', 'oldest' => 'Oldest first'] as $value => $label)
-                                        <option value="{{ $value }}" @selected($historySort === $value)>{{ $label }}</option>
+                                        <option value="{{ $value }}" @selected($historySort === $value)>{{ __($label) }}</option>
                                     @endforeach
                                 </select>
-                                <noscript><button type="submit">Apply</button></noscript>
+                                <noscript><button type="submit">{{ __('Apply') }}</button></noscript>
                             </form>
                         </div>
                         <div class="event-grid profile-bookmark-grid">
                             @forelse ($historyEvents as $event)
                                 <div>
-                                    <p class="mb-2"><span class="profile-history-status {{ $event->pivot->status === 'pending' ? 'is-pending' : ($event->end_at->lt($historyNow) ? 'is-past' : 'is-upcoming') }}">{{ $event->pivot->status === 'pending' ? 'Pending approval' : ($event->end_at->lt($historyNow) ? 'Past event' : 'Upcoming') }}</span></p>
+                                    <p class="mb-2"><span class="profile-history-status {{ $event->pivot->status === 'pending' ? 'is-pending' : ($event->end_at->lt($historyNow) ? 'is-past' : 'is-upcoming') }}">{{ __($event->pivot->status === 'pending' ? 'Pending approval' : ($event->end_at->lt($historyNow) ? 'Past event' : 'Upcoming')) }}</span></p>
                                     @include('events.partials.card', ['event' => $event])
                                 </div>
                             @empty
@@ -354,21 +354,21 @@
                     @if ($activeTab === 'review')
                         @if ((int) auth()->id() === (int) $user->id)
                             <nav class="profile-review-direction" aria-label="Review direction">
-                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'event']) }}#profile-activity" @if ($reviewType !== 'written') aria-current="page" @endif>Received reviews</a>
-                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'written']) }}#profile-activity" @if ($reviewType === 'written') aria-current="page" @endif>Written reviews</a>
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'event']) }}#profile-activity" @if ($reviewType !== 'written') aria-current="page" @endif>{{ __('Received reviews') }}</a>
+                                <a href="{{ route('profile.show', ['id' => $user->id, 'tab' => 'review', 'review_type' => 'written']) }}#profile-activity" @if ($reviewType === 'written') aria-current="page" @endif>{{ __('Written reviews') }}</a>
                             </nav>
                         @endif
                         @if ($reviewType === 'written')
                             @include('profile.partials.written-reviews')
                         @else
                         @php
-                            $heading = $reviewType === 'host' ? 'Host reviews' : 'Event reviews';
+                            $heading = $reviewType === 'host' ? __('Host reviews') : __('Event reviews');
                             $reviews = $reviewType === 'host' ? $hostReviews : $eventReviews;
                         @endphp
                             <section class="mb-4" aria-label="{{ $heading }}">
                                 <div class="profile-feed-heading">
                                     <h2>{{ $heading }}</h2>
-                                    <span>{{ $reviews->total() }} {{ $reviews->total() === 1 ? 'review' : 'reviews' }}</span>
+                                    <span>{{ $reviews->total() }} {{ $reviews->total() === 1 ? __('review') : __('reviews') }}</span>
                                 </div>
                                 @forelse ($reviews as $review)
                                     <article class="profile-review-card">
@@ -378,13 +378,13 @@
                                                 @if ($review->user)
                                                     <a href="{{ route('profile.show', $review->user_id) }}">{{ $review->user->name }}</a>
                                                 @else
-                                                    <strong>Deleted user</strong>
+                                                    <strong>{{ __('Deleted user') }}</strong>
                                                 @endif
                                                 @if ($review->created_at)
                                                     <time datetime="{{ $review->created_at->toIso8601String() }}">{{ $review->created_at->format('M j, Y') }}</time>
                                                 @endif
                                             </div>
-                                            <div class="profile-review-rating" aria-label="{{ $review->rating }} out of 5 stars">
+                                            <div class="profile-review-rating" aria-label="{{ $review->rating }} {{ __('out of 5 stars') }}">
                                                 <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}<span class="profile-review-unfilled">{{ str_repeat('★', 5 - $review->rating) }}</span></span>
                                                 <strong aria-hidden="true">{{ $review->rating }}<small>/5</small></strong>
                                             </div>
@@ -392,16 +392,16 @@
                                         @if ($review->comment)
                                             <p class="profile-review-comment">{{ $review->comment }}</p>
                                         @else
-                                            <p class="profile-review-no-comment">Rating only</p>
+                                            <p class="profile-review-no-comment">{{ __('Rating only') }}</p>
                                         @endif
                                         <a class="profile-review-event" href="{{ route('events.show', $review->event_id) }}">
                                             <img src="{{ $imageUrl($review->event->image, asset('images/onlylogo.jpg')) }}" alt="" width="48" height="48" loading="lazy">
-                                            <span><small>{{ $reviewType === 'host' ? 'Hosted event' : 'Reviewed event' }}</small><strong>{{ $review->event->title }}</strong></span>
+                                            <span><small>{{ __($reviewType === 'host' ? 'Hosted event' : 'Reviewed event') }}</small><strong>{{ $review->event->title }}</strong></span>
                                             <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                                         </a>
                                     </article>
                                 @empty
-                                    <p class="profile-events-empty">{{ $heading === 'Event reviews' ? 'No event reviews yet.' : 'No host reviews yet.' }}</p>
+                                    <p class="profile-events-empty">{{ $reviewType === 'host' ? __('No host reviews yet.') : __('No event reviews yet.') }}</p>
                                 @endforelse
                                 {{ $reviews->links() }}
                             </section>
@@ -452,12 +452,14 @@
     <div class="profile-share-feedback" hidden>
         <div class="profile-share-message">
             <p id="profile-share-status" role="status" aria-live="polite"></p>
-            <button type="button" class="profile-share-dismiss" aria-label="Dismiss notification">×</button>
+            <button type="button" class="profile-share-dismiss" aria-label="{{ __('Dismiss notification') }}">×</button>
         </div>
-        <input type="text" id="profile-share-url" value="{{ route('profile.show', $user->id) }}" aria-label="Profile link to copy" readonly hidden>
+        <input type="text" id="profile-share-url" value="{{ route('profile.show', $user->id) }}" aria-label="{{ __('Profile link to copy') }}" readonly hidden>
     </div>
     <script>
         let profileShareTimer;
+        const profileLinkCopied = @json(__('Profile link copied.'));
+        const selectAndCopyProfileLink = @json(__('Select and copy this profile link:'));
         document.querySelector('.profile-share-dismiss').addEventListener('click', () => {
             clearTimeout(profileShareTimer);
             document.querySelector('.profile-share-feedback').hidden = true;
@@ -473,11 +475,11 @@
                     await navigator.clipboard.writeText(profileShareButton.dataset.profileUrl);
                     urlInput.hidden = true;
                     feedback.hidden = false;
-                    status.textContent = 'Profile link copied.';
+                    status.textContent = profileLinkCopied;
                     profileShareTimer = setTimeout(() => { feedback.hidden = true; }, 3500);
                 } catch {
                     feedback.hidden = false;
-                    status.textContent = 'Select and copy this profile link:';
+                    status.textContent = selectAndCopyProfileLink;
                     urlInput.hidden = false;
                     urlInput.focus();
                     urlInput.select();
@@ -526,14 +528,16 @@
                 window.history.replaceState(null, '', url);
             });
         }
+        const linkCopied = @json(__('Link copied.'));
+        const copyThisLink = @json(__('Copy this link:'));
         document.querySelectorAll('[data-copy-event]').forEach(button => {
             button.addEventListener('click', async () => {
                 const feedback = document.querySelector('.profile-feedback');
                 try {
                     await navigator.clipboard.writeText(button.dataset.copyEvent);
-                    feedback.textContent = 'Link copied.';
+                    feedback.textContent = linkCopied;
                 } catch {
-                    feedback.textContent = 'Copy this link: ' + button.dataset.copyEvent;
+                    feedback.textContent = copyThisLink + ' ' + button.dataset.copyEvent;
                 }
                 button.closest('details').open = false;
             });

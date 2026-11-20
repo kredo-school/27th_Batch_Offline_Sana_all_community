@@ -24,10 +24,13 @@ if (confirmationModalElement && confirmationMessage && confirmationSubmit) {
 		event.preventDefault();
 		event.stopPropagation();
 		pendingForm = form;
-		const confirmMessage = form.dataset.confirmMessage || 'Are you sure you want to continue?';
-		const isDeleteAction = /\bdelete\b/i.test(confirmMessage);
+		const confirmMessage = form.dataset.confirmMessage || confirmationSubmit.dataset.continueLabel || 'Continue';
+		const isDeleteAction = Boolean(form.dataset.confirmAction)
+			|| /\b(delete|remove)\b/i.test(confirmMessage);
+		const deleteLabel = confirmationSubmit.dataset.deleteLabel || form.dataset.confirmAction || 'Delete';
+		const continueLabel = confirmationSubmit.dataset.continueLabel || 'Continue';
 		confirmationMessage.textContent = confirmMessage;
-		confirmationSubmit.textContent = isDeleteAction ? 'Delete' : 'Continue';
+		confirmationSubmit.textContent = isDeleteAction ? (form.dataset.confirmAction || deleteLabel) : continueLabel;
 		confirmationSubmit.classList.toggle('btn-danger', isDeleteAction);
 		confirmationSubmit.classList.toggle('btn-primary', !isDeleteAction);
 		confirmationModal.show();
@@ -59,6 +62,74 @@ const chatInput = document.querySelector('#message-chat-input');
 
 if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 	let activeRequest = 0;
+	let dragState = null;
+
+	const chatHeader = chatPanel.querySelector('.message-chat-header');
+	const keepPanelInViewport = (left, top) => {
+		const maxLeft = Math.max(8, window.innerWidth - chatPanel.offsetWidth - 8);
+		const maxTop = Math.max(8, window.innerHeight - chatPanel.offsetHeight - 8);
+		return {
+			left: Math.min(Math.max(8, left), maxLeft),
+			top: Math.min(Math.max(8, top), maxTop),
+		};
+	};
+
+	if (chatHeader) {
+		chatHeader.addEventListener('pointerdown', (event) => {
+			if (event.button !== 0 || event.target.closest('button')) {
+				return;
+			}
+
+			const bounds = chatPanel.getBoundingClientRect();
+			dragState = {
+				offsetX: event.clientX - bounds.left,
+				offsetY: event.clientY - bounds.top,
+			};
+			chatPanel.style.left = `${bounds.left}px`;
+			chatPanel.style.top = `${bounds.top}px`;
+			chatPanel.style.right = 'auto';
+			chatPanel.style.bottom = 'auto';
+			chatHeader.setPointerCapture(event.pointerId);
+		});
+
+		chatHeader.addEventListener('pointermove', (event) => {
+			if (!dragState) {
+				return;
+			}
+
+			const position = keepPanelInViewport(
+				event.clientX - dragState.offsetX,
+				event.clientY - dragState.offsetY,
+			);
+			chatPanel.style.left = `${position.left}px`;
+			chatPanel.style.top = `${position.top}px`;
+		});
+
+		const stopDragging = (event) => {
+			if (!dragState) {
+				return;
+			}
+
+			dragState = null;
+			if (chatHeader.hasPointerCapture(event.pointerId)) {
+				chatHeader.releasePointerCapture(event.pointerId);
+			}
+		};
+
+		chatHeader.addEventListener('pointerup', stopDragging);
+		chatHeader.addEventListener('pointercancel', stopDragging);
+	}
+
+	window.addEventListener('resize', () => {
+		if (chatPanel.hidden || chatPanel.style.left === '') {
+			return;
+		}
+
+		const bounds = chatPanel.getBoundingClientRect();
+		const position = keepPanelInViewport(bounds.left, bounds.top);
+		chatPanel.style.left = `${position.left}px`;
+		chatPanel.style.top = `${position.top}px`;
+	});
 
 	const requestHeaders = {
 		Accept: 'application/json',

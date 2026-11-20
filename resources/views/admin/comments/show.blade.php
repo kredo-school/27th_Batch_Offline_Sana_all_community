@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Comment Details')
+@section('title', __('Comment Details'))
 
 @section('content')
 <div class="container py-4" style="max-width: 720px;">
     <a href="{{ route('admin.comments') }}" class="small text-decoration-none">
-        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>Back to comments
+        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>{{ __('Back to comments') }}
     </a>
 
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mt-3 mb-4">
@@ -18,16 +18,19 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('admin.comments.edit', $comment) }}" class="btn btn-outline-primary btn-sm">
-            <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.comments.edit', $comment) }}" class="btn btn-outline-primary btn-sm"
+                title="{{ __('Edit') }}" aria-label="{{ __('Edit comment') }}">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </a>
+        </div>
     </div>
 
     <dl class="row">
         <dt class="col-sm-3">Comment</dt>
         <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $comment->content }}</dd>
         <dt class="col-sm-3">Language</dt>
-        <dd class="col-sm-9">{{ strtoupper($comment->language ?: '-') }}</dd>
+        <dd class="col-sm-9">{{ $comment->language_label }}</dd>
         <dt class="col-sm-3">Created</dt>
         <dd class="col-sm-9">{{ $comment->created_at?->format('M j, Y g:i A') ?? '-' }}</dd>
         <dt class="col-sm-3">Updated</dt>
