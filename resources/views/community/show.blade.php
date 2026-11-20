@@ -18,10 +18,10 @@
 
     <!-- コミュニティ・メインカード HEADER -->
     <div class="card bg-white border shadow-sm rounded-3 overflow-hidden mb-4">
-        <!-- Cover Banner (背景カバー画像エリア：写真があれば写真の縦横比に合わせて枠の高さが変わる) -->
-        <div class="position-relative d-flex align-items-center justify-content-center overflow-hidden {{ $community->image ? 'bg-white' : 'bg-light community-cover-empty' }}">
+        <!-- Cover Banner (背景カバー画像エリア：プロフィールと同じく高さ 260px で固定し、写真は切らずに全体を出す) -->
+        <div class="position-relative d-flex align-items-center justify-content-center overflow-hidden community-cover {{ $community->image ? 'bg-white' : 'bg-light' }}">
             @if ($community->image)
-                <img src="{{ asset('storage/' . $community->image) }}" alt="{{ $community->name }} cover image" class="d-block w-100 object-fit-contain" style="max-height: 260px;">
+                <img src="{{ asset('storage/' . $community->image) }}" alt="{{ $community->name }} cover image" class="d-block w-100 h-100 object-fit-contain">
             @else
                 <h1 class="display-3 fw-bold text-secondary opacity-50 mb-0">
                     {{ strtoupper(substr($community->name, 0, 2)) }}
@@ -127,9 +127,45 @@
     </div>
 
     <style>
-        /* カバー写真がないときの枠の高さ */
-        .community-cover-empty {
-            height: 180px;
+        /* 背景写真の枠の高さ（写真の有る無しに関係なく、プロフィールの背景写真と同じ 260px） */
+        .community-cover {
+            height: 260px;
+        }
+
+        /* イベントのカードの並び（プロフィールのカードの並びと同じ間隔） */
+        .community-event-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .community-event-grid--narrow {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .community-event-empty {
+            grid-column: 1 / -1;
+            margin: 0;
+            padding: 32px 24px;
+            border: 1px dashed #dfe8ed;
+            border-radius: 12px;
+            background: #fff;
+            color: #647580;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .community-event-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .community-event-grid,
+            .community-event-grid--narrow {
+                grid-template-columns: 1fr;
+            }
         }
 
         #communityTab .nav-link.active {
@@ -149,13 +185,12 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="fw-bold text-dark h5 mb-0">Upcoming events</h4>
             </div>
-            <div class="card bg-white border shadow-sm rounded-3 p-3 mb-4">
+            {{-- プロフィールと同じ画像付きのカードで並べる（横幅が狭いので 2 列） --}}
+            <div class="community-event-grid community-event-grid--narrow mb-4">
                 @forelse ($community->events as $event)
-                    <x-event-row :event="$event" class="py-3 border-bottom">
-                        <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
-                    </x-event-row>
+                    @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
                 @empty
-                    <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
+                    <p class="community-event-empty">There are no upcoming events for this community yet.</p>
                 @endforelse
             </div>
         </div>
@@ -220,31 +255,22 @@
 
     <!-- Events タブ: 今後のイベント一覧 -->
     <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
-        <div class="card bg-white border shadow-sm rounded-3 p-3">
+        {{-- プロフィールと同じ画像付きのカードで並べる --}}
+        <div class="community-event-grid">
             @forelse ($allEvents as $event)
-                <x-event-row :event="$event" show-description class="py-3 border-bottom">
-                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
-                </x-event-row>
+                @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
             @empty
-                <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
+                <p class="community-event-empty">There are no upcoming events for this community yet.</p>
             @endforelse
         </div>
 
         {{-- 終了・中止したイベント（タブの横の数字に含まれているイベントは、どこかに必ず出す） --}}
         @if ($pastEvents->isNotEmpty())
-            <h6 class="fw-bold text-dark mt-4 mb-2">Past &amp; cancelled events</h6>
-            <div class="card bg-white border shadow-sm rounded-3 p-3">
+            <h6 class="fw-bold text-dark mt-4 mb-3">Past &amp; cancelled events</h6>
+            <div class="community-event-grid">
                 @foreach ($pastEvents as $event)
-                    <x-event-row :event="$event" class="py-3 border-bottom">
-                        <div class="d-flex align-items-center gap-2">
-                            @if ($event->status === 'cancelled')
-                                <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis border border-danger-subtle">Cancelled</span>
-                            @else
-                                <span class="badge rounded-pill bg-light text-secondary border">Ended</span>
-                            @endif
-                            <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
-                        </div>
-                    </x-event-row>
+                    {{-- プロフィールと同じイベントの掲載（画像の左上に Cancelled / Ended の印が付く） --}}
+                    @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
                 @endforeach
             </div>
         @endif

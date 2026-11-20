@@ -248,11 +248,14 @@ class CommunityCreationTest extends TestCase
         $this->assertSame($community->id, $event->community_id);
         $this->assertSame($owner->id, $event->owner_id);
 
+        // プロフィールと同じカードで出す（カードには場所ではなく開催日と説明が出る）
         $this->get(route('community.index'))
             ->assertOk()
             ->assertSee('Community Workshop')
             ->assertSee('Event Hosting Community')
-            ->assertSee('Community Hall');
+            ->assertSee('A hands-on workshop.')
+            ->assertSee($event->start_at->format('M d, Y'))
+            ->assertSee('class="event-card"', false);
     }
 
     public function test_creating_shows_no_success_message(): void
@@ -576,7 +579,8 @@ class CommunityCreationTest extends TestCase
             ->assertOk()
             ->assertSee('Still On Picnic')
             // 中止・終了したイベントは、Events タブの下の欄に出る
-            ->assertSeeInOrder(['Past &amp; cancelled events', 'Rained Out Picnic', 'Cancelled', 'Last Month Picnic', 'Ended'], false)
+            // 印（Cancelled / Ended）はカードの画像の左上に重ねるので、タイトルより前に出る
+            ->assertSeeInOrder(['Past &amp; cancelled events', 'Cancelled', 'Rained Out Picnic', 'Ended', 'Last Month Picnic'], false)
             ->assertDontSee('Unfinished Draft Picnic');
 
         // Home タブの Upcoming と Events タブの開催予定の一覧からは外れている

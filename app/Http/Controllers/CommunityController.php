@@ -51,7 +51,7 @@ class CommunityController extends Controller
             ->when($sort === 'oldest', fn ($query) => $query->oldest())
             ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
             ->get();
-        $upcomingEvents = Event::with('community')
+        $upcomingEvents = $this->withCardData(Event::with('community'))
             ->where('status', 'published')
             ->where('start_at', '>=', now())
             ->whereHas('community', fn ($query) => $query->visibleTo($request->user()))
@@ -60,6 +60,15 @@ class CommunityController extends Controller
             ->get();
 
         return view('community.index', compact('communities', 'upcomingEvents', 'keyword', 'sort', 'filter'));
+    }
+
+    /**
+     * イベントをカード（events.partials.card）で出すのに使う、カテゴリーと自分がブックマークしたかの情報を一緒に読む
+     */
+    private function withCardData($query)
+    {
+        return $query->with('categories')
+            ->withExists(['bookmarkedBy as is_bookmarked' => fn ($query) => $query->where('users.id', Auth::id())]);
     }
 
     /**
@@ -136,7 +145,8 @@ class CommunityController extends Controller
             'owner.profile',
             'owner',
             // 中止したイベントは Upcoming に出さない（一覧ページの Upcoming と同じく公開中だけ）
-            'events' => fn ($query) => $query->where('status', 'published')
+            'events' => fn ($query) => $this->withCardData($query)
+                ->where('status', 'published')
                 ->where('start_at', '>=', now())
                 ->orderBy('start_at')
                 ->limit(5),
@@ -144,13 +154,13 @@ class CommunityController extends Controller
         ])->findOrFail($id);
         // 招待のみのコミュニティは、関係ない人には存在しないものとして扱う
         abort_unless($community->isVisibleTo($request->user()), 404);
-        $allEvents = $community->events()
+        $allEvents = $this->withCardData($community->events())
             ->where('status', 'published')
             ->where('start_at', '>=', now())
             ->orderBy('start_at')
             ->get();
         // 終了・中止したイベントは Events タブの下の欄に新しい順で出す（下書きは出さない）
-        $pastEvents = $community->events()
+        $pastEvents = $this->withCardData($community->events())
             ->where(fn ($query) => $query->where('status', 'cancelled')
                 ->orWhere(fn ($query) => $query->where('status', 'published')->where('start_at', '<', now())))
             ->orderByDesc('start_at')
