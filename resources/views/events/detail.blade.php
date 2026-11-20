@@ -178,10 +178,9 @@
             ($event->start_at->isSameDay($event->end_at)
                 ? $event->end_at->format('H:i')
                 : $event->end_at->format('M j (D) H:i'));
-        // 参加費の表示（Tom さんのコミット 134477d の内容。main のマージで消えていた $hasPrice と $feeNote を戻した）
+        $priceText = (float) $event->price == 0 ? __('Free') : number_format((float) $event->price) . ' PHP';
         $hasPrice = (float) $event->price > 0;
-        $priceText = $hasPrice ? number_format((float) $event->price) . ' PHP / person' : ($event->fee_note ?: 'Free');
-        $feeNote = $hasPrice ? $event->fee_note : null;
+        $feeNote = trim((string) ($event->fee_note ?? '')) !== '' ? $event->fee_note : null;
         $isCancelled = $event->status === 'cancelled';
         $hasEnded = $event->end_at->isPast();
         $myReview = auth()->check() ? $event->reviews->firstWhere('user_id', auth()->id()) : null;
@@ -207,8 +206,7 @@
                 class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
                 {{ $event->community->name }}</a>
         @else
-            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to') }}
-                {{ __('Events') }}</a>
+            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to events') }}</a>
         @endif
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
@@ -297,8 +295,7 @@
 
                     <div class="d-flex align-items-center gap-2 mt-3">
                         <span class="event-help">{{ __('Language') }}</span>
-                        <span class="event-lang {{ $event->language === 'en' ? 'active-en' : '' }}">EN {{ __('English') }}</span>
-                        <span class="event-lang {{ $event->language === 'ja' ? 'active-ja' : '' }}">JA {{ __('Japanese') }}</span>
+                        <span class="event-lang active-en">{{ strtoupper($event->language) }} {{ $event->language_label }}</span>
                     </div>
                 </div>
 
@@ -500,49 +497,48 @@
                     @if ($feeNote)
                         <div class="event-help mb-1">{{ $feeNote }}</div>
                     @endif
-                    <div class="event-help mb-1">{{ $joined }}/{{ $event->capacity }} joined</div>
+                    <div class="event-help mb-1">{{ $joined }}/{{ $event->capacity }} {{ __('joined') }}</div>
                     <div class="progress mb-3" style="height: 6px;">
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>
                     </div>
                     @if ($isCancelled)
-                        <div class="alert alert-secondary text-center small py-2 mb-0">This event has been cancelled.</div>
+                        <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('This event has been cancelled.') }}</div>
                     @elseif ($isOwner)
-                        <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">Edit
-                            event</a>
+                        <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">{{ __('Edit event') }}</a>
                         <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal"
                             data-bs-target="#cancelEventModal">
-                            Cancel the event
+                            {{ __('Cancel the event') }}
                         </button>
                     @elseif ($hasEnded)
-                        <div class="alert alert-secondary text-center small py-2 mb-0">This event has ended.</div>
+                        <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('This event has ended.') }}</div>
                     @else
                         @guest
-                            <a href="{{ route('login') }}" class="btn btn-primary w-100">Log in to join</a>
+                            <a href="{{ route('login') }}" class="btn btn-primary w-100">{{ __('Log in to join') }}</a>
                         @else
                             @if (!$myParticipation)
                                 <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
                                     data-bs-target="#joinModal">
-                                    Request to join
+                                    {{ __('Request to join') }}
                                 </button>
                                 @if ($event->approval_required)
-                                    <div class="event-help text-center mt-2">Host approval required</div>
+                                    <div class="event-help text-center mt-2">{{ __('Host approval required') }}</div>
                                 @endif
                             @elseif ($myParticipation->status === 'pending')
-                                <div class="alert alert-warning text-center small py-2 mb-2">Waiting for host approval</div>
+                                <div class="alert alert-warning text-center small py-2 mb-2">{{ __('Waiting for host approval') }}</div>
                                 <form action="{{ route('events.join.cancel', $event) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger w-100">Cancel request</button>
+                                    <button type="submit" class="btn btn-outline-danger w-100">{{ __('Cancel request') }}</button>
                                 </form>
                             @elseif ($myParticipation->status === 'approved')
-                                <div class="alert alert-success text-center small py-2 mb-2">You're joined!</div>
+                                <div class="alert alert-success text-center small py-2 mb-2">{{ __("You're joined!") }}</div>
                                 <form action="{{ route('events.join.cancel', $event) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger w-100">Cancel</button>
+                                    <button type="submit" class="btn btn-outline-danger w-100">{{ __('Cancel') }}</button>
                                 </form>
                             @else
-                                <div class="alert alert-secondary text-center small py-2 mb-0">Your request was not accepted.
+                                <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('Your request was not accepted.') }}
                                 </div>
                             @endif
                         @endguest
@@ -553,7 +549,7 @@
                 @if ($isOwner && $event->community_id)
                     <button type="button" class="btn btn-outline-danger w-100 mb-3" data-bs-toggle="modal"
                         data-bs-target="#deleteEventModal{{ $event->id }}">
-                        <i class="fa-regular fa-trash-can me-1"></i> Delete event
+                        <i class="fa-regular fa-trash-can me-1"></i> {{ __('Delete event') }}
                     </button>
                 @endif
 
@@ -563,12 +559,12 @@
                         src="https://maps.google.com/maps?q={{ urlencode($event->location) }}&output=embed"></iframe>
                     <div class="mt-2">{{ $event->location }}</div>
                     <a href="https://www.google.com/maps/dir/?api=1&destination={{ urlencode($event->location) }}"
-                        target="_blank" class="small">Get Directions &#8599;</a>
+                        target="_blank" class="small">{{ __('Get Directions') }} &#8599;</a>
                 </div>
 
                 {{-- host --}}
                 <div class="event-card">
-                    <div class="event-help mb-2">Hosted by</div>
+                    <div class="event-help mb-2">{{ __('Hosted by') }}</div>
                     <div class="d-flex align-items-center gap-2">
                         <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
                         <div>
@@ -578,10 +574,10 @@
                                     {{ $event->owner->name }}
                                 </a>
                             @else
-                                <div>Unknown</div>
+                                <div>{{ __('Unknown') }}</div>
                             @endif
                             <div class="event-help">
-                                host
+                                {{ __('host') }}
                                 @if ($hostReviewCount)
                                     <span class="review-stars ms-1">★</span> {{ $hostRating }} ({{ $hostReviewCount }})
                                 @endif
@@ -594,16 +590,15 @@
                     @if ($canReviewHost)
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                             data-bs-target="#hostReviewModal">
-                            Review the host
+                            {{ __('Review the host') }}
                         </button>
                     @elseif ($myHostReview)
-                        <p class="event-help mb-0">You have reviewed the host. Thank you!</p>
+                        <p class="event-help mb-0">{{ __('You have reviewed the host. Thank you!') }}</p>
                     @elseif (auth()->guest())
-                        <p class="event-help mb-0">Log in to review the host.</p>
+                        <p class="event-help mb-0">{{ __('Log in to review the host.') }}</p>
                     @endif
                 @else
-                    <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">See all
-                        participants</a>
+                    <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">{{ __('See all participants') }}</a>
                 @endif
             </div>
         </div>
@@ -615,29 +610,29 @@
                     <form action="{{ route('events.join', $event) }}" method="POST">
                         @csrf
                         <div class="modal-header">
-                            <h5 class="modal-title">Do you want to join this event?</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h5 class="modal-title">{{ __('Do you want to join this event?') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-2">
-                                <div class="event-info-label">Event name</div>
+                                <div class="event-info-label">{{ __('Event name') }}</div>
                                 <div class="event-info-value">{{ $event->title }}</div>
                             </div>
                             <div class="mb-2">
-                                <div class="event-info-label">Date</div>
+                                <div class="event-info-label">{{ __('Date') }}</div>
                                 <div class="event-info-value">{{ $dateText }}</div>
                             </div>
                             <div class="mb-2">
-                                <div class="event-info-label">Fee</div>
+                                <div class="event-info-label">{{ __('Fee') }}</div>
                                 <div class="event-info-value">{{ $priceText }}</div>
                             </div>
                             @if ($event->approval_required)
-                                <p class="event-help mb-0 mt-3">The host needs to approve your request before you can join.</p>
+                                <p class="event-help mb-0 mt-3">{{ __('The host needs to approve your request before you can join.') }}</p>
                             @endif
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Send request</button>
+                            <button type="submit" class="btn btn-primary">{{ __('Send request') }}</button>
                         </div>
                     </form>
                 </div>
@@ -655,33 +650,33 @@
                         @csrf
                         @method('PATCH')
                         <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title">Cancel the event</h5>
+                            <h5 class="modal-title">{{ __('Cancel the event') }}</h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
+                                aria-label="{{ __('Close') }}"></button>
                         </div>
                         <div class="modal-body">
-                            <p class="text-danger mb-3">Are you sure you want to cancel this event? This cannot be undone.
+                            <p class="text-danger mb-3">{{ __('Are you sure you want to cancel this event? This cannot be undone.') }}
                             </p>
                             <div class="mb-2">
-                                <div class="event-info-label">Event name</div>
+                                <div class="event-info-label">{{ __('Event name') }}</div>
                                 <div class="event-info-value">{{ $event->title }}</div>
                             </div>
                             <div class="mb-3">
-                                <div class="event-info-label">Date</div>
+                                <div class="event-info-label">{{ __('Date') }}</div>
                                 <div class="event-info-value">{{ $dateText }}</div>
                             </div>
-                            <label for="cancel_reason" class="event-info-label">Reason</label>
+                            <label for="cancel_reason" class="event-info-label">{{ __('Reason') }}</label>
                             <textarea name="cancel_reason" id="cancel_reason" rows="3" maxlength="500" required
                                 class="form-control @error('cancel_reason') is-invalid @enderror"
-                                placeholder="Please tell the participants why the event is cancelled.">{{ old('cancel_reason') }}</textarea>
+                                placeholder="{{ __('Please tell the participants why the event is cancelled.') }}">{{ old('cancel_reason') }}</textarea>
                             @error('cancel_reason')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary"
-                                data-bs-dismiss="modal">Back</button>
-                            <button type="submit" class="btn btn-danger">Cancel the event</button>
+                                data-bs-dismiss="modal">{{ __('Back') }}</button>
+                            <button type="submit" class="btn btn-danger">{{ __('Cancel the event') }}</button>
                         </div>
                     </form>
                 </div>
@@ -695,20 +690,20 @@
                     <form action="{{ route('events.host-reviews.store', $event) }}" method="POST">
                         @csrf
                         <div class="modal-header">
-                            <h5 class="modal-title">Review the host</h5>
+                            <h5 class="modal-title">{{ __('Review the host') }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
+                                aria-label="{{ __('Close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
                                 <div>
-                                    <div>{{ $event->owner->name ?? 'Unknown' }}</div>
-                                    <div class="event-help">host of {{ $event->title }}</div>
+                                    <div>{{ $event->owner->name ?? __('Unknown') }}</div>
+                                    <div class="event-help">{{ __('host of :event', ['event' => $event->title]) }}</div>
                                 </div>
                             </div>
 
-                            <div class="event-info-label mb-1">How was the host?</div>
+                            <div class="event-info-label mb-1">{{ __('How was the host?') }}</div>
                             <div class="star-rating mb-2">
                                 @for ($star = 5; $star >= 1; $star--)
                                     <input type="radio" name="host_rating" id="hostStar{{ $star }}"
@@ -721,15 +716,15 @@
                             @enderror
 
                             <textarea name="host_comment" rows="3" maxlength="500" class="form-control"
-                                placeholder="Share your experience with the host (optional)">{{ old('host_comment') }}</textarea>
+                                placeholder="{{ __('Share your experience with the host (optional)') }}">{{ old('host_comment') }}</textarea>
                             @error('host_comment')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary"
-                                data-bs-dismiss="modal">Back</button>
-                            <button type="submit" class="btn btn-primary">Post review</button>
+                                data-bs-dismiss="modal">{{ __('Back') }}</button>
+                            <button type="submit" class="btn btn-primary">{{ __('Post review') }}</button>
                         </div>
                     </form>
                 </div>

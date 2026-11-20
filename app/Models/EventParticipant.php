@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 
 class EventParticipant extends Model
@@ -22,4 +23,9 @@ class EventParticipant extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return LocalizedValue::status($this->status);
+}
 }

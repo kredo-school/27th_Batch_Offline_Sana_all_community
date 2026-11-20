@@ -224,7 +224,7 @@ class CommunityChatController extends Controller
             'community_notification_count' => UserNotification::query()
                 ->where('user_id', $userId)
                 ->whereNull('read_at')
-                ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                ->communityFilter()
                 ->count(),
         ]);
     }

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Admin Users')
+@section('title', __('Admin Users'))
 
 @section('content')
     <style>
@@ -13,8 +13,15 @@
         }
 
         .admin-sidebar {
+            position: fixed;
+            inset-inline-start: 0;
+            top: 74px;
+            z-index: 100;
+            width: 210px;
+            height: calc(100vh - 74px);
+            overflow-y: auto;
             padding: 24px 14px;
-            border-right: 1px solid var(--admin-line);
+            border-inline-end: 1px solid var(--admin-line);
             background: #fff;
         }
 
@@ -66,15 +73,21 @@
         }
 
         .admin-main {
+            grid-column: 2;
             min-width: 0;
             padding: 28px clamp(16px, 3vw, 42px) 36px;
         }
 
+        footer {
+            position: relative;
+            z-index: 101;
+        }
+
         .admin-heading {
             display: flex;
-            align-items: end;
-            justify-content: space-between;
-            gap: 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
             margin-bottom: 20px;
         }
 
@@ -279,9 +292,13 @@
             }
 
             .admin-sidebar {
+                position: static;
+                width: auto;
+                height: auto;
+                overflow: visible;
                 padding: 10px 12px;
-                border-right: 0;
-                border-bottom: 1px solid var(--admin-line);
+                border-inline-end: 0;
+                border-block-end: 1px solid var(--admin-line);
             }
 
             .admin-sidebar-title {
@@ -299,6 +316,7 @@
             }
 
             .admin-main {
+                grid-column: 1;
                 padding: 22px 12px;
             }
 
@@ -326,30 +344,28 @@
 
         <section class="admin-main">
             <header class="admin-heading">
-                <div>
-                    <p class="text-uppercase small fw-bold text-success mb-1">Admin console</p>
-                    <h1 class="h3 mb-0 fw-medium">User Management</h1>
-                </div>
-                <span class="admin-count">{{ $all_users->total() }} users</span>
+                <p class="text-uppercase small fw-bold text-success mb-1">{{ __('Admin console') }}</p>
+                <h1 class="h3 mb-0 fw-medium">{{ __('User Management') }}</h1>
+                <span class="admin-count">{{ $all_users->total() }} {{ __('Users') }}</span>
             </header>
 
             <div class="container-fluid mt-4">
             <form class="admin-toolbar" method="GET" action="{{ route('admin.users') }}">
                 <div class="admin-search">
-                    <label class="visually-hidden" for="user-search">Search users</label>
+                    <label class="visually-hidden" for="user-search">{{ __('Search users') }}</label>
                     <input id="user-search" type="search" name="search" value="{{ request('search') }}"
-                        placeholder="Search by name or email">
-                    <button type="submit" aria-label="Search users" title="Search" class="btn btn-primary">
+                        placeholder="{{ __('Search by name or email') }}">
+                    <button type="submit" aria-label="{{ __('Search users') }}" title="{{ __('Search') }}" class="btn btn-primary">
                         <i class="fa-solid fa-magnifying-glass text-white bg-primary"></i>
                     </button>
                 </div>
                 <div class="admin-sort">
-                    <label for="user-sort">Sort by</label>
+                    <label for="user-sort">{{ __('Sort by') }}</label>
                     <select id="user-sort" name="sort" onchange="this.form.submit()">
-                        <option value="latest" @selected(request('sort', 'latest') === 'latest')>Newest</option>
-                        <option value="oldest" @selected(request('sort') === 'oldest')>Oldest</option>
-                        <option value="name_asc" @selected(request('sort') === 'name_asc')>Name A to Z</option>
-                        <option value="name_desc" @selected(request('sort') === 'name_desc')>Name Z to A</option>
+                        <option value="latest" @selected(request('sort', 'latest') === 'latest')>{{ __('Newest') }}</option>
+                        <option value="oldest" @selected(request('sort') === 'oldest')>{{ __('Oldest') }}</option>
+                        <option value="name_asc" @selected(request('sort') === 'name_asc')>{{ __('Name A to Z') }}</option>
+                        <option value="name_desc" @selected(request('sort') === 'name_desc')>{{ __('Name Z to A') }}</option>
                     </select>
                 </div>
             </form>
@@ -359,17 +375,14 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th aria-label="Avatar"></th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Registered</th>
-                            <th>Language</th>
-                            <th>Page views</th>
-                            <th>Category views</th>
-                            <th>Top category</th>
-                            <th>Status</th>
-                            <th>Role</th>
-                            <th aria-label="Actions"></th>
+                            <th aria-label="{{ __('Avatar') }}"></th>
+                            <th>{{ __('Name') }}</th>
+                            <th>{{ __('Email Address') }}</th>
+                            <th>{{ __('Registered') }}</th>
+                            <th>{{ __('Language') }}</th>
+                            <th>{{ __('Status') }}</th>
+                            <th>{{ __('Role') }}</th>
+                            <th aria-label="{{ __('Actions') }}"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -381,11 +394,6 @@
                                 <td>{{ $user->id }}</td>
                                 <td>
                                     <span class="admin-avatar">
-                                        {{-- @if ($user->profile?->avatar)
-                                            <img src="{{ $user->profile->avatar }}" alt="{{ $user->name }}">
-                                        @else
-                                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                                        @endif --}}
                                         @if ($user->profile?->avatar)
                                                 @php
                                                     $avatarPath = $user->profile->avatar;
@@ -408,28 +416,16 @@
                                 </td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->created_at?->format('M d, Y') ?? '-' }}</td>
-                                <td>{{ $user->preferred_language ?? '-' }}</td>
-                                @php
-                                    $userCategories = $categoryAnalytics->get($user->id, collect());
-                                    $topCategory = $userCategories->first();
-                                @endphp
-                                <td>{{ data_get($pageViewStats->get($user->id), 'page_view_count', 0) }}</td>
-                                <td>{{ $userCategories->sum('view_count') }}</td>
-                                <td>
-                                    @if ($topCategory)
-                                        {{ $topCategory->name }} ({{ $topCategory->view_count }})
-                                    @else
-                                        -
-                                    @endif
+                                <td>{{ $user->preferred_language_label }}</td>
                                 </td>
                                 <td>
                                     <span class="admin-badge {{ $user->trashed() ? 'inactive' : 'active' }}">
-                                        {{ $user->trashed() ? 'Inactive' : 'Active' }}
+                                        {{ $user->trashed() ? __('Inactive') : __('Active') }}
                                     </span>
                                 </td>
                                 <td>
                                     <span class="admin-badge {{ $user->role === 'admin' ? 'role-admin' : 'role-user' }}">
-                                        {{ ucfirst($user->role ?? 'user') }}
+                                        {{ $user->role === 'admin' ? __('Admin') : __('User') }}
                                     </span>
                                 </td>
                                 <td>
@@ -438,20 +434,20 @@
                                             @if ($user->trashed())
                                                 <button type="button" class="btn btn-outline-success btn-sm admin-action-button"
                                                     data-bs-toggle="modal" data-bs-target="#activate-user-{{ $user->id }}"
-                                                    aria-label="Activate {{ $user->name }}" title="Activate user">
+                                                    aria-label="{{ __('Activate') }} {{ $user->name }}" title="{{ __('Activate user') }}">
                                                     <i class="fa-solid fa-user-check"></i>
                                                 </button>
                                             @else
                                                 <button type="button" class="btn btn-outline-danger btn-sm admin-action-button"
                                                     data-bs-toggle="modal" data-bs-target="#deactivate-user-{{ $user->id }}"
-                                                    aria-label="Deactivate {{ $user->name }}" title="Deactivate user">
+                                                    aria-label="{{ __('Deactivate') }} {{ $user->name }}" title="{{ __('Deactivate user') }}">
                                                     <i class="fa-solid fa-user-slash"></i>
                                                 </button>
                                             @endif
                                             <button type="button" class="btn btn-outline-primary btn-sm admin-action-button"
                                                 data-bs-toggle="modal" data-bs-target="#change-role-user-{{ $user->id }}"
-                                                aria-label="{{ $user->role === 'admin' ? 'Change to user' : 'Make admin' }} for {{ $user->name }}"
-                                                title="{{ $user->role === 'admin' ? 'Change to user' : 'Make admin' }}">
+                                                aria-label="{{ $user->role === 'admin' ? __('Change to user') : __('Make admin') }} {{ $user->name }}"
+                                                title="{{ $user->role === 'admin' ? __('Change to user') : __('Make admin') }}">
                                                 <i class="fa-solid fa-user-gear"></i>
                                             </button>
                                         </div>
@@ -460,7 +456,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-empty" colspan="12">No users match this search.</td>
+                                <td class="admin-empty" colspan="12">{{ __('No users match this search.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

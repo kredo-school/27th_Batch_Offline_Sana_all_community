@@ -304,7 +304,7 @@
                     @foreach (config('app.supported_locales') as $code => $label)
                         <label class="event-option">
                             <input type="radio" name="language" value="{{ $code }}" class="form-check-input me-2" @checked(old('language', $event->language) === $code)>
-                            {{ $label }}
+                            {{ \App\Support\LocalizedValue::language($code) }}
                         </label>
                     @endforeach
             </div>

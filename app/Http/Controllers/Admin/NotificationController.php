@@ -32,11 +32,16 @@ class NotificationController extends Controller
 
         $records = UserNotification::query()
             ->with('user')
+            ->where('type', '!=', 'community_message')
             ->where(fn ($query) => $query
                 ->whereNull('recipient_label')
                 ->orWhereIn('id', $firstOfBroadcast))
             ->when(
-                in_array($type, ['general', 'maintenance', 'community'], true),
+                $type === 'community',
+                fn ($query) => $query->communityFilter()
+            )
+            ->when(
+                in_array($type, ['general', 'maintenance'], true),
                 fn ($query) => $query->where('type', $type)
             )
             ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
@@ -54,15 +59,16 @@ class NotificationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        // Keep canonical titles for view logic; Blade translations handle display.
         $title = 'Notifications';
         $columns = [
-            'User' => 'recipient_name',
-            'From' => 'sender_name',
-            'Type' => 'type',
-            'Title' => 'title',
-            'Message' => 'message',
-            'Read at' => 'read_at',
-            'Created' => 'created_at',
+            __('User') => 'recipient_name',
+            __('From') => 'sender_name',
+            __('Type') => 'type',
+            __('Title') => 'title',
+            __('Message') => 'message',
+            __('Read at') => 'read_at',
+            __('Created') => 'created_at',
         ];
 
         return view('admin.sections.index', compact('title', 'columns', 'records'));

@@ -92,6 +92,7 @@ return [
         'zh' => '中文',
         'vi' => 'Tiếng Việt',
         'th' => 'ไทย',
+        'ceb' => 'Cebuano',
     ],
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),

@@ -52,19 +52,16 @@
                     @if (auth()->id() === $community->owner_id)
                         <!-- 編集ボタン (Edit community) -->
                         <a href="{{ route('community.edit', $community->id) }}" class="btn btn-outline-secondary btn-sm fw-bold px-3">
-                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit community
+                            <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit community') }}
                         </a>
-                        <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ Post an event</a>
+                        <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ {{ __('Post an event') }}</a>
                     @elseif ($membershipStatus === 'approved')
                         <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-check me-1"></i> Joined</span>
-                        @if ($canManage)
-                            <span class="badge rounded-pill community-moderator-badge px-3 py-2"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>Moderator</span>
-                        @endif
                         <form action="{{ route('community.leave', $community->id) }}" method="POST"
                             data-confirm="true" data-confirm-message="Leave this community?">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Leave</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">{{ __('Leave') }}</button>
                         </form>
                     @elseif ($membershipStatus === 'invited')
                         {{-- オーナーから招待されている人: 承諾すると参加、断ると招待が消える --}}
@@ -80,11 +77,11 @@
                             <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Decline</button>
                         </form>
                     @elseif ($membershipStatus === 'pending')
-                        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2">Request pending</span>
+                        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2">{{ __('Request pending') }}</span>
                         <form action="{{ route('community.leave', $community->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Cancel request</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">{{ __('Cancel request') }}</button>
                         </form>
                     @elseif ($community->visibility === 'private')
                         <span class="badge rounded-pill bg-light text-secondary border px-3 py-2"><i class="fa-solid fa-lock me-1"></i> Invite only</span>
@@ -92,7 +89,7 @@
                         <form action="{{ route('community.join', $community->id) }}" method="POST">
                             @csrf
                             <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3">
-                                {{ $community->visibility === 'approval' ? 'Request to join' : '+ Join community' }}
+                                {{ $community->visibility === 'approval' ? __('Request to join') : '+ ' . __('Join community') }}
                             </button>
                         </form>
                     @endif
@@ -108,7 +105,7 @@
                     <button class="nav-link text-muted border-0 px-3 pb-2" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">{{ __('Events') }} <span class="badge bg-light text-dark border rounded-pill">{{ $eventCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Chat
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">{{ __('Chat') }}
                         @if ($canChat)
                             <span class="badge rounded-pill community-chat-unread" @if ($unreadCount === 0) hidden @endif><span class="community-chat-unread-count">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span><span class="visually-hidden"> unread messages</span></span>
                             {{-- 誰からの未読か（最近送った人の名前と、他の人数） --}}
@@ -117,10 +114,10 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">Members <span class="badge bg-light text-dark border rounded-pill">{{ $memberCount }}</span></button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">{{ __('Members') }} <span class="badge bg-light text-dark border rounded-pill">{{ $memberCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">About</button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">{{ __('About') }}</button>
                 </li>
             </ul>
         </div>
@@ -183,7 +180,7 @@
         <!-- 左メインエリア -->
         <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-bold text-dark h5 mb-0">Upcoming events</h4>
+                <h4 class="fw-bold text-dark h5 mb-0">{{ __('Upcoming Events') }}</h4>
             </div>
             {{-- プロフィールと同じ画像付きのカードで並べる（横幅が狭いので 2 列） --}}
             <div class="community-event-grid community-event-grid--narrow mb-4">
@@ -199,28 +196,28 @@
         <div class="col-lg-4">
             <!-- About Card -->
             <div class="card bg-white border shadow-sm rounded-3 p-4 mb-4">
-                <h5 class="fw-bold text-dark h6 mb-3">About this community</h5>
+                <h5 class="fw-bold text-dark h6 mb-3">{{ __('About this community') }}</h5>
                 <p class="text-muted small mb-4">{{ $community->description }}</p>
 
                 <div class="d-flex flex-column gap-2 small border-top pt-3">
                     <div class="d-flex justify-content-between text-muted">
-                        <span><i class="fa-regular fa-calendar me-2"></i> Events</span>
+                        <span><i class="fa-regular fa-calendar me-2"></i> {{ __('Events') }}</span>
                         <strong class="text-dark">{{ $eventCount }}</strong>
                     </div>
                     @if ($community->location)
                         <div class="d-flex justify-content-between text-muted">
-                            <span><i class="fa-solid fa-location-dot me-2"></i> Area</span>
+                            <span><i class="fa-solid fa-location-dot me-2"></i> {{ __('Area') }}</span>
                             <strong class="text-dark">{{ $community->location }}</strong>
                         </div>
                     @endif
                     <div class="d-flex justify-content-between text-muted">
-                        <span><i class="fa-solid fa-lock me-2"></i> Access</span>
+                        <span><i class="fa-solid fa-lock me-2"></i> {{ __('Access') }}</span>
                         <strong class="text-dark">{{ $community->visibility_label }}</strong>
                     </div>
                 </div>
                 @if ($community->guidelines)
                     <div class="border-top mt-3 pt-3">
-                        <h6 class="fw-bold text-dark">Welcome & guidelines</h6>
+                        <h6 class="fw-bold text-dark">{{ __('Welcome & guideline') }}</h6>
                         <p class="text-muted small mb-0">{!! nl2br(e($community->guidelines)) !!}</p>
                     </div>
                 @endif
@@ -228,13 +225,13 @@
 
             <!-- Organizers Card -->
             <div class="card bg-white border shadow-sm rounded-3 p-4">
-                <h5 class="fw-bold text-dark h6 mb-3">Organizers</h5>
+                <h5 class="fw-bold text-dark h6 mb-3">{{ __('Organizers') }}</h5>
                 @if ($community->owner)
                     <a href="{{ route('profile.show', $community->owner->id) }}" class="d-flex align-items-center gap-3 community-profile-link">
                         <x-avatar :user="$community->owner" />
                         <div>
                             <strong class="d-block text-dark small">{{ $community->owner->name }}</strong>
-                            <small class="text-muted" style="font-size: 0.75rem;">Community organizer</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
                         </div>
                     </a>
                 @endif
@@ -260,7 +257,7 @@
             @forelse ($allEvents as $event)
                 @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
             @empty
-                <p class="community-event-empty">There are no upcoming events for this community yet.</p>
+                <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
             @endforelse
         </div>
 
@@ -305,7 +302,7 @@
                         <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
                     </label>
                     <textarea name="message" class="form-control" rows="1" maxlength="2000"
-                        placeholder="Write a message..." aria-label="Write a message"></textarea>
+                        placeholder="{{ __('Write a message...') }}" aria-label="Write a message"></textarea>
                     <button type="submit" class="btn community-chat-send" aria-label="Send message">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -324,24 +321,24 @@
         {{-- 招待（オーナーだけに表示）: ユーザー名で招待し、承諾待ちの人を取り消せる --}}
         @if (auth()->id() === $community->owner_id)
             <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-invite">
-                <h6 class="fw-bold text-dark mb-1">Invite members</h6>
+                <h6 class="fw-bold text-dark mb-1">{{ __('Invite members') }}</h6>
                 <p class="text-muted small mb-2">
                     {{ $community->visibility === 'private'
                         ? 'This community is invite only. Only people you invite can join.'
-                        : 'Invited people can join right away without sending a request.' }}
+                        : __('Invited people can join right away without sending a request.') }}
                 </p>
                 <form action="{{ route('community.invitations.store', $community->id) }}" method="POST" class="d-flex gap-2">
                     @csrf
                     <div class="flex-grow-1">
-                        <label for="invite-username" class="visually-hidden">Username</label>
+                        <label for="invite-username" class="visually-hidden">{{ __('Username')}}</label>
                         <input type="text" id="invite-username" name="username" value="{{ old('username') }}" maxlength="255" required
-                            placeholder="Username" autocomplete="off"
+                            placeholder="{{ __('Username') }}" autocomplete="off"
                             class="form-control form-control-sm @error('username', 'invite') is-invalid @enderror">
                         @error('username', 'invite')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3 align-self-start">Invite</button>
+                    <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3 align-self-start">{{ __('Invite') }}</button>
                 </form>
 
                 @if ($invitedMembers->isNotEmpty())
@@ -364,7 +361,7 @@
         {{-- 参加申請（オーナーだけに表示） --}}
         @if ($pendingMembers->isNotEmpty())
             <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-requests">
-                <h6 class="fw-bold text-dark mb-2">Join requests <span class="badge rounded-pill community-joined-badge">{{ $pendingMembers->count() }}</span></h6>
+                <h6 class="fw-bold text-dark mb-2">{{ __('Join requests') }} <span class="badge rounded-pill community-joined-badge">{{ $pendingMembers->count() }}</span></h6>
                 @foreach ($pendingMembers as $requester)
                     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
                         <x-avatar :user="$requester" />
@@ -372,12 +369,12 @@
                         <form action="{{ route('community.members.approve', [$community->id, $requester->id]) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" class="btn btn-primary btn-sm text-white">Approve</button>
+                            <button type="submit" class="btn btn-primary btn-sm text-white">{{ __('Approve') }}</button>
                         </form>
                         <form action="{{ route('community.members.remove', [$community->id, $requester->id]) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">Decline</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('Decline') }}</button>
                         </form>
                     </div>
                 @endforeach
@@ -392,11 +389,11 @@
                         <div>
                             <strong class="d-block text-dark small">{{ $member->name }}</strong>
                             @if ($member->id === $community->owner_id)
-                                <small class="text-muted" style="font-size: 0.75rem;">Community organizer</small>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
                             @elseif (($member->pivot->role ?? 'member') === 'moderator')
-                                <span class="badge rounded-pill community-moderator-badge"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>Moderator</span>
+                                <span class="badge rounded-pill community-moderator-badge"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>{{ __('Moderator') }}</span>
                             @else
-                                <small class="text-muted" style="font-size: 0.75rem;">Member</small>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ __('Member') }}</small>
                             @endif
                         </div>
                     </a>
@@ -406,8 +403,8 @@
                         <div class="dropdown">
                             {{-- 気づきやすいように、文字付きの枠のボタンにする --}}
                             <button class="btn btn-sm community-member-menu dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="Manage {{ $member->name }}">
-                                <i class="fa-solid fa-user-gear me-1" aria-hidden="true"></i>Manage
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Manage') }} {{ $member->name }}">
+                                <i class="fa-solid fa-user-gear me-1" aria-hidden="true"></i>{{ __('Manage') }}
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                 <li>
@@ -416,7 +413,7 @@
                                         @method('PATCH')
                                         <input type="hidden" name="role" value="{{ $isModerator ? 'member' : 'moderator' }}">
                                         <button type="submit" class="dropdown-item small">
-                                            <i class="fa-solid fa-shield-halved me-2 text-muted" aria-hidden="true"></i>{{ $isModerator ? 'Remove moderator' : 'Make moderator' }}
+                                            <i class="fa-solid fa-shield-halved me-2 text-muted" aria-hidden="true"></i>{{ $isModerator ? __('Remove moderator') : __('Make moderator') }}
                                         </button>
                                     </form>
                                 </li>
@@ -427,7 +424,7 @@
                                         @method('PATCH')
                                         <input type="hidden" name="user_id" value="{{ $member->id }}">
                                         <button type="submit" class="dropdown-item small">
-                                            <i class="fa-solid fa-crown me-2 text-muted" aria-hidden="true"></i>Make owner
+                                            <i class="fa-solid fa-crown me-2 text-muted" aria-hidden="true"></i>{{ __('Make owner') }}
                                         </button>
                                     </form>
                                 </li>
@@ -438,7 +435,7 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item small text-danger">
-                                            <i class="fa-solid fa-user-minus me-2" aria-hidden="true"></i>Remove from community
+                                            <i class="fa-solid fa-user-minus me-2" aria-hidden="true"></i>{{ __('Remove from community') }}
                                         </button>
                                     </form>
                                 </li>
@@ -453,10 +450,10 @@
     <!-- About タブ -->
     <div class="tab-pane fade" id="about" role="tabpanel" aria-labelledby="about-tab">
         <div class="card bg-white border shadow-sm rounded-3 p-4">
-            <h5 class="fw-bold text-dark h6 mb-3">About this community</h5>
+            <h5 class="fw-bold text-dark h6 mb-3">{{ __('About this community') }}</h5>
             <p class="text-muted small">{!! nl2br(e($community->description)) !!}</p>
             @if ($community->guidelines)
-                <h6 class="fw-bold text-dark mt-4">Welcome & guidelines</h6>
+                <h6 class="fw-bold text-dark mt-4">{{ __('Welcome & guideline') }}</h6>
                 <p class="text-muted small mb-0">{!! nl2br(e($community->guidelines)) !!}</p>
             @endif
         </div>

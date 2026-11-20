@@ -49,11 +49,11 @@ class ContactController extends Controller
 
         if (! $recipient) {
             return back()->withErrors([
-                'message' => 'This inquirer is not a registered user. Please reply by email instead.',
+                'message' => __('This inquirer is not a registered user. Please reply by email instead.'),
             ]);
         }
 
-        abort_if((int) $recipient->id === (int) Auth::id(), 422, 'You cannot reply to your own inquiry.');
+        abort_if((int) $recipient->id === (int) Auth::id(), 422, __('You cannot reply to your own inquiry.'));
 
         UserNotification::create([
             'user_id' => $recipient->id,
@@ -65,6 +65,8 @@ class ContactController extends Controller
 
         $contact->update(['replied_at' => now()]);
 
-        return back()->with('status', 'Reply sent to ' . ($recipient->username ?: $recipient->name) . '.');
+        return back()->with('status', __('Reply sent to :name.', [
+            'name' => $recipient->username ?: $recipient->name,
+        ]));
     }
 }

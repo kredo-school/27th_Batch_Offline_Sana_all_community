@@ -141,7 +141,7 @@ class Category extends Model
             }
         }
 
-        return $name;
+        return $locale === app()->getLocale() ? __($name) : $name;
     }
 
     public function events()

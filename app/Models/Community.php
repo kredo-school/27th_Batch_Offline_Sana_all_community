@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -29,26 +30,29 @@ class Community extends Model
         'image', 'icon', 'visibility', 'language',
     ];
 
-    public static function getLocalizedCategoryName(string $category): string
+    public static function getLocalizedCategoryName(?string $category): string
     {
-        // 以前の固定カテゴリー（Creative など）に無ければ、管理画面のカテゴリー（Sports など）の訳を使う
-        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? Category::localizeName($category);
+        if ($category === null || $category === '') {
+            return '';
+        }
+
+        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category]
+            ?? __($category);
     }
 
-    /**
-     * 今の言語でのカテゴリー名（画面に出すとき用。保存している値は英語のまま）
-     */
     public function getLocalizedCategoryAttribute(): string
     {
-        return $this->category ? self::getLocalizedCategoryName($this->category) : "";
+        return self::getLocalizedCategoryName($this->category);
     }
 
-    /**
-     * 今の言語での公開設定の名前（public / approval / private）
-     */
     public function getVisibilityLabelAttribute(): string
     {
-        return __(["public" => "Public", "approval" => "Approval required", "private" => "Private"][$this->visibility] ?? "Public");
+        return LocalizedValue::visibility($this->visibility);
+    }
+
+    public function getLanguageLabelAttribute(): string
+    {
+        return LocalizedValue::language($this->language);
     }
 
     public function owner()

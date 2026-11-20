@@ -101,8 +101,10 @@ class AppServiceProvider extends ServiceProvider
             $notifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
+                    ->notCommunityFilter()
+                    ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -113,7 +115,8 @@ class AppServiceProvider extends ServiceProvider
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
+                    ->notCommunityFilter()
+                    ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->count()
                 : 0;
             $unreadMessagesCount = $currentUserId
@@ -137,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
             $eventCommentNotifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     ->where('type', 'event_comment')
                     ->with('related')
                     ->latest()
@@ -146,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
             $adminContactNotifications = $currentUserId && Auth::user()?->role === 'admin'
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     ->where('type', 'admin_contact')
                     ->with('related')
                     ->latest()
@@ -156,7 +161,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                    ->communityFilter()
                     ->count()
                 : 0;
             // 確認済み（既読）の通知はコミュニティ通知欄から消す（過去の分は Show All で見られる）
@@ -164,7 +169,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                    ->communityFilter()
                     ->with('related')
                     ->latest()
                     ->limit(5)

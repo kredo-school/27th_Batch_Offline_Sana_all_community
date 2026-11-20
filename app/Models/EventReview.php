@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -19,5 +20,10 @@ class EventReview extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getRatingLabelAttribute(): string
+    {
+        return LocalizedValue::reviewRating((int) $this->rating);
     }
 }
