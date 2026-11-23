@@ -63,7 +63,7 @@ class MessageController extends Controller
             ->orderBy('created_at')
             ->orderBy('id')
             ->get(['id', 'sender_id', 'receiver_id', 'message', 'created_at']);
-        Message::query()
+        $readCount = Message::query()
             ->where('sender_id', $user->id)
             ->where('receiver_id', $currentUserId)
             ->whereNull('read_at')
@@ -75,6 +75,7 @@ class MessageController extends Controller
 
         return response()->json([
             'unread_count' => $unreadCount,
+            'read_count' => $readCount,
             'participant' => [
                 'name' => $user->username ?: $user->name,
                 'avatar' => $this->avatarUrl($user->profile?->avatar),

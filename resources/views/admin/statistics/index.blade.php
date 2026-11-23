@@ -7,7 +7,7 @@
         .admin-dashboard {
             display: grid;
             grid-template-columns: 210px minmax(0, 1fr);
-            min-height: calc(100vh - 74px);
+            min-height: calc(100vh - 70px);
             color: #183b3a;
             background: #f5f8f7;
         }
@@ -26,6 +26,26 @@
             text-transform: uppercase;
         }
 
+        .admin-dashboard .admin-sidebar {
+            position: fixed;
+            inset-inline-start: 0;
+            top: 70px;
+            width: 210px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            z-index: 100;
+            padding: 24px 14px;
+            border-inline-end: 1px solid #dce8e5;
+            background: #fff;
+        }
+
+        .admin-dashboard .admin-sidebar-title {
+            margin: 0 10px 16px;
+            color: #70827f;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
         .admin-nav { display: grid; gap: 4px; }
         .admin-nav-link,
         .admin-nav-disabled {
@@ -46,7 +66,7 @@
         .admin-nav-link.active { font-weight: 700; }
         .admin-nav-disabled { color: #98a9a7; }
 
-        .admin-main { min-width: 0; padding: 28px clamp(16px, 3vw, 42px) 36px; }
+        .admin-main { grid-column: 2; min-width: 0; padding: 28px clamp(16px, 3vw, 42px) 36px; }
         .admin-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
         .admin-heading h1 { margin: 0; font-size: 25px; font-weight: 700; }
         .admin-eyebrow { margin: 0 0 5px; color: #668380; font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -56,21 +76,41 @@
         .stats-card-label { color: #70827f; font-size: 13px; }
         .stats-card-value { margin-top: 7px; color: #126b6b; font-size: 28px; font-weight: 700; }
         .stats-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+        .stats-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px; }
+        .stats-chart-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+        .stats-period-control { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #70827f; font-size: 13px; }
         .stats-panel { min-width: 0; overflow: hidden; }
         .stats-panel-header { padding: 13px 16px; border-bottom: 1px solid #dce8e5; font-weight: 700; }
         .stats-panel-body { padding: 12px 16px; }
         .stats-panel .table { margin-bottom: 0; }
         .stats-panel th { color: #70827f; font-size: 12px; white-space: nowrap; }
         .stats-url { max-width: 360px; overflow-wrap: anywhere; }
-        .chart-bars { display: grid; grid-template-columns: repeat(7, minmax(24px, 1fr)); align-items: end; gap: 10px; min-height: 175px; padding-top: 12px; }
-        .chart-column { display: grid; grid-template-rows: 18px 125px 24px; align-items: end; justify-items: center; gap: 4px; color: #70827f; font-size: 11px; }
-        .chart-track { display: flex; width: 100%; height: 125px; align-items: end; justify-content: center; }
-        .chart-bar { width: min(34px, 75%); min-height: 3px; border-radius: 4px 4px 0 0; background: #238f91; }
+        .stats-line-chart { display: block; width: 100%; height: 170px; }
+        .chart-grid-line { stroke: #e6efed; stroke-width: 1; }
+        .chart-axis-label { fill: #70827f; font-size: 11px; }
+        .chart-line { fill: none; stroke: #238f91; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .chart-point { fill: #126b6b; stroke: #fff; stroke-width: 2; }
+        .chart-axis-labels { display: flex; justify-content: space-between; padding: 0 4px 4px 28px; color: #70827f; font-size: 11px; }
+        .category-chart { display: grid; gap: 10px; padding: 14px 16px; }
+        .category-chart-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(48px, 2fr) auto; align-items: center; gap: 9px; font-size: 12px; }
+        .category-chart-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .category-chart-track { height: 10px; overflow: hidden; border-radius: 999px; background: #edf3f1; }
+        .category-chart-bar { height: 100%; border-radius: inherit; background: #238f91; }
+        .category-chart-value { color: #70827f; font-variant-numeric: tabular-nums; }
         .stats-empty { padding: 18px; color: #70827f; text-align: center; }
 
         @media (max-width: 900px) {
             .admin-dashboard { grid-template-columns: 1fr; }
-            .admin-sidebar { border-right: 0; border-bottom: 1px solid #dce8e5; }
+            .admin-main { grid-column: 1; }
+            .admin-dashboard .admin-sidebar {
+                position: static;
+                width: auto;
+                height: auto;
+                overflow: visible;
+                z-index: auto;
+                border-inline-end: 0;
+                border-block-end: 1px solid #dce8e5;
+            }
             .admin-nav { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
         }
         @media (max-width: 680px) {
@@ -113,33 +153,56 @@
                 </article>
             </section>
 
-            <section class="stats-panel mb-3">
-                <div class="stats-panel-header">{{ __('Category views — last 7 days') }}</div>
-                <div class="stats-panel-body">
-                    <div class="chart-bars">
-                        @foreach ($dailyCategoryViews as $day)
-                            <div class="chart-column" title="{{ __(':count views', ['count' => number_format($day->view_count)]) }}">
-                                <span>{{ $day->view_count }}</span>
-                                <div class="chart-track">
-                                    <div class="chart-bar" style="height: {{ max(3, ($day->view_count / $maxDailyCategoryViews) * 100) }}%"></div>
-                                </div>
-                                <small>{{ \Carbon\Carbon::parse($day->date)->format('m/d') }}</small>
-                            </div>
+            <div class="stats-chart-toolbar">
+                <div class="stats-period-control">
+                    <span>{{ __('Period') }}</span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ __('Period') }}">
+                        @foreach ($periodOptions as $periodKey => $periodLabel)
+                            <a href="{{ route('admin.statistics', array_filter(['period' => $periodKey, 'detail' => $detail])) }}"
+                                class="btn {{ $chartPeriod === $periodKey ? 'btn-success' : 'btn-outline-success' }}" style="width: 100px;"
+                                @if ($chartPeriod === $periodKey) aria-current="page" @endif>
+                                {{ __($periodLabel) }}
+                            </a>
                         @endforeach
                     </div>
                 </div>
+            </div>
+
+            <section class="stats-chart-grid">
+                @foreach ($lineCharts as $chart)
+                    <article class="stats-panel">
+                        <div class="stats-panel-header">{{ __($chart->title) }}</div>
+                        @include('admin.statistics.partials.line-chart', ['chart' => $chart])
+                    </article>
+                @endforeach
+                <article class="stats-panel">
+                    <div class="stats-panel-header">{{ __('Most viewed categories') }}</div>
+                    <div class="category-chart">
+                        @forelse ($topCategoryChart as $category)
+                        <div class="category-chart-row" title="{{ \App\Support\LocalizedValue::category($category->name) }}: {{ __(':count views', ['count' => number_format($category->view_count)]) }}">
+                            <span class="category-chart-name">{{ \App\Support\LocalizedValue::category($category->name) }}</span>
+                                <div class="category-chart-track">
+                                    <div class="category-chart-bar" style="width: {{ ($category->view_count / $maxCategoryChartCount) * 100 }}%"></div>
+                                </div>
+                                <span class="category-chart-value">{{ number_format($category->view_count) }}</span>
+                            </div>
+                        @empty
+                            <div class="stats-empty">{{ __('No category view data yet.') }}</div>
+                        @endforelse
+                    </div>
+                </article>
             </section>
 
             <div class="stats-panels">
                 <section class="stats-panel" id="top-categories">
-                    <div class="stats-panel-header">{{ __('Most viewed categories') }}</div>
+                    <div class="stats-panel-header">{{ __('All-time most viewed categories') }}</div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead><tr><th>{{ __('Category') }}</th><th>{{ __('Views') }}</th><th>{{ __('Users') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($topCategories as $category)
                                     <tr>
-                                        <td>{{ $category->name }}</td>
+                                        <td>{{ \App\Support\LocalizedValue::category($category->name) }}</td>
                                         <td>{{ number_format($category->view_count) }}</td>
                                         <td>{{ number_format($category->unique_users) }}</td>
                                     </tr>
@@ -152,11 +215,11 @@
                     @if ($detail === 'categories')
                         <div class="d-flex justify-content-between align-items-center gap-2 p-3">
                             {{ $topCategories->links() }}
-                            <a href="{{ route('admin.statistics') }}#top-categories">{{ __('Back') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['period' => $chartPeriod])) }}#top-categories">{{ __('Back') }}</a>
                         </div>
                     @elseif ($hasMore['categories'])
                         <div class="pb-3 px-3 text-end">
-                            <a href="{{ route('admin.statistics', ['detail' => 'categories']) }}#top-categories">{{ __('Show more') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['detail' => 'categories', 'period' => $chartPeriod])) }}#top-categories">{{ __('Show more') }}</a>
                         </div>
                     @endif
                 </section>
@@ -182,11 +245,11 @@
                     @if ($detail === 'pages')
                         <div class="d-flex justify-content-between align-items-center gap-2 p-3">
                             {{ $topPages->links() }}
-                            <a href="{{ route('admin.statistics') }}#top-pages">{{ __('Back') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['period' => $chartPeriod])) }}#top-pages">{{ __('Back') }}</a>
                         </div>
                     @elseif ($hasMore['pages'])
                         <div class="pb-3 px-3 text-end">
-                            <a href="{{ route('admin.statistics', ['detail' => 'pages']) }}#top-pages">{{ __('Show more') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['detail' => 'pages', 'period' => $chartPeriod])) }}#top-pages">{{ __('Show more') }}</a>
                         </div>
                     @endif
                 </section>
@@ -214,11 +277,11 @@
                     @if ($detail === 'active-users')
                         <div class="d-flex justify-content-between align-items-center gap-2 p-3">
                             {{ $activeUsers->links() }}
-                            <a href="{{ route('admin.statistics') }}#active-users">{{ __('Back') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['period' => $chartPeriod])) }}#active-users">{{ __('Back') }}</a>
                         </div>
                     @elseif ($hasMore['active-users'])
                         <div class="pb-3 px-3 text-end">
-                            <a href="{{ route('admin.statistics', ['detail' => 'active-users']) }}#active-users">{{ __('Show more') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['detail' => 'active-users', 'period' => $chartPeriod])) }}#active-users">{{ __('Show more') }}</a>
                         </div>
                     @endif
                 </section>
@@ -245,11 +308,11 @@
                     @if ($detail === 'recent-page-views')
                         <div class="d-flex justify-content-between align-items-center gap-2 p-3">
                             {{ $recentPageViews->links() }}
-                            <a href="{{ route('admin.statistics') }}#recent-page-views">{{ __('Back') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['period' => $chartPeriod])) }}#recent-page-views">{{ __('Back') }}</a>
                         </div>
                     @elseif ($hasMore['recent-page-views'])
                         <div class="pb-3 px-3 text-end">
-                            <a href="{{ route('admin.statistics', ['detail' => 'recent-page-views']) }}#recent-page-views">{{ __('Show more') }}</a>
+                            <a href="{{ route('admin.statistics', array_filter(['detail' => 'recent-page-views', 'period' => $chartPeriod])) }}#recent-page-views">{{ __('Show more') }}</a>
                         </div>
                     @endif
                 </section>

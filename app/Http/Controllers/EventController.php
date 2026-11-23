@@ -513,7 +513,7 @@ class EventController extends Controller
             ->where('status', 'approved')
             ->count();
         if ($event->capacity && $joinedCount >= $event->capacity) {
-            return back()->with('error', 'This event is already full.');
+            return back()->with('error', __('This event is already full.'));
         }
 
         $participant->status = 'approved';
@@ -590,10 +590,7 @@ class EventController extends Controller
             $event->cancel_reason = $request->cancel_reason;
             $event->save();
 
-            // コミュニティ内のイベントだけ、参加確定・申請中の人に中止になったことと理由を知らせる
-            if (! $event->community_id) {
-                return;
-            }
+            // Notify approved and pending participants for both community and standalone events.
             $owner = $request->user();
             $event->participants()
                 ->whereIn('status', ['approved', 'pending'])
@@ -762,7 +759,7 @@ class EventController extends Controller
 
         return [
             'calendarDays' => $calendarDays,
-            'displayMonth' => $startOfMonth->format('M, Y'),
+            'displayMonth' => $startOfMonth->copy()->locale(app()->getLocale())->translatedFormat('F Y'),
             'previousMonthUrl' => route('events.index', $previousMonthQuery),
             'nextMonthUrl' => route('events.index', $nextMonthQuery),
             'selectedEventDate' => $selectedEventDate,

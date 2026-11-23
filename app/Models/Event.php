@@ -206,7 +206,7 @@ class Event extends Model
         // 1~3 days left
         if ($daysLeft <= 3) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-urgent',
             ];
         }
@@ -214,14 +214,18 @@ class Event extends Model
         // 4~7 days left
         if ($daysLeft <= 7) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-info',
             ];
         }
 
         // after 8 days left
+        $localizedDate = $joinTill->copy()
+            ->locale(app()->getLocale())
+            ->isoFormat('LL') ?: $joinTill->format('F j, Y');
+
         return [
-            'label' => $joinTill->format('D, M j'),
+            'label' => $localizedDate,
             'class' => 'status-info',
         ];
     }

@@ -245,6 +245,77 @@ class LanguageTest extends TestCase
         $this->assertSame('はい', LocalizedValue::approval(true));
         $this->assertSame('いいえ', LocalizedValue::approval(false));
         $this->assertSame('5 - とても良い', LocalizedValue::reviewRating(5));
+
+        app()->setLocale('ceb');
+        $this->assertSame('Cebuano', LocalizedValue::language('ceb'));
+    }
+
+    public function test_event_language_picker_uses_the_cebuano_locale_code(): void
+    {
+        $user = User::factory()->create(['preferred_language' => 'ceb']);
+
+        $this->actingAs($user)
+            ->get(route('events.create'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'name="language" value="ceb"',
+                'Cebuano',
+            ], false);
+    }
+
+    public function test_event_participants_page_uses_the_preferred_language(): void
+    {
+        $owner = User::factory()->create(['preferred_language' => 'ja']);
+        $event = Event::create([
+            'owner_id' => $owner->id,
+            'title' => 'Language test event',
+            'description' => 'Event details.',
+            'language' => 'ja',
+            'location' => 'Tokyo',
+            'start_at' => now()->addDay(),
+            'join_till' => now()->addHours(12),
+            'end_at' => now()->addDays(2),
+            'price' => 0,
+            'approval_required' => true,
+            'visibility' => 'public',
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('events.participants', $event))
+            ->assertOk()
+            ->assertSee('参加者')
+            ->assertSee('イベントに戻る')
+            ->assertSee('保留中の申請はありません。')
+            ->assertSee('まだ誰も参加していません。');
+    }
+
+    public function test_event_detail_page_uses_the_preferred_language(): void
+    {
+        $owner = User::factory()->create(['preferred_language' => 'ja']);
+        $event = Event::create([
+            'owner_id' => $owner->id,
+            'title' => 'Language test event',
+            'description' => 'Event details.',
+            'language' => 'en',
+            'location' => 'Tokyo',
+            'start_at' => now()->addDays(2),
+            'join_till' => now()->addDay(),
+            'end_at' => now()->addDays(3),
+            'price' => 0,
+            'approval_required' => false,
+            'visibility' => 'public',
+            'status' => 'published',
+        ]);
+        $event->categories()->attach(Category::create(['name' => 'Events'])->id);
+
+        $this->actingAs($owner)
+            ->get(route('events.show', $event))
+            ->assertOk()
+            ->assertSee('日付')
+            ->assertSee('料金')
+            ->assertSee('コメント')
+            ->assertDontSee('$dateText');
     }
 
     public function test_new_category_name_is_added_to_language_files_without_overwriting(): void

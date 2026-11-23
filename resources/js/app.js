@@ -243,14 +243,20 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 				}
 
 				const conversation = await response.json();
-				if (requestId !== activeRequest) {
-					return;
-				}
-
+				openButton.classList.remove('dropdown-item--unread', 'fw-semibold', 'unread-row');
 				const unreadBadge = document.querySelector('#unread-messages-badge');
-				if (unreadBadge && Number.isInteger(conversation.unread_count)) {
+				if (unreadBadge && Number.isInteger(conversation.read_count)) {
+					const currentCount = Number.parseInt(unreadBadge.textContent, 10) || 0;
+					const remainingCount = Math.max(0, currentCount - conversation.read_count);
+					unreadBadge.textContent = remainingCount;
+					unreadBadge.hidden = remainingCount < 1;
+				} else if (unreadBadge && Number.isInteger(conversation.unread_count)) {
 					unreadBadge.textContent = conversation.unread_count;
 					unreadBadge.hidden = conversation.unread_count < 1;
+				}
+
+				if (requestId !== activeRequest) {
+					return;
 				}
 
 				chatTitle.textContent = conversation.participant.name || chatTitle.textContent;

@@ -87,7 +87,10 @@
         @if ($categories->isNotEmpty())
             <div class="search-result-grid">
                 @foreach ($categories as $category)
-                    <a class="search-result-card" href="{{ route('events.index', ['category' => $category->id]) }}">
+                    @php
+                        $isHelpCategory = strcasecmp((string) $category->name, 'Help') === 0;
+                    @endphp
+                    <a class="search-result-card" href="{{ $isHelpCategory ? route('helps.index') : route('events.index', ['category' => $category->id]) }}">
                         <h3>{{ $category->localized_name }}</h3>
                         <p>{{ __('Browse events') }}</p>
                     </a>

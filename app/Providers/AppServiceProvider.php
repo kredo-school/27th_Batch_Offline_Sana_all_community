@@ -43,8 +43,8 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', function ($view): void {
             $currentUserId = Auth::id();
             $storedOrder = json_decode((string) SiteSetting::get('header_category_order', ''), true);
-            $categoryOrder = array_values(array_filter(is_array($storedOrder) ? $storedOrder : ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs']));
-            $categoryOrder = $categoryOrder ?: ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs'];
+            $categoryOrder = array_values(array_filter(is_array($storedOrder) ? $storedOrder : ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs', 'Help']));
+            $categoryOrder = $categoryOrder ?: ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs', 'Help'];
             $storedCategories = Category::query()
                 ->whereIn('name', $categoryOrder)
                 ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])

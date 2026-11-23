@@ -121,15 +121,21 @@
             ? asset('storage/' . ltrim($help->image_path, '/'))
             : asset('images/onlylogo.jpg');
 
-        $statusLabel = $help->status ? ucfirst(str_replace('_', ' ', $help->status)) : 'Unknown';
+        $statusLabel = $help->status
+            ? __(\Illuminate\Support\Str::headline($help->status))
+            : __('Unknown');
 
         $eventDateLabel = null;
 
         if ($help->event_start_at) {
-            $eventDateLabel = $help->event_start_at->format('M j, Y H:i');
+            $eventDateLabel = $help->event_start_at
+                ->locale(app()->getLocale())
+                ->isoFormat('lll');
 
             if ($help->event_end_at) {
-                $eventDateLabel .= ' - ' . $help->event_end_at->format('M j, Y H:i');
+                $eventDateLabel .= ' - ' . $help->event_end_at
+                    ->locale(app()->getLocale())
+                    ->isoFormat('lll');
             }
         }
 
@@ -141,7 +147,7 @@
     <div class="container py-4" style="max-width: 1000px;">
         {{-- Back --}}
         <a href="{{ route('helps.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">
-            &larr; Back to helps
+            &larr; {{ __('Back to helps') }}
         </a>
 
         @if (session('success'))
@@ -165,13 +171,13 @@
                         <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}">
                     @else
                         <div class="help-cover-empty">
-                            No image
+                            {{ __('No image') }}
                         </div>
                     @endif
 
                     @if ($isDeadlinePassed)
                         <span class="help-status text-danger border-danger">
-                            Application closed
+                            {{ __('Application closed') }}
                         </span>
                     @else
                         <span class="help-status">
@@ -217,10 +223,10 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Category
+                                    {{ __('Category') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->category?->name ?? 'Not specified' }}
+                                    {{ $help->category?->name ?? __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -229,10 +235,10 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Requester type
+                                    {{ __('Requester type') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->requester_type ?: 'Not specified' }}
+                                    {{ $help->requester_type ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -241,10 +247,10 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Event date
+                                    {{ __('Event date') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $eventDateLabel ?: 'Not specified' }}
+                                    {{ $eventDateLabel ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -253,10 +259,10 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Location
+                                    {{ __('Location') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->location ?: 'Not specified' }}
+                                    {{ $help->location ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -265,10 +271,10 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Reward
+                                    {{ __('Reward') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $rewardLabel ?: 'Not specified' }}
+                                    {{ $rewardLabel ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -277,17 +283,17 @@
                         <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Capacity
+                                    {{ __('Capacity') }}
                                 </div>
                                 <div class="help-info-value">
                                     @if (!is_null($help->capacity))
                                         @if ($help->capacity == 1)
-                                            {{ $help->capacity }} person
+                                            {{ __(':count person', ['count' => $help->capacity]) }}
                                         @else
-                                            {{ $help->capacity }} people
+                                            {{ __(':count people', ['count' => $help->capacity]) }}
                                         @endif
                                     @else
-                                        Not specified
+                                        {{ __('Not specified') }}
                                     @endif
                                 </div>
                             </div>
@@ -297,13 +303,13 @@
                         <div class="col-12">
                             <div class="help-info-box">
                                 <div class="help-info-label">
-                                    Application deadline
+                                    {{ __('Application deadline') }}
                                 </div>
                                 <div class="help-info-value">
                                     @if ($help->application_deadline)
-                                        {{ $help->application_deadline->format('M j, Y') }}
+                                        {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('LL') }}
                                     @else
-                                        No deadline
+                                        {{ __('No deadline') }}
                                     @endif
                                 </div>
                             </div>
@@ -314,7 +320,7 @@
                 {{-- Description --}}
                 <div class="help-card">
                     <h5 class="mb-3">
-                        Help description
+                        {{ __('Help description') }}
                     </h5>
 
                     <p class="mb-0" style="white-space: pre-line;">{{ $help->description }}</p>
@@ -324,7 +330,7 @@
                 @if ($help->requirements)
                     <div class="help-card">
                         <h5 class="mb-3">
-                            Requirements
+                            {{ __('Requirements') }}
                         </h5>
 
                         <p class="mb-0" style="white-space: pre-line;">
@@ -341,21 +347,21 @@
                 {{-- Apply --}}
                 <div class="help-card">
                     <h5 class="mb-3">
-                        Apply for this help
+                        {{ __('Apply for this help') }}
                     </h5>
 
                     @if ($isOwner)
                         <div class="alert alert-info small">
-                            This is your help posting.
+                            {{ __('This is your help posting.') }}
                         </div>
 
                         <a href="{{ route('helps.applications.index', $help) }}"
                             class="btn btn-outline-primary w-100 mb-2">
-                            View applications
+                            {{ __('View applications') }}
                         </a>
 
                         <a href="{{ route('helps.edit', $help) }}" class="btn btn-outline-primary w-100 mb-2">
-                            Edit Help
+                            {{ __('Edit Help') }}
                         </a>
 
                         @if ($errors->has('help'))
@@ -365,37 +371,37 @@
                         @endif
 
                         <form action="{{ route('helps.destroy', $help) }}" method="POST"
-                            onsubmit="return confirm('Are you sure you want to delete this help?')">
+                            onsubmit="return confirm('{{ __('Are you sure you want to delete this help?') }}')">
                             @csrf
                             @method('DELETE')
 
                             <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
                                 data-bs-target="#deletehelpModal{{ $help->id }}">
-                                Delete Help
+                                {{ __('Delete Help') }}
                             </button>
                         </form>
                     @elseif ($isDeadlinePassed)
                         <div class="alert alert-secondary text-center small mb-0">
-                            Applications are closed.
+                            {{ __('Applications are closed.') }}
                         </div>
                     @elseif (!auth()->check())
                         <a href="{{ route('login') }}" class="btn btn-primary w-100">
-                            Log in to apply
+                            {{ __('Log in to apply') }}
                         </a>
                     @else
                         <form action="{{ route('helps.applications.store', $help) }}" method="POST">
                             @csrf
 
                             <label for="cover_letter" class="form-label small">
-                                Message
+                                {{ __('Message') }}
                                 <span class="text-muted">
-                                    (optional)
+                                    ({{ __('optional') }})
                                 </span>
                             </label>
 
                             <textarea name="cover_letter" id="cover_letter" rows="5" maxlength="2000"
                                 class="form-control @error('cover_letter') is-invalid @enderror"
-                                placeholder="Tell the company why you are interested.">{{ old('cover_letter') }}</textarea>
+                                placeholder="{{ __('Tell the company why you are interested.') }}">{{ old('cover_letter') }}</textarea>
 
                             @error('cover_letter')
                                 <div class="text-danger small">
@@ -404,7 +410,7 @@
                             @enderror
 
                             <button type="submit" class="btn btn-primary w-100 mt-3">
-                                Apply now
+                                {{ __('Apply now') }}
                             </button>
 
                             @error('application')
@@ -420,7 +426,7 @@
                 @if ($help->location)
                     <div class="help-card">
                         <h5 class="mb-3">
-                            Location
+                            {{ __('Location') }}
                         </h5>
 
                         <iframe class="help-map" loading="lazy"
@@ -432,7 +438,7 @@
 
                         <a href="https://www.google.com/maps/dir/?api=1&destination={{ urlencode($help->location) }}"
                             target="_blank" rel="noopener noreferrer" class="small">
-                            Get Directions &#8599;
+                            {{ __('Get Directions') }} &#8599;
                         </a>
                     </div>
                 @endif
@@ -440,7 +446,7 @@
                 {{-- Posted by --}}
                 <div class="help-card">
                     <div class="help-help mb-2">
-                        Posted by
+                        {{ __('Posted by') }}
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
@@ -450,11 +456,11 @@
 
                         <div>
                             <div class="fw-semibold">
-                                {{ $help->user->name ?? 'Unknown' }}
+                                {{ $help->user->name ?? __('Unknown') }}
                             </div>
 
                             <div class="help-help">
-                                Help creator
+                                {{ __('Help creator') }}
                             </div>
                         </div>
                     </div>

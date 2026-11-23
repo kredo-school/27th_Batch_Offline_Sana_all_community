@@ -118,8 +118,8 @@
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
 
-            <input type="search" name="keyword" id="keyword" value="{{ request('keyword') }}" placeholder="Search helps"
-                aria-label="search-help" @include('partials.search-suggest-attributes', ['type' => 'helps'])>
+            <input type="search" name="keyword" id="keyword" value="{{ request('keyword') }}" placeholder="{{ __('Search helps') }}"
+                aria-label="{{ __('Search helps') }}" @include('partials.search-suggest-attributes', ['type' => 'helps'])>
         </div>
 
         @if (request('category_id'))
@@ -129,7 +129,7 @@
         <input type="hidden" name="sort" value="{{ $sort }}">
 
         <button type="submit" class="btn btn-primary search-button">
-            Search
+            {{ __('Search') }}
         </button>
     </form>
 
@@ -137,7 +137,7 @@
     <div class="help-action">
         <div class="dropdown">
             <button class="sort-dropdown-btn" type="button" id="sortDropdownMenu" data-bs-toggle="dropdown"
-                aria-expanded="false" aria-label="sort-menu">
+                aria-expanded="false" aria-label="{{ __('Sort') }}">
                 <i class="fa-solid fa-sort"></i>
             </button>
 
@@ -150,7 +150,7 @@
                                 'sort' => 'deadline_asc',
                             ]),
                         ) }}">
-                        Deadline soonest
+                        {{ __('Deadline soonest') }}
                     </a>
                 </li>
 
@@ -162,7 +162,7 @@
                                 'sort' => 'deadline_desc',
                             ]),
                         ) }}">
-                        Deadline latest
+                        {{ __('Deadline latest') }}
                     </a>
                 </li>
 
@@ -174,7 +174,7 @@
                                 'sort' => 'created_desc',
                             ]),
                         ) }}">
-                        Latest
+                        {{ __('Latest') }}
                     </a>
                 </li>
             </ul>
@@ -182,7 +182,7 @@
 
         @auth
             <a href="{{ route('helps.create') }}" class="btn btn-primary create-help-button">
-                + Create help
+                + {{ __('Create help') }}
             </a>
         @endauth
     </div>
@@ -190,7 +190,7 @@
     {{-- Category --}}
     <div class="category-list">
         <span class="w-100 small text-muted">
-            Category
+            {{ __('Category') }}
         </span>
 
         <a href="{{ route(
@@ -200,7 +200,7 @@
             ]),
         ) }}"
             class="category-button {{ !request('category_id') ? 'active' : '' }}">
-            All
+            {{ __('All') }}
         </a>
 
         @foreach ($categories as $category)

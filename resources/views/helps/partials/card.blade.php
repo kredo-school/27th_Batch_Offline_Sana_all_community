@@ -227,15 +227,15 @@
         ? asset('storage/' . ltrim($help->image_path, '/'))
         : asset('images/onlylogo.jpg');
 
-    $deadlineLabel = 'Open';
+    $deadlineLabel = __('Open');
     $deadlineClass = 'status-info';
 
     if ($help->application_deadline) {
         if ($help->application_deadline->isBefore(today())) {
-            $deadlineLabel = 'Closed';
+            $deadlineLabel = __('Closed');
             $deadlineClass = 'status-closed';
         } elseif (today()->diffInDays($help->application_deadline) <= 7) {
-            $deadlineLabel = 'Closing soon';
+            $deadlineLabel = __('Closing soon');
             $deadlineClass = 'status-urgent';
         }
     }
@@ -243,10 +243,14 @@
     $eventDateLabel = null;
 
     if ($help->event_start_at) {
-        $eventDateLabel = $help->event_start_at->format('Y/m/d H:i');
+        $eventDateLabel = $help->event_start_at
+            ->locale(app()->getLocale())
+            ->isoFormat('lll');
 
         if ($help->event_end_at) {
-            $eventDateLabel .= ' - ' . $help->event_end_at->format('Y/m/d H:i');
+            $eventDateLabel .= ' - ' . $help->event_end_at
+                ->locale(app()->getLocale())
+                ->isoFormat('lll');
         }
     }
 
@@ -281,7 +285,7 @@
                 @endif
 
                 <button type="submit" class="favorite-button {{ $isBookmarked ? 'active' : '' }}"
-                    aria-label="{{ $isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks' }}"
+                    aria-label="{{ $isBookmarked ? __('Remove from bookmarks') : __('Add to bookmarks') }}"
                     aria-pressed="{{ $isBookmarked ? 'true' : 'false' }}">
                     {{ $isBookmarked ? '♥' : '♡' }}
                 </button>
@@ -289,7 +293,7 @@
 
             {{-- 未ログインユーザー：ハートを表示し、ログイン画面へ遷移 --}}
         @else
-            <a href="{{ route('login') }}" class="favorite-button" aria-label="Log in to bookmark this help">
+            <a href="{{ route('login') }}" class="favorite-button" aria-label="{{ __('Log in to bookmark this help') }}">
                 ♡
             </a>
         @endif
@@ -366,9 +370,9 @@
                 <div>
                     <span aria-hidden="true">👥</span>
                     @if ($help->capacity == 1)
-                        Capacity {{ $help->capacity }} person
+                        {{ __('Capacity :count person', ['count' => $help->capacity]) }}
                     @else
-                        Capacity {{ $help->capacity }} peaple
+                        {{ __('Capacity :count people', ['count' => $help->capacity]) }}
                     @endif
                 </div>
             @endif
@@ -378,15 +382,15 @@
         <div class="help-card-footer">
             <time datetime="{{ $help->application_deadline?->format('Y-m-d') ?? '' }}">
                 @if ($help->application_deadline)
-                    Apply by
-                    {{ $help->application_deadline->format('M d, Y') }}
+                    {{ __('Apply by') }}
+                    {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('LL') }}
                 @else
-                    Open application
+                    {{ __('Open application') }}
                 @endif
             </time>
 
             <a href="{{ route('helps.show', $help->id) }}">
-                View details &gt;
+                {{ __('View details') }} &gt;
             </a>
         </div>
     </div>

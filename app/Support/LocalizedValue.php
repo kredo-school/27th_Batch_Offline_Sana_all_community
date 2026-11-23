@@ -106,6 +106,7 @@ final class LocalizedValue
             'zh' => 'Chinese',
             'vi' => 'Vietnamese',
             'th' => 'Thai',
+            'ceb' => 'Cebuano',
             default => null,
         };
 
