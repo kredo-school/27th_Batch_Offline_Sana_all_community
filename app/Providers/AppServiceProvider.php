@@ -49,11 +49,18 @@ class AppServiceProvider extends ServiceProvider
                 ->whereIn('name', $categoryOrder)
                 ->with(['translations' => fn ($query) => $query->where('field', 'name')->where('target_language', app()->getLocale())])
                 ->get()
-                ->keyBy('name');
+                // データベースの名前が小文字（sports など）でも同じカテゴリーとして扱う
+                ->keyBy(fn (Category $category) => mb_strtolower($category->name));
             $categories = collect($categoryOrder)->mapWithKeys(function (string $label) use ($storedCategories): array {
-                $category = $storedCategories->get($label);
+                $category = $storedCategories->get(mb_strtolower($label));
 
-                return [$category?->id ?? $label => $category?->localized_name ?? $label];
+                // データベースに無いカテゴリーも、用意してある訳で今の言語にする
+                // （英語のときは、データベースの表記（sports など）ではなく並び順の設定の表記をそのまま出す）
+                $name = app()->getLocale() === 'en'
+                    ? $label
+                    : ($category?->localized_name ?? Category::localizeName($label));
+
+                return [$category?->id ?? $label => $name];
             });
             $unreadMessageSenderIds = $currentUserId
                 ? Message::query()
@@ -94,8 +101,10 @@ class AppServiceProvider extends ServiceProvider
             $notifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
+                    ->notCommunityFilter()
+                    ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -106,7 +115,8 @@ class AppServiceProvider extends ServiceProvider
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->whereNotIn('type', [...UserNotification::COMMUNITY_TYPES, 'event_comment', 'admin_contact'])
+                    ->notCommunityFilter()
+                    ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->count()
                 : 0;
             $unreadMessagesCount = $currentUserId
@@ -130,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
             $eventCommentNotifications = $currentUserId
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     ->where('type', 'event_comment')
                     ->with('related')
                     ->latest()
@@ -139,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
             $adminContactNotifications = $currentUserId && Auth::user()?->role === 'admin'
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
+                    ->whereNull('read_at')
                     ->where('type', 'admin_contact')
                     ->with('related')
                     ->latest()
@@ -149,7 +161,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                    ->communityFilter()
                     ->count()
                 : 0;
             // 確認済み（既読）の通知はコミュニティ通知欄から消す（過去の分は Show All で見られる）
@@ -157,7 +169,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                    ->communityFilter()
                     ->with('related')
                     ->latest()
                     ->limit(5)

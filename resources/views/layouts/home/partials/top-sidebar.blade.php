@@ -1,4 +1,23 @@
 <style>
+    .communication-sidebar {
+        position: fixed;
+        top: 74px;
+        left: 0;
+        z-index: 100;
+        width: 210px;
+        height: calc(100vh - 74px);
+        min-height: calc(100vh - 74px);
+        box-sizing: border-box;
+        border-right: 1px solid #d8e7e4;
+        background: #fff;
+        overflow: visible;
+    }
+
+    footer {
+        position: relative;
+        z-index: 101;
+    }
+
     .communication-sidebar .contact-sidebar{
         padding: 24px 14px;
         border-right: 1px solid #d8e7e4;
@@ -53,6 +72,15 @@
     }
 
     @media (max-width: 760px) {
+        .communication-sidebar {
+            position: static;
+            width: auto;
+            height: auto;
+            min-height: 0;
+            border-right: 0;
+            overflow: visible;
+        }
+
         .communication-sidebar .contact-sidebar{
             padding: 10px 12px;
             border-right: 0;

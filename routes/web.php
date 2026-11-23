@@ -2,7 +2,7 @@
 
 
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
-use App\Http\Controllers\Admin\JobsController;
+use App\Http\Controllers\Admin\helpsController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
@@ -21,9 +21,14 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\CommunityMembershipController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
+use App\Http\Controllers\Admin\JobsController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\HelpApplicationController;
+use App\Http\Controllers\HelpBookmarkController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Auth;
@@ -125,6 +130,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::patch('/community/{id}/invitations/accept', [CommunityMembershipController::class, 'accept'])->name('community.invitations.accept');
     Route::patch('/community/{id}/members/{user}', [CommunityMembershipController::class, 'approve'])->name('community.members.approve');
     Route::delete('/community/{id}/members/{user}', [CommunityMembershipController::class, 'remove'])->name('community.members.remove');
+    // 副管理者にする・外す、オーナーの引き継ぎ（どちらもオーナーだけ）
+    Route::patch('/community/{id}/members/{user}/role', [CommunityMembershipController::class, 'updateRole'])->name('community.members.role');
+    Route::patch('/community/{id}/owner', [CommunityMembershipController::class, 'transferOwnership'])->name('community.owner.transfer');
 
     // ==========================================================================================
     // ====================================ADMIN ROUTES==========================================
@@ -155,6 +163,9 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/communities/{community}', [CommunitiesController::class, 'show'])->name('communities.show');
         Route::get('/communities/{community}/edit', [CommunitiesController::class, 'edit'])->name('communities.edit');
         Route::patch('/communities/{community}', [CommunitiesController::class, 'update'])->name('communities.update');
+        Route::patch('/communities/{community}/owner', [CommunitiesController::class, 'replaceOwner'])->name('communities.owner.replace');
+        Route::patch('/communities/{community}/members/{member}/role', [CommunitiesController::class, 'updateMemberRole'])->name('communities.members.role');
+        Route::delete('/communities/{community}/members/{member}', [CommunitiesController::class, 'removeMember'])->name('communities.members.remove');
         Route::delete('/communities/{community}', [CommunitiesController::class, 'destroy'])->name('communities.destroy');
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications');
         Route::get('/notifications/create', [AdminNotificationController::class, 'create'])->name('notifications.create');
@@ -188,6 +199,18 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
         Route::patch('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::get('/languages', [AdminLanguageController::class, 'index'])->name('languages.index');
+        Route::get('/languages/create', [AdminLanguageController::class, 'create'])->name('languages.create');
+        Route::post('/languages', [AdminLanguageController::class, 'store'])->name('languages.store');
+        Route::get('/languages/{locale}/{key}/edit', [AdminLanguageController::class, 'edit'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.edit');
+        Route::patch('/languages/{locale}/{key}', [AdminLanguageController::class, 'update'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.update');
+        Route::delete('/languages/{locale}/{key}', [AdminLanguageController::class, 'destroy'])
+            ->where('locale', '[a-zA-Z_-]+')
+            ->name('languages.destroy');
 
         // Event Review Management Admin(Masa)
         Route::group(['prefix' => 'reviews', 'as' => 'reviews.'], function () {
@@ -196,7 +219,6 @@ Route::group(['middleware' => 'auth'], function () {
             Route::patch('/{review}', [AdminReviewController::class, 'update'])->name('update');
             Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->name('destroy');
         });
-
     });
 });
 
@@ -230,3 +252,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'store'])->name('bookmarks.store');
     Route::delete('/events/{event}/bookmark', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 });
+
+// ==========================================================================
+// =============================== Job->Help Routes ===============================
+// ==========================================================================
+Route::get('/helps', [HelpController::class, 'index'])->name('helps.index');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/helps/create', [HelpController::class, 'create'])->name('helps.create');
+    Route::post('/helps', [HelpController::class, 'store'])->name('helps.store');
+    Route::get('/helps/{help}/edit', [HelpController::class, 'edit'])->name('helps.edit');
+    Route::put('/helps/{help}', [HelpController::class, 'update'])->name('helps.update');
+    Route::delete('/helps/{help}', [HelpController::class, 'destroy'])->name('helps.destroy');
+
+    // Application
+    Route::post('/helps/{help}/applications', [HelpApplicationController::class, 'store'])->name('helps.applications.store');
+    Route::get('/helps/{help}/applications', [HelpApplicationController::class, 'index'])->name('helps.applications.index');
+    Route::patch('/helps/{help}/applications/{application}', [HelpApplicationController::class, 'updateStatus'])->name('helps.applications.update-status');
+
+    // Bookmark
+    Route::post('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'store'])->name('helps.bookmarks.store');
+    Route::delete('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'destroy'])->name('helps.bookmarks.destroy');
+});
+
+Route::get('/helps/{help}', [HelpController::class, 'show'])->name('helps.show');

@@ -3,12 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\LocalizedValue;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Profile;
+use App\Models\Help;
+use App\Models\HelpApplication;
 
 class User extends Authenticatable
 {
@@ -85,6 +88,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function getPreferredLanguageLabelAttribute(): string
+    {
+        return LocalizedValue::language($this->preferred_language);
+    }
+
     public function eventsOwned()
     {
         return $this->hasMany(Event::class, 'owner_id');
@@ -150,5 +158,20 @@ class User extends Authenticatable
     public function userNotifications()
     {
         return $this->hasMany(UserNotification::class);
+    }
+
+    public function helps()
+    {
+        return $this->hasMany(Help::class, 'user_id');
+    }
+
+    public function helpApplications()
+    {
+        return $this->hasMany(HelpApplication::class, 'user_id');
+    }
+
+    public function helpBookmarks()
+    {
+        return $this->hasMany(HelpBookmark::class);
     }
 }

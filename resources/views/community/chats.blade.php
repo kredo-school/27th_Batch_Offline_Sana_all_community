@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Community Chats')
+@section('title', __('Community Chats'))
 
 @section('sidebar', 'community')
 
@@ -61,9 +61,10 @@
             display: none;
         }
 
+        /* コミュニティのページなので、ナビバーの Community と同じオレンジにする */
         .community-chat-card-header a:hover,
         .community-chat-card-header summary:hover {
-            color: #126b6b;
+            color: #F58634;
         }
 
         .community-chat-details {
@@ -125,15 +126,16 @@
 
     <main class="community-chats-page">
         <header class="community-chats-header">
-            <p class="text-uppercase small fw-bold text-success mb-1">Communities</p>
-            <h1 class="h3 mb-2">Community Chats</h1>
-            <p class="text-secondary small mb-0">Recent messages from communities you own or have joined.</p>
+            {{-- コミュニティのページなので、ナビバーの Community と同じオレンジにする --}}
+            <p class="text-uppercase small fw-bold mb-1" style="color: #F58634;">{{ __('Communities') }}</p>
+            <h1 class="h3 mb-2">{{ __('Community Chats') }}</h1>
+            <p class="text-secondary small mb-0">{{ __('Recent messages from communities you own or have joined.') }}</p>
         </header>
 
-        @foreach ([['title' => 'Owned Communities', 'communities' => $ownedCommunities], ['title' => 'Joined Communities', 'communities' => $joinedCommunities]] as $section)
-            @php($sectionId = str($section['title'])->slug())
+        @foreach ([['key' => 'Owned Communities', 'communities' => $ownedCommunities], ['key' => 'Joined Communities', 'communities' => $joinedCommunities]] as $section)
+            @php($sectionId = str($section['key'])->slug())
             <section class="community-chat-section" aria-labelledby="{{ $sectionId }}-title">
-                <h2 id="{{ $sectionId }}-title">{{ $section['title'] }}</h2>
+                <h2 id="{{ $sectionId }}-title">{{ __($section['key']) }}</h2>
                 @forelse ($section['communities'] as $community)
                     <article class="community-chat-card">
                         <div class="community-chat-card-header">
@@ -141,18 +143,20 @@
                                 <summary class="d-flex justify-content-between align-items-center gap-3">
                                     <span>{{ $community->name }}</span>
                                     @if ($community->unreadMessages->isNotEmpty())
-                                        <span class="badge rounded-pill bg-danger">{{ $community->unreadMessages->count() }} unread</span>
+                                        <span class="badge rounded-pill bg-danger">{{ __(':count unread', ['count' => $community->unreadMessages->count()]) }}</span>
                                     @else
-                                        <span class="small text-muted">{{ $community->latestMessages->count() }} recent messages</span>
+                                        <span class="small text-muted">{{ __(':count recent messages', ['count' => $community->latestMessages->count()]) }}</span>
                                     @endif
                                 </summary>
                                 <div class="community-chat-details mt-3">
                                     <div class="d-flex flex-wrap gap-3">
-                                        <span><strong>Category:</strong> {{ $community->category }}</span>
-                                        @if ($community->location)
-                                            <span><strong>Location:</strong> {{ $community->location }}</span>
+                                        @if ($community->category)
+                                            <span><strong>{{ __('Category') }}:</strong> {{ $community->localized_category }}</span>
                                         @endif
-                                        <span><strong>Access:</strong> {{ ucfirst($community->visibility) }}</span>
+                                        @if ($community->location)
+                                            <span><strong>{{ __('Location') }}:</strong> {{ $community->location }}</span>
+                                        @endif
+                                        <span><strong>{{ __('Access') }}:</strong> {{ $community->visibility_label }}</span>
                                     </div>
                                     @if ($community->description)
                                         <p class="mb-0 mt-2">{{ $community->description }}</p>
@@ -163,33 +167,33 @@
                                     @foreach ($community->unreadMessages as $message)
                                         <a class="community-chat-message community-chat-unread" href="{{ route('community.show', $community->id) }}#chat">
                                             <span class="d-flex justify-content-between gap-3">
-                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: 'Unknown user' }}</span>
+                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: __('Unknown user') }}</span>
                                                 <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
                                             </span>
-                                            <span class="d-block text-break">{{ $message->message }}</span>
+                                            <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>
                                     @endforeach
                                 @endif
 
                                 <details class="community-chat-history">
-                                    <summary>Chat history ({{ $community->latestMessages->count() }})</summary>
+                                    <summary>{{ __('Chat history (:count)', ['count' => $community->latestMessages->count()]) }}</summary>
                                     @forelse ($community->latestMessages as $message)
                                         <a class="community-chat-message" href="{{ route('community.show', $community->id) }}#chat">
                                             <span class="d-flex justify-content-between gap-3">
-                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: 'Unknown user' }}</span>
+                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: __('Unknown user') }}</span>
                                                 <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
                                             </span>
-                                            <span class="d-block text-break">{{ $message->message }}</span>
+                                            <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>
                                     @empty
-                                        <p class="community-chat-empty mb-0">No messages yet.</p>
+                                        <p class="community-chat-empty mb-0">{{ __('No messages yet.') }}</p>
                                     @endforelse
                                 </details>
                             </details>
                         </div>
                     </article>
                 @empty
-                    <p class="text-secondary small">You have no {{ strtolower($section['title']) }}.</p>
+                    <p class="text-secondary small">{{ __('You have no :section.', ['section' => strtolower(__($section['key']))]) }}</p>
                 @endforelse
             </section>
         @endforeach

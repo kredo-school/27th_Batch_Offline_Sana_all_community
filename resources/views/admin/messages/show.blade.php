@@ -26,11 +26,11 @@
                                     <span class="text-secondary small ms-2">{{ $item->created_at?->format('M d, Y H:i') }}</span>
                                 </div>
                                 <form action="{{ route('admin.messages.destroy', $item) }}" method="POST"
-                                    data-confirm="true" data-confirm-message="Delete this message?">
+                                    data-confirm="true" data-confirm-action="{{ __('Delete') }}" data-confirm-message="{{ __('Delete this message?') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="Delete message">
-                                        <i class="fa-solid fa-trash-can"></i>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="{{ __('Delete message') }}" title="{{ __('Delete') }}">
+                                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                                     </button>
                                 </form>
                             </div>

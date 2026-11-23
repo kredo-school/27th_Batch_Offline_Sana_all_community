@@ -1,1 +1,0 @@
-@include('profile.partials.navigation')

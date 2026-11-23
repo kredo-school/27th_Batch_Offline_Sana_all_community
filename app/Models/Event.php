@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -74,7 +75,7 @@ class Event extends Model
 
     public function getCategoryNamesAttribute(): string
     {
-        return $this->categories->pluck('name')->implode(', ');
+        return $this->categories->pluck('localized_name')->implode(', ');
     }
 
     public function participants()
@@ -122,6 +123,26 @@ class Event extends Model
     public function translations()
     {
         return $this->morphMany(Translation::class, 'translatable');
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return LocalizedValue::status($this->status);
+    }
+
+    public function getVisibilityLabelAttribute(): string
+    {
+        return LocalizedValue::visibility($this->visibility);
+    }
+
+    public function getLanguageLabelAttribute(): string
+    {
+        return LocalizedValue::language($this->language);
+    }
+
+    public function getApprovalLabelAttribute(): string
+    {
+        return LocalizedValue::approval($this->approval_required);
     }
 
     /////////////////    Event Page - Change badge color of join_till. /////////////

@@ -96,6 +96,17 @@
         white-space: nowrap;
     }
 
+    .community-upcoming-empty {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 32px 24px;
+        border: 1px dashed #dfe8ed;
+        border-radius: 12px;
+        background: #fff;
+        color: #647580;
+        text-align: center;
+    }
+
     /* カードの3列グリッド */
     .event-grid {
         display: grid;
@@ -317,11 +328,11 @@
                     <i class="fa-solid fa-sort"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="communitySortMenu">
-                    @foreach (['latest' => 'Latest', 'oldest' => 'Oldest', 'name' => 'Name (A–Z)'] as $value => $label)
+                    @foreach (['latest' => 'Latest', 'oldest' => 'Oldest', 'name' => 'Name A to Z'] as $value => $label)
                         <li>
                             <a class="dropdown-item {{ $sort === $value ? 'active' : '' }}"
                                 href="{{ route('community.index', array_merge(request()->except('page'), ['sort' => $value])) }}">
-                                {{ $label }}
+                                {{ __($label) }}
                             </a>
                         </li>
                     @endforeach
@@ -351,16 +362,13 @@
     {{-- コミュニティのイベント --}}
     <h2 class="community-section-heading">{{ __('Upcoming community events') }}</h2>
 
-    <div class="event-card mt-3">
-        <div class="list-group list-group-flush">
-            @forelse ($upcomingEvents as $event)
-                <x-event-row :event="$event" show-community class="list-group-item py-3 px-4">
-                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm">{{ __('View details') }} &gt;</a>
-                </x-event-row>
-            @empty
-                <p class="text-muted text-center py-4 mb-0">{{ __('There are no upcoming community events yet.') }}</p>
-            @endforelse
-        </div>
+    {{-- プロフィールと同じ画像付きのカードで並べる。どのコミュニティのイベントかはカードの上に出す --}}
+    <div class="event-grid">
+        @forelse ($upcomingEvents as $event)
+            @include('events.partials.post', ['event' => $event])
+        @empty
+            <p class="community-upcoming-empty">{{ __('There are no upcoming community events yet.') }}</p>
+        @endforelse
     </div>
 </div>
 @endsection

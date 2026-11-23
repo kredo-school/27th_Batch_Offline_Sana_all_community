@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 
 class CommunityMember extends Model
@@ -22,4 +23,15 @@ class CommunityMember extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getRoleLabelAttribute(): string
+    {
+        return LocalizedValue::role($this->role);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return LocalizedValue::status($this->status);
+}
+
 }

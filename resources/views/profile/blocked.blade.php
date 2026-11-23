@@ -1,18 +1,19 @@
 @extends('layouts.app')
 @section('title', 'Block list')
+
 @section('content')
+<div class="container py-4">
 <div class="profile-page profile-editor">
-    @include('profile.partials.editor-sidebar')
     <div class="profile-blocked-content">
         <header class="profile-editor-heading">
-            <h1>Block list</h1>
-            <p class="profile-editor-intro">Manage the people you have blocked. Only you can see this list.</p>
-            <a href="{{ route('profile.edit') }}" class="profile-blocked-back" aria-label="Back to Edit Profile" title="Back to Edit Profile"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
+            <h1>{{ __('Block list') }}</h1>
+            <p class="profile-editor-intro">{{ __('Manage the people you have blocked. Only you can see this list.') }}</p>
+            <a href="{{ route('profile.edit') }}" class="profile-blocked-back" aria-label="{{ __('Back to Edit Profile') }}" title="{{ __('Back to Edit Profile') }}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
         </header>
         @if (session('status'))
             <div class="alert alert-success mt-3" role="status">{{ session('status') }}</div>
         @endif
-        <section class="profile-editor-section mt-4" aria-label="Blocked users">
+        <section class="profile-editor-section mt-4" aria-label="{{ __('Blocked users') }}">
             <ul class="profile-blocked-list">
                 @forelse ($blockedUsers as $block)
                     @php
@@ -30,15 +31,16 @@
                         <form action="{{ route('messages.unblock', $blockedUser) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="profile-unblock-button">Unblock</button>
+                            <button type="submit" class="profile-unblock-button">{{ __('Unblock') }}</button>
                         </form>
                     </li>
                 @empty
-                    <li class="profile-blocked-empty">You haven't blocked anyone.</li>
+                    <li class="profile-blocked-empty">{{ __("You haven't blocked anyone.") }}</li>
                 @endforelse
             </ul>
             {{ $blockedUsers->links() }}
         </section>
     </div>
+</div>
 </div>
 @endsection

@@ -106,13 +106,15 @@ class ProfileTest extends TestCase
             ->assertOk()->assertSee('No users found.')->assertViewHas('connections', fn ($users) => $users->total() === 0);
     }
 
-    public function test_other_profiles_hide_sidebar_and_show_their_own_sections(): void
+    public function test_other_profiles_show_the_viewers_own_sidebar_and_the_owners_sections(): void
     {
         $viewer = User::factory()->create();
         $owner = User::factory()->create();
+        // 他の人のプロフィールでも、コミュニティと同じ形にそろえるため自分用のメニューを左に出す（どれも選択中にはしない）
         $this->actingAs($viewer)->get(route('profile.show', $owner))
             ->assertOk()->assertViewHas('activeTab', 'event')
-            ->assertDontSee('aria-label="Personal navigation"', false)
+            ->assertSee('aria-label="Personal navigation"', false)
+            ->assertDontSee('profile-nav-item is-active', false)
             ->assertSee('profile-visitor')
             ->assertSee(route('profile.show', ['id' => $owner->id, 'tab' => 'review']))
             ->assertSee('User profile sections')->assertDontSee('Block list')

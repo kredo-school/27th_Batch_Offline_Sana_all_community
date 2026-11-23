@@ -39,26 +39,26 @@
                 <p class="fw-light">
                     @switch($reviews->rating)
                         @case(1)
-                            RATE: {{ $reviews->rating}} Very Poor<i class="fa-regular fa-thumbs-down"></i><i class="fa-regular fa-thumbs-down"></i>
+                        {{ __('Rating') }}: {{ \App\Support\LocalizedValue::reviewRating(1) }}<i class="fa-regular fa-thumbs-down"></i><i class="fa-regular fa-thumbs-down"></i>
                             @break
                         @case(2)
-                            RATE: {{ $reviews->rating}} Poor<i class="fa-regular fa-thumbs-down"></i>
+                        {{ __('Rating') }}: {{ \App\Support\LocalizedValue::reviewRating(2) }}<i class="fa-regular fa-thumbs-down"></i>
                             @break
 
                         @case(3)
-                            RATE: {{ $reviews->rating}} Average
+                        {{ __('Rating') }}: {{ \App\Support\LocalizedValue::reviewRating(3) }}
                             @break
 
                         @case(4)
-                            RATE: {{ $reviews->rating}} Good<i class="fa-regular fa-thumbs-up"></i>
+                        {{ __('Rating') }}: {{ \App\Support\LocalizedValue::reviewRating(4) }}<i class="fa-regular fa-thumbs-up"></i>
                             @break
 
                         @case(5)
-                            RATE: {{ $reviews->rating}} Very Good <i class="fa-regular fa-thumbs-up"></i><i class="fa-regular fa-thumbs-up"></i>
+                        {{ __('Rating') }}: {{ \App\Support\LocalizedValue::reviewRating(5) }}<i class="fa-regular fa-thumbs-up"></i><i class="fa-regular fa-thumbs-up"></i>
                             @break
                         
                         @default
-                            No review yet
+                            {{ __('No review yet.') }}
                     @endswitch
                 </p>
                 @if ($reviews->product->image)
@@ -73,7 +73,11 @@
 
                 {{-- if the auth is the owner of the reviews, show a delete btn  --}}
                 &middot;
-                <button type="button" class="border-0 bg-transparent text-danger p-0 xsmall" data-bs-toggle="modal" data-bs-target="#delete-review-{{ $reviews->id }}">Delete</button>
+                <button type="button" class="border-0 bg-transparent text-danger p-0 xsmall"
+                    data-bs-toggle="modal" data-bs-target="#delete-review-{{ $reviews->id }}"
+                    title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                </button>
                 @include('admin.reviews.modals.delete', ['review' => $reviews])
             @endif
                 

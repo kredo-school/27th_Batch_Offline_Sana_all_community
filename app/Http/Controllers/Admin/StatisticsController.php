@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StatisticsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $totalPageViews = DB::table('page_views')->count();
         $guestPageViews = DB::table('page_views')->whereNull('user_id')->count();
@@ -15,14 +16,31 @@ class StatisticsController extends Controller
         $totalCategoryViews = DB::table('category_views')->count();
         $trackedCategories = DB::table('category_views')->distinct()->count('category_id');
 
-        $topPages = DB::table('page_views')
+        $detail = $request->query('detail');
+        $detailSections = ['categories', 'pages', 'active-users', 'recent-page-views'];
+        $detail = in_array($detail, $detailSections, true) ? $detail : null;
+        $hasMore = [];
+        $loadSection = function ($query, string $section) use ($detail, &$hasMore) {
+            if ($detail === $section) {
+                $hasMore[$section] = false;
+
+                return $query->paginate(20)->withQueryString();
+            }
+
+            $preview = $query->limit(11)->get();
+            $hasMore[$section] = $preview->count() > 10;
+
+            return $preview->take(10);
+        };
+
+        $topPagesQuery = DB::table('page_views')
             ->select('url', DB::raw('COUNT(*) as view_count'), DB::raw('MAX(created_at) as last_viewed_at'))
             ->groupBy('url')
-            ->orderByDesc('view_count')
-            ->limit(10)
-            ->get();
+            ->orderByDesc('view_count');
 
-        $topCategories = DB::table('category_views')
+        $topPages = $loadSection($topPagesQuery, 'pages');
+
+        $topCategoriesQuery = DB::table('category_views')
             ->join('categories', 'category_views.category_id', '=', 'categories.id')
             ->select(
                 'categories.id',
@@ -31,9 +49,9 @@ class StatisticsController extends Controller
                 DB::raw('COUNT(DISTINCT category_views.user_id) as unique_users')
             )
             ->groupBy('categories.id', 'categories.name')
-            ->orderByDesc('view_count')
-            ->limit(10)
-            ->get();
+            ->orderByDesc('view_count');
+
+        $topCategories = $loadSection($topCategoriesQuery, 'categories');
 
         $pageActivity = DB::table('page_views')
             ->select('user_id', DB::raw('COUNT(*) as page_view_count'))
@@ -45,7 +63,7 @@ class StatisticsController extends Controller
             ->whereNotNull('user_id')
             ->groupBy('user_id');
 
-        $activeUsers = DB::table('users')
+        $activeUsersQuery = DB::table('users')
             ->leftJoinSub($pageActivity, 'page_activity', function ($join) {
                 $join->on('users.id', '=', 'page_activity.user_id');
             })
@@ -63,9 +81,9 @@ class StatisticsController extends Controller
                 DB::raw('COALESCE(page_activity.page_view_count, 0) as page_view_count'),
                 DB::raw('COALESCE(category_activity.category_view_count, 0) as category_view_count')
             )
-            ->orderByRaw('COALESCE(page_activity.page_view_count, 0) + COALESCE(category_activity.category_view_count, 0) DESC')
-            ->limit(10)
-            ->get();
+            ->orderByRaw('COALESCE(page_activity.page_view_count, 0) + COALESCE(category_activity.category_view_count, 0) DESC');
+
+        $activeUsers = $loadSection($activeUsersQuery, 'active-users');
 
         $dailyCategoryCounts = DB::table('category_views')
             ->selectRaw('DATE(created_at) as view_date, COUNT(*) as view_count')
@@ -84,12 +102,12 @@ class StatisticsController extends Controller
         });
         $maxDailyCategoryViews = max(1, (int) $dailyCategoryViews->max('view_count'));
 
-        $recentPageViews = DB::table('page_views')
+        $recentPageViewsQuery = DB::table('page_views')
             ->leftJoin('users', 'page_views.user_id', '=', 'users.id')
             ->select('page_views.url', 'page_views.ip_address', 'page_views.created_at', 'users.name as user_name')
-            ->orderByDesc('page_views.created_at')
-            ->limit(20)
-            ->get();
+            ->orderByDesc('page_views.created_at');
+
+        $recentPageViews = $loadSection($recentPageViewsQuery, 'recent-page-views');
 
         return view('admin.statistics.index', compact(
             'totalPageViews',
@@ -97,6 +115,8 @@ class StatisticsController extends Controller
             'uniquePageViewUsers',
             'totalCategoryViews',
             'trackedCategories',
+            'detail',
+            'hasMore',
             'topPages',
             'topCategories',
             'activeUsers',

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Admin Statistics')
+@section('title', __('Admin') . ' ' . __('Statistics'))
 
 @section('content')
     <style>
@@ -85,40 +85,40 @@
         <main class="admin-main">
             <header class="admin-heading">
                 <div>
-                    <p class="text-uppercase small fw-bold text-success mb-1">Admin console</p>
-                    <h1 class="mb-0 fw-medium">Statistics</h1>
+                    <p class="text-uppercase small fw-bold text-success mb-1">{{ __('Admin console') }}</p>
+                    <h1 class="mb-0 fw-medium">{{ __('Statistics') }}</h1>
                 </div>
             </header>
 
-            <section class="stats-grid" aria-label="Summary statistics">
+            <section class="stats-grid" aria-label="{{ __('Summary statistics') }}">
                 <article class="stats-card">
-                    <div class="stats-card-label">Total page views</div>
+                    <div class="stats-card-label">{{ __('Total page views') }}</div>
                     <div class="stats-card-value">{{ number_format($totalPageViews) }}</div>
                 </article>
                 <article class="stats-card">
-                    <div class="stats-card-label">Guest page views</div>
+                    <div class="stats-card-label">{{ __('Guest page views') }}</div>
                     <div class="stats-card-value">{{ number_format($guestPageViews) }}</div>
                 </article>
                 <article class="stats-card">
-                    <div class="stats-card-label">Logged-in page viewers</div>
+                    <div class="stats-card-label">{{ __('Logged-in page viewers') }}</div>
                     <div class="stats-card-value">{{ number_format($uniquePageViewUsers) }}</div>
                 </article>
                 <article class="stats-card">
-                    <div class="stats-card-label">Category view events</div>
+                    <div class="stats-card-label">{{ __('Category view events') }}</div>
                     <div class="stats-card-value">{{ number_format($totalCategoryViews) }}</div>
                 </article>
                 <article class="stats-card">
-                    <div class="stats-card-label">Categories viewed</div>
+                    <div class="stats-card-label">{{ __('Categories viewed') }}</div>
                     <div class="stats-card-value">{{ number_format($trackedCategories) }}</div>
                 </article>
             </section>
 
             <section class="stats-panel mb-3">
-                <div class="stats-panel-header">Category views — last 7 days</div>
+                <div class="stats-panel-header">{{ __('Category views — last 7 days') }}</div>
                 <div class="stats-panel-body">
                     <div class="chart-bars">
                         @foreach ($dailyCategoryViews as $day)
-                            <div class="chart-column" title="{{ number_format($day->view_count) }} views">
+                            <div class="chart-column" title="{{ __(':count views', ['count' => number_format($day->view_count)]) }}">
                                 <span>{{ $day->view_count }}</span>
                                 <div class="chart-track">
                                     <div class="chart-bar" style="height: {{ max(3, ($day->view_count / $maxDailyCategoryViews) * 100) }}%"></div>
@@ -131,11 +131,11 @@
             </section>
 
             <div class="stats-panels">
-                <section class="stats-panel">
-                    <div class="stats-panel-header">Most viewed categories</div>
+                <section class="stats-panel" id="top-categories">
+                    <div class="stats-panel-header">{{ __('Most viewed categories') }}</div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead><tr><th>Category</th><th>Views</th><th>Users</th></tr></thead>
+                            <thead><tr><th>{{ __('Category') }}</th><th>{{ __('Views') }}</th><th>{{ __('Users') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($topCategories as $category)
                                     <tr>
@@ -144,18 +144,28 @@
                                         <td>{{ number_format($category->unique_users) }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="stats-empty">No category view data yet.</td></tr>
+                                    <tr><td colspan="3" class="stats-empty">{{ __('No category view data yet.') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($detail === 'categories')
+                        <div class="d-flex justify-content-between align-items-center gap-2 p-3">
+                            {{ $topCategories->links() }}
+                            <a href="{{ route('admin.statistics') }}#top-categories">{{ __('Back') }}</a>
+                        </div>
+                    @elseif ($hasMore['categories'])
+                        <div class="pb-3 px-3 text-end">
+                            <a href="{{ route('admin.statistics', ['detail' => 'categories']) }}#top-categories">{{ __('Show more') }}</a>
+                        </div>
+                    @endif
                 </section>
 
-                <section class="stats-panel">
-                    <div class="stats-panel-header">Most viewed pages</div>
+                <section class="stats-panel" id="top-pages">
+                    <div class="stats-panel-header">{{ __('Most viewed pages') }}</div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead><tr><th>URL</th><th>Views</th><th>Last viewed</th></tr></thead>
+                            <thead><tr><th>{{ __('URL') }}</th><th>{{ __('Views') }}</th><th>{{ __('Last viewed') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($topPages as $page)
                                     <tr>
@@ -164,20 +174,30 @@
                                         <td>{{ $page->last_viewed_at ? \Carbon\Carbon::parse($page->last_viewed_at)->format('Y-m-d H:i') : '—' }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="stats-empty">No page view data yet.</td></tr>
+                                    <tr><td colspan="3" class="stats-empty">{{ __('No page view data yet.') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($detail === 'pages')
+                        <div class="d-flex justify-content-between align-items-center gap-2 p-3">
+                            {{ $topPages->links() }}
+                            <a href="{{ route('admin.statistics') }}#top-pages">{{ __('Back') }}</a>
+                        </div>
+                    @elseif ($hasMore['pages'])
+                        <div class="pb-3 px-3 text-end">
+                            <a href="{{ route('admin.statistics', ['detail' => 'pages']) }}#top-pages">{{ __('Show more') }}</a>
+                        </div>
+                    @endif
                 </section>
             </div>
 
             <div class="stats-panels">
-                <section class="stats-panel">
-                    <div class="stats-panel-header">Most active users</div>
+                <section class="stats-panel" id="active-users">
+                    <div class="stats-panel-header">{{ __('Most active users') }}</div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead><tr><th>User</th><th>Page views</th><th>Category views</th></tr></thead>
+                            <thead><tr><th>{{ __('User') }}</th><th>{{ __('Page views') }}</th><th>{{ __('Category views') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($activeUsers as $activeUser)
                                     <tr>
@@ -186,32 +206,52 @@
                                         <td>{{ number_format($activeUser->category_view_count) }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="stats-empty">No user activity data yet.</td></tr>
+                                    <tr><td colspan="3" class="stats-empty">{{ __('No user activity data yet.') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($detail === 'active-users')
+                        <div class="d-flex justify-content-between align-items-center gap-2 p-3">
+                            {{ $activeUsers->links() }}
+                            <a href="{{ route('admin.statistics') }}#active-users">{{ __('Back') }}</a>
+                        </div>
+                    @elseif ($hasMore['active-users'])
+                        <div class="pb-3 px-3 text-end">
+                            <a href="{{ route('admin.statistics', ['detail' => 'active-users']) }}#active-users">{{ __('Show more') }}</a>
+                        </div>
+                    @endif
                 </section>
 
-                <section class="stats-panel">
-                    <div class="stats-panel-header">Recent page views</div>
+                <section class="stats-panel" id="recent-page-views">
+                    <div class="stats-panel-header">{{ __('Recent page views') }}</div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead><tr><th>URL</th><th>Visitor</th><th>IP address</th><th>Date</th></tr></thead>
+                            <thead><tr><th>{{ __('URL') }}</th><th>{{ __('Visitor') }}</th><th>{{ __('IP address') }}</th><th>{{ __('Date') }}</th></tr></thead>
                             <tbody>
                                 @forelse ($recentPageViews as $pageView)
                                     <tr>
                                         <td class="stats-url">{{ $pageView->url }}</td>
-                                        <td>{{ $pageView->user_name ?? 'Guest' }}</td>
+                                        <td>{{ $pageView->user_name ?? __('Guest') }}</td>
                                         <td><code>{{ $pageView->ip_address }}</code></td>
                                         <td>{{ \Carbon\Carbon::parse($pageView->created_at)->format('m/d H:i') }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="4" class="stats-empty">No page view data yet.</td></tr>
+                                    <tr><td colspan="4" class="stats-empty">{{ __('No page view data yet.') }}</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($detail === 'recent-page-views')
+                        <div class="d-flex justify-content-between align-items-center gap-2 p-3">
+                            {{ $recentPageViews->links() }}
+                            <a href="{{ route('admin.statistics') }}#recent-page-views">{{ __('Back') }}</a>
+                        </div>
+                    @elseif ($hasMore['recent-page-views'])
+                        <div class="pb-3 px-3 text-end">
+                            <a href="{{ route('admin.statistics', ['detail' => 'recent-page-views']) }}#recent-page-views">{{ __('Show more') }}</a>
+                        </div>
+                    @endif
                 </section>
             </div>
         </main>

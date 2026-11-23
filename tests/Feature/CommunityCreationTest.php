@@ -16,6 +16,61 @@ class CommunityCreationTest extends TestCase
 {
     use RefreshDatabase;
 
+    // コミュニティのカテゴリーは管理画面で作ったものから選ぶので、テストで使う名前を用意しておく
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach (['Sports', 'Creative', 'Learning'] as $name) {
+            Category::create(['name' => $name]);
+        }
+    }
+
+    public function test_only_admin_categories_can_be_chosen_when_creating(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)
+            ->get(route('community.create'))
+            ->assertOk()
+            ->assertSee('<option value="Creative"', false)
+            // 以前の固定の 6 つのうち、管理画面に無いものは出さない
+            ->assertDontSee('<option value="Technology"', false)
+            ->assertDontSee('<option value="Wellness"', false);
+
+        $this->actingAs($owner)
+            ->post(route('community.store'), [
+                'name' => 'Not Allowed Club',
+                'category' => 'Technology',
+                'description' => 'Uses a category that is not in the admin list.',
+                'visibility' => 'public',
+            ])
+            ->assertSessionHasErrors('category');
+
+        $this->assertDatabaseMissing('communities', ['name' => 'Not Allowed Club']);
+    }
+
+    public function test_editing_keeps_an_old_category_that_is_not_in_the_admin_list(): void
+    {
+        $owner = User::factory()->create();
+        $community = $owner->communitiesOwned()->create(['name' => 'Old Club', 'description' => 'Old.', 'category' => 'Wellness']);
+
+        $this->actingAs($owner)
+            ->get(route('community.edit', $community->id))
+            ->assertSee('<option value="Wellness"', false);
+
+        $this->actingAs($owner)
+            ->put(route('community.update', $community->id), [
+                'name' => 'Old Club Renamed',
+                'category' => 'Wellness',
+                'description' => 'Old.',
+                'visibility' => 'public',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Old Club Renamed', $community->fresh()->name);
+    }
+
     public function test_authenticated_user_is_saved_as_community_owner(): void
     {
         $owner = User::factory()->create();
@@ -193,11 +248,14 @@ class CommunityCreationTest extends TestCase
         $this->assertSame($community->id, $event->community_id);
         $this->assertSame($owner->id, $event->owner_id);
 
+        // プロフィールと同じカードで出す（カードには場所ではなく開催日と説明が出る）
         $this->get(route('community.index'))
             ->assertOk()
             ->assertSee('Community Workshop')
             ->assertSee('Event Hosting Community')
-            ->assertSee('Community Hall');
+            ->assertSee('A hands-on workshop.')
+            ->assertSee($event->start_at->format('M d, Y'))
+            ->assertSee('class="event-card"', false);
     }
 
     public function test_creating_shows_no_success_message(): void
@@ -510,16 +568,26 @@ class CommunityCreationTest extends TestCase
         ];
         $community->events()->create(['title' => 'Still On Picnic', ...$dates]);
         $community->events()->create(['title' => 'Rained Out Picnic', 'status' => 'cancelled', ...$dates]);
+        $community->events()->create([
+            'title' => 'Last Month Picnic', ...$dates,
+            'start_at' => now()->subMonth(), 'end_at' => now()->subMonth()->addHour(), 'join_till' => now()->subMonth(),
+        ]);
+        $community->events()->create(['title' => 'Unfinished Draft Picnic', 'status' => 'draft', ...$dates]);
 
         $response = $this->actingAs($owner)
             ->get(route('community.show', $community->id))
             ->assertOk()
             ->assertSee('Still On Picnic')
-            ->assertDontSee('Rained Out Picnic');
+            // 中止・終了したイベントは、Events タブの下の欄に出る
+            // 印（Cancelled / Ended）はカードの画像の左上に重ねるので、タイトルより前に出る
+            ->assertSeeInOrder(['Past &amp; cancelled events', 'Cancelled', 'Rained Out Picnic', 'Ended', 'Last Month Picnic'], false)
+            ->assertDontSee('Unfinished Draft Picnic');
 
-        // Home タブの Upcoming と Events タブの一覧の両方から外れている
+        // Home タブの Upcoming と Events タブの開催予定の一覧からは外れている
         $this->assertFalse($response->viewData('community')->events->contains('title', 'Rained Out Picnic'));
         $this->assertFalse($response->viewData('allEvents')->contains('title', 'Rained Out Picnic'));
+        // タブの横の数字は、画面に出ているイベント（開催予定 1 + 終了・中止 2）の合計で、下書きは数えない
+        $this->assertSame(3, $response->viewData('eventCount'));
     }
 
     public function test_community_detail_page_links_to_event_details(): void

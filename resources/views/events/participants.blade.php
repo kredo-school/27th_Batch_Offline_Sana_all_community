@@ -59,7 +59,7 @@
 
     @if ($isOwner)
         <div class="participant-card">
-            <h5 class="mb-3">Pending requests ({{ $pending->count() }})</h5>
+            <h5 class="mb-3">{{ __('Pending') }} ({{ $pending->count() }})</h5>
 
             @forelse ($pending as $participant)
                 <div class="participant-row">
@@ -71,12 +71,12 @@
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                        <button type="submit" class="btn btn-primary btn-sm">{{ __('Approve') }}</button>
                     </form>
                     <form action="{{ route('events.participants.reject', [$event, $participant]) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">{{ __('Reject') }}</button>
                     </form>
                 </div>
             @empty
@@ -86,7 +86,7 @@
     @endif
 
     <div class="participant-card">
-        <h5 class="mb-3">Joined ({{ $approved->count() }})</h5>
+        <h5 class="mb-3">{{ __('Joined') }} ({{ $approved->count() }})</h5>
 
         @forelse ($approved as $participant)
             <div class="participant-row">
@@ -103,7 +103,7 @@
 
     @if ($isOwner && $rejected->isNotEmpty())
         <div class="participant-card">
-            <h5 class="mb-3">Rejected ({{ $rejected->count() }})</h5>
+            <h5 class="mb-3">{{ __('Rejected') }} ({{ $rejected->count() }})</h5>
 
             @foreach ($rejected as $participant)
                 <div class="participant-row">
@@ -114,7 +114,7 @@
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn btn-outline-primary btn-sm">Approve</button>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">{{ __('Approve') }}</button>
                     </form>
                 </div>
             @endforeach

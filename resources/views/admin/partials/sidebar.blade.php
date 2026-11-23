@@ -9,13 +9,17 @@
             href="{{ route('admin.categories.index') }}" @if (request()->routeIs('admin.categories.*')) aria-current="page" @endif>
             <i class="fa-solid fa-tags"></i><span>{{ __('Categories') }}</span>
         </a>
+        <a class="admin-nav-link {{ request()->routeIs('admin.languages.*') ? 'active' : '' }}"
+            href="{{ route('admin.languages.index') }}" @if (request()->routeIs('admin.languages.*')) aria-current="page" @endif>
+            <i class="fa-solid fa-language"></i><span>{{ __('Languages') }}</span>
+        </a>
         <a class="admin-nav-link {{ request()->routeIs('admin.events') ? 'active' : '' }}"
             href="{{ route('admin.events') }}" @if (request()->routeIs('admin.events')) aria-current="page" @endif>
             <i class="fa-solid fa-calendar-days"></i><span>{{ __('Events') }}</span>
         </a>
         {{-- <a class="admin-nav-link {{ request()->routeIs('admin.jobs*') ? 'active' : '' }}"
             href="{{ route('admin.jobs') }}" @if (request()->routeIs('admin.jobs*')) aria-current="page" @endif>
-            <i class="fa-solid fa-gears"></i><span>Queue Jobs</span>
+            <i class="fa-solid fa-gears"></i><span>{{ __('Queue Jobs') }}</span>
         </a> --}}
         <a class="admin-nav-link {{ request()->routeIs('admin.communities') ? 'active' : '' }}"
             href="{{ route('admin.communities') }}" @if (request()->routeIs('admin.communities')) aria-current="page" @endif>

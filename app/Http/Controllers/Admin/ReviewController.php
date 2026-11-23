@@ -24,14 +24,14 @@ class ReviewController extends Controller
 
         $review->update($validated);
 
-        return redirect()->route('admin.reviews')->with('status', 'Review updated.');
+        return redirect()->route('admin.reviews')->with('status', __('Review updated.'));
     }
 
     public function destroy(EventReview $review)
     {
         $review->delete();
 
-        return redirect()->route('admin.reviews')->with('status', 'Review deleted.');
+        return redirect()->route('admin.reviews')->with('status', __('Review deleted.'));
     }
 }
 

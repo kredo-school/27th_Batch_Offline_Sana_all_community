@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\Community;
 use App\Models\Comment;
 use App\Models\User;
+use App\Support\LanguageFileWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -135,16 +136,30 @@ class ExampleTest extends TestCase
 
     public function test_admin_can_create_edit_and_delete_categories(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'preferred_language' => 'ja',
+        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.categories.index'))
             ->assertOk()
             ->assertSee(route('admin.categories.create'), false);
 
+        $this->get(route('admin.categories.create'))
+            ->assertOk()
+            ->assertSee('英語でカテゴリーを追加')
+            ->assertSee('<strong class="text-danger fw-bold">英語</strong>', false);
+
+        $this->app->instance(LanguageFileWriter::class, new LanguageFileWriter(sys_get_temp_dir()));
+
         $this->post(route('admin.categories.store'), [
             'name' => 'Community Events',
-            'name_ja' => 'コミュニティイベント',
+            'translations' => [
+                'ja' => 'コミュニティイベント', 'ru' => 'Событие сообщества', 'ar' => 'فعاليات المجتمع',
+                'ko' => '커뮤니티 이벤트', 'pt' => 'Eventos da comunidade', 'es' => 'Eventos de la comunidad',
+                'zh' => '社区活动', 'vi' => 'Sự kiện cộng đồng', 'th' => 'กิจกรรมชุมชน',
+            ],
         ])->assertRedirect(route('admin.categories.index'));
 
         $category = Category::where('name', 'Community Events')->firstOrFail();

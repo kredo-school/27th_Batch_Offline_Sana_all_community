@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -29,9 +30,29 @@ class Community extends Model
         'image', 'icon', 'visibility', 'language',
     ];
 
-    public static function getLocalizedCategoryName(string $category): string
+    public static function getLocalizedCategoryName(?string $category): string
     {
-        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category] ?? $category;
+        if ($category === null || $category === '') {
+            return '';
+        }
+
+        return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category]
+            ?? __($category);
+    }
+
+    public function getLocalizedCategoryAttribute(): string
+    {
+        return self::getLocalizedCategoryName($this->category);
+    }
+
+    public function getVisibilityLabelAttribute(): string
+    {
+        return LocalizedValue::visibility($this->visibility);
+    }
+
+    public function getLanguageLabelAttribute(): string
+    {
+        return LocalizedValue::language($this->language);
     }
 
     public function owner()
@@ -120,6 +141,39 @@ class Community extends Model
 
         return $this->owner_id === $user->id
             || $this->memberships()->where('user_id', $user->id)->whereIn('status', ['approved', 'invited'])->exists();
+    }
+
+    // 副管理者（モデレーター）: オーナーが承認済みメンバーの中から選ぶ
+    public function isModerator(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->memberships()
+            ->where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('role', 'moderator')
+            ->exists();
+    }
+
+    // オーナーか副管理者なら、参加申請の承認とチャットの削除ができる
+    public function canManage(?User $user): bool
+    {
+        return $user !== null && ($this->owner_id === $user->id || $this->isModerator($user));
+    }
+
+    // 参加申請の通知を受け取る人（オーナーと副管理者）
+    public function managerIds()
+    {
+        return $this->memberships()
+            ->where('status', 'approved')
+            ->where('role', 'moderator')
+            ->pluck('user_id')
+            ->push($this->owner_id)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
     }
 
     // オーナーか承認済みメンバーならチャットに参加できる

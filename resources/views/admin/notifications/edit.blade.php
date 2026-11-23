@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Notification')
+@section('title', __('Edit Notification'))
 
 @section('content')
 <section class="category-form-panel mx-auto">
     <div class="card mx-auto">
         <div class="card-body">
-            <h1 class="h3 mb-4">Edit Notification</h1>
+            <h1 class="h3 mb-4">{{ __('Edit Notification') }}</h1>
             <form action="{{ route('admin.notifications.update', $notification) }}" method="POST">
                 @csrf
                 @method('PATCH')
-                @include('admin.notifications.form', ['submitLabel' => 'Save'])
+                @include('admin.notifications.form', ['submitLabel' => __('Save')])
             </form>
         </div>
     </div>

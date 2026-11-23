@@ -18,10 +18,10 @@
 
     <!-- コミュニティ・メインカード HEADER -->
     <div class="card bg-white border shadow-sm rounded-3 overflow-hidden mb-4">
-        <!-- Cover Banner (背景カバー画像エリア：写真があれば写真の縦横比に合わせて枠の高さが変わる) -->
-        <div class="position-relative d-flex align-items-center justify-content-center overflow-hidden {{ $community->image ? 'bg-white' : 'bg-light community-cover-empty' }}">
+        <!-- Cover Banner (背景カバー画像エリア：プロフィールと同じく高さ 260px で固定し、写真は切らずに全体を出す) -->
+        <div class="position-relative d-flex align-items-center justify-content-center overflow-hidden community-cover {{ $community->image ? 'bg-white' : 'bg-light' }}">
             @if ($community->image)
-                <img src="{{ asset('storage/' . $community->image) }}" alt="{{ $community->name }} cover image" class="d-block w-100 object-fit-contain" style="max-height: 260px;">
+                <img src="{{ asset('storage/' . $community->image) }}" alt="{{ $community->name }} cover image" class="d-block w-100 h-100 object-fit-contain">
             @else
                 <h1 class="display-3 fw-bold text-secondary opacity-50 mb-0">
                     {{ strtoupper(substr($community->name, 0, 2)) }}
@@ -39,7 +39,9 @@
                         <x-icon :community="$community" class="w-100 h-100 rounded-2 fs-3" />
                     </div>
                     <div class="mb-1">
-                        <span class="badge bg-light text-secondary border mb-1">{{ $community->category }}</span>
+                        @if ($community->category)
+                            <span class="badge bg-light text-secondary border mb-1">{{ $community->localized_category }}</span>
+                        @endif
                         <h2 class="fw-bold text-dark mb-1 h3">{{ $community->name }}</h2>
                         <p class="text-muted small mb-0">{{ $community->description }}</p>
                     </div>
@@ -50,16 +52,16 @@
                     @if (auth()->id() === $community->owner_id)
                         <!-- 編集ボタン (Edit community) -->
                         <a href="{{ route('community.edit', $community->id) }}" class="btn btn-outline-secondary btn-sm fw-bold px-3">
-                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit community
+                            <i class="fa-solid fa-pen-to-square me-1"></i> {{ __('Edit community') }}
                         </a>
-                        <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ Post an event</a>
+                        <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ {{ __('Post an event') }}</a>
                     @elseif ($membershipStatus === 'approved')
                         <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-check me-1"></i> Joined</span>
                         <form action="{{ route('community.leave', $community->id) }}" method="POST"
                             data-confirm="true" data-confirm-message="Leave this community?">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Leave</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">{{ __('Leave') }}</button>
                         </form>
                     @elseif ($membershipStatus === 'invited')
                         {{-- オーナーから招待されている人: 承諾すると参加、断ると招待が消える --}}
@@ -75,11 +77,11 @@
                             <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Decline</button>
                         </form>
                     @elseif ($membershipStatus === 'pending')
-                        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2">Request pending</span>
+                        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2">{{ __('Request pending') }}</span>
                         <form action="{{ route('community.leave', $community->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">Cancel request</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm fw-bold px-3">{{ __('Cancel request') }}</button>
                         </form>
                     @elseif ($community->visibility === 'private')
                         <span class="badge rounded-pill bg-light text-secondary border px-3 py-2"><i class="fa-solid fa-lock me-1"></i> Invite only</span>
@@ -87,7 +89,7 @@
                         <form action="{{ route('community.join', $community->id) }}" method="POST">
                             @csrf
                             <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3">
-                                {{ $community->visibility === 'approval' ? 'Request to join' : '+ Join community' }}
+                                {{ $community->visibility === 'approval' ? __('Request to join') : '+ ' . __('Join community') }}
                             </button>
                         </form>
                     @endif
@@ -103,7 +105,7 @@
                     <button class="nav-link text-muted border-0 px-3 pb-2" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">{{ __('Events') }} <span class="badge bg-light text-dark border rounded-pill">{{ $eventCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Chat
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">{{ __('Chat') }}
                         @if ($canChat)
                             <span class="badge rounded-pill community-chat-unread" @if ($unreadCount === 0) hidden @endif><span class="community-chat-unread-count">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span><span class="visually-hidden"> unread messages</span></span>
                             {{-- 誰からの未読か（最近送った人の名前と、他の人数） --}}
@@ -112,19 +114,55 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">Members <span class="badge bg-light text-dark border rounded-pill">{{ $memberCount }}</span></button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">{{ __('Members') }} <span class="badge bg-light text-dark border rounded-pill">{{ $memberCount }}</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link text-muted border-0 px-3 pb-2" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">About</button>
+                    <button class="nav-link text-muted border-0 px-3 pb-2" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">{{ __('About') }}</button>
                 </li>
             </ul>
         </div>
     </div>
 
     <style>
-        /* カバー写真がないときの枠の高さ */
-        .community-cover-empty {
-            height: 180px;
+        /* 背景写真の枠の高さ（写真の有る無しに関係なく、プロフィールの背景写真と同じ 260px） */
+        .community-cover {
+            height: 260px;
+        }
+
+        /* イベントのカードの並び（プロフィールのカードの並びと同じ間隔） */
+        .community-event-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .community-event-grid--narrow {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .community-event-empty {
+            grid-column: 1 / -1;
+            margin: 0;
+            padding: 32px 24px;
+            border: 1px dashed #dfe8ed;
+            border-radius: 12px;
+            background: #fff;
+            color: #647580;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .community-event-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .community-event-grid,
+            .community-event-grid--narrow {
+                grid-template-columns: 1fr;
+            }
         }
 
         #communityTab .nav-link.active {
@@ -142,15 +180,14 @@
         <!-- 左メインエリア -->
         <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-bold text-dark h5 mb-0">Upcoming events</h4>
+                <h4 class="fw-bold text-dark h5 mb-0">{{ __('Upcoming Events') }}</h4>
             </div>
-            <div class="card bg-white border shadow-sm rounded-3 p-3 mb-4">
+            {{-- プロフィールと同じ画像付きのカードで並べる（横幅が狭いので 2 列） --}}
+            <div class="community-event-grid community-event-grid--narrow mb-4">
                 @forelse ($community->events as $event)
-                    <x-event-row :event="$event" class="py-3 border-bottom">
-                        <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
-                    </x-event-row>
+                    @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
                 @empty
-                    <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
+                    <p class="community-event-empty">There are no upcoming events for this community yet.</p>
                 @endforelse
             </div>
         </div>
@@ -159,28 +196,28 @@
         <div class="col-lg-4">
             <!-- About Card -->
             <div class="card bg-white border shadow-sm rounded-3 p-4 mb-4">
-                <h5 class="fw-bold text-dark h6 mb-3">About this community</h5>
+                <h5 class="fw-bold text-dark h6 mb-3">{{ __('About this community') }}</h5>
                 <p class="text-muted small mb-4">{{ $community->description }}</p>
 
                 <div class="d-flex flex-column gap-2 small border-top pt-3">
                     <div class="d-flex justify-content-between text-muted">
-                        <span><i class="fa-regular fa-calendar me-2"></i> Events</span>
+                        <span><i class="fa-regular fa-calendar me-2"></i> {{ __('Events') }}</span>
                         <strong class="text-dark">{{ $eventCount }}</strong>
                     </div>
                     @if ($community->location)
                         <div class="d-flex justify-content-between text-muted">
-                            <span><i class="fa-solid fa-location-dot me-2"></i> Area</span>
+                            <span><i class="fa-solid fa-location-dot me-2"></i> {{ __('Area') }}</span>
                             <strong class="text-dark">{{ $community->location }}</strong>
                         </div>
                     @endif
                     <div class="d-flex justify-content-between text-muted">
-                        <span><i class="fa-solid fa-lock me-2"></i> Access</span>
-                        <strong class="text-dark">{{ ['public' => 'Public', 'approval' => 'Approval required', 'private' => 'Private'][$community->visibility] ?? 'Public' }}</strong>
+                        <span><i class="fa-solid fa-lock me-2"></i> {{ __('Access') }}</span>
+                        <strong class="text-dark">{{ $community->visibility_label }}</strong>
                     </div>
                 </div>
                 @if ($community->guidelines)
                     <div class="border-top mt-3 pt-3">
-                        <h6 class="fw-bold text-dark">Welcome & guidelines</h6>
+                        <h6 class="fw-bold text-dark">{{ __('Welcome & guideline') }}</h6>
                         <p class="text-muted small mb-0">{!! nl2br(e($community->guidelines)) !!}</p>
                     </div>
                 @endif
@@ -188,16 +225,26 @@
 
             <!-- Organizers Card -->
             <div class="card bg-white border shadow-sm rounded-3 p-4">
-                <h5 class="fw-bold text-dark h6 mb-3">Organizers</h5>
+                <h5 class="fw-bold text-dark h6 mb-3">{{ __('Organizers') }}</h5>
                 @if ($community->owner)
                     <a href="{{ route('profile.show', $community->owner->id) }}" class="d-flex align-items-center gap-3 community-profile-link">
                         <x-avatar :user="$community->owner" />
                         <div>
                             <strong class="d-block text-dark small">{{ $community->owner->name }}</strong>
-                            <small class="text-muted" style="font-size: 0.75rem;">Community organizer</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
                         </div>
                     </a>
                 @endif
+                {{-- 副管理者もオーガナイザーとして並べる --}}
+                @foreach ($community->members->filter(fn ($member) => $member->id !== $community->owner_id && $member->pivot->role === 'moderator') as $moderator)
+                    <a href="{{ route('profile.show', $moderator->id) }}" class="d-flex align-items-center gap-3 community-profile-link mt-3">
+                        <x-avatar :user="$moderator" />
+                        <div>
+                            <strong class="d-block text-dark small">{{ $moderator->name }}</strong>
+                            <small class="text-muted" style="font-size: 0.75rem;">Moderator</small>
+                        </div>
+                    </a>
+                @endforeach
             </div>
         </div>
     </div>
@@ -205,15 +252,25 @@
 
     <!-- Events タブ: 今後のイベント一覧 -->
     <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
-        <div class="card bg-white border shadow-sm rounded-3 p-3">
+        {{-- プロフィールと同じ画像付きのカードで並べる --}}
+        <div class="community-event-grid">
             @forelse ($allEvents as $event)
-                <x-event-row :event="$event" show-description class="py-3 border-bottom">
-                    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm text-nowrap">View details &gt;</a>
-                </x-event-row>
+                @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
             @empty
                 <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
             @endforelse
         </div>
+
+        {{-- 終了・中止したイベント（タブの横の数字に含まれているイベントは、どこかに必ず出す） --}}
+        @if ($pastEvents->isNotEmpty())
+            <h6 class="fw-bold text-dark mt-4 mb-3">Past &amp; cancelled events</h6>
+            <div class="community-event-grid">
+                @foreach ($pastEvents as $event)
+                    {{-- プロフィールと同じイベントの掲載（画像の左上に Cancelled / Ended の印が付く） --}}
+                    @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
+                @endforeach
+            </div>
+        @endif
     </div>
 
     <!-- Chat タブ: オーナーと承認済みメンバーだけが使える -->
@@ -229,10 +286,23 @@
                     <div class="community-chat-empty">Loading messages...</div>
                 </div>
                 <div class="community-chat-status" role="status" aria-live="polite"></div>
-                <form action="{{ route('community.chat.store', $community->id) }}" method="POST" class="community-chat-form">
+                {{-- 送る前に選んだ画像を確認できる（× で取り消し） --}}
+                <div class="community-chat-attachment" hidden>
+                    <img alt="Selected photo">
+                    <span class="community-chat-attachment-name"></span>
+                    <button type="button" class="community-chat-attachment-remove" aria-label="Remove photo" title="Remove photo">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <form action="{{ route('community.chat.store', $community->id) }}" method="POST" enctype="multipart/form-data" class="community-chat-form">
                     @csrf
-                    <textarea name="message" class="form-control" rows="1" maxlength="2000" required
-                        placeholder="Write a message..." aria-label="Write a message"></textarea>
+                    <label class="btn community-chat-attach" title="Attach a photo">
+                        <i class="fa-regular fa-image" aria-hidden="true"></i>
+                        <span class="visually-hidden">Attach a photo</span>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+                    </label>
+                    <textarea name="message" class="form-control" rows="1" maxlength="2000"
+                        placeholder="{{ __('Write a message...') }}" aria-label="Write a message"></textarea>
                     <button type="submit" class="btn community-chat-send" aria-label="Send message">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -251,24 +321,24 @@
         {{-- 招待（オーナーだけに表示）: ユーザー名で招待し、承諾待ちの人を取り消せる --}}
         @if (auth()->id() === $community->owner_id)
             <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-invite">
-                <h6 class="fw-bold text-dark mb-1">Invite members</h6>
+                <h6 class="fw-bold text-dark mb-1">{{ __('Invite members') }}</h6>
                 <p class="text-muted small mb-2">
                     {{ $community->visibility === 'private'
                         ? 'This community is invite only. Only people you invite can join.'
-                        : 'Invited people can join right away without sending a request.' }}
+                        : __('Invited people can join right away without sending a request.') }}
                 </p>
                 <form action="{{ route('community.invitations.store', $community->id) }}" method="POST" class="d-flex gap-2">
                     @csrf
                     <div class="flex-grow-1">
-                        <label for="invite-username" class="visually-hidden">Username</label>
+                        <label for="invite-username" class="visually-hidden">{{ __('Username')}}</label>
                         <input type="text" id="invite-username" name="username" value="{{ old('username') }}" maxlength="255" required
-                            placeholder="Username" autocomplete="off"
+                            placeholder="{{ __('Username') }}" autocomplete="off"
                             class="form-control form-control-sm @error('username', 'invite') is-invalid @enderror">
                         @error('username', 'invite')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3 align-self-start">Invite</button>
+                    <button type="submit" class="btn btn-primary btn-sm text-white fw-bold px-3 align-self-start">{{ __('Invite') }}</button>
                 </form>
 
                 @if ($invitedMembers->isNotEmpty())
@@ -291,7 +361,7 @@
         {{-- 参加申請（オーナーだけに表示） --}}
         @if ($pendingMembers->isNotEmpty())
             <div class="card bg-white border shadow-sm rounded-3 p-3 mb-3 community-requests">
-                <h6 class="fw-bold text-dark mb-2">Join requests <span class="badge rounded-pill community-joined-badge">{{ $pendingMembers->count() }}</span></h6>
+                <h6 class="fw-bold text-dark mb-2">{{ __('Join requests') }} <span class="badge rounded-pill community-joined-badge">{{ $pendingMembers->count() }}</span></h6>
                 @foreach ($pendingMembers as $requester)
                     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
                         <x-avatar :user="$requester" />
@@ -299,12 +369,12 @@
                         <form action="{{ route('community.members.approve', [$community->id, $requester->id]) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" class="btn btn-primary btn-sm text-white">Approve</button>
+                            <button type="submit" class="btn btn-primary btn-sm text-white">{{ __('Approve') }}</button>
                         </form>
                         <form action="{{ route('community.members.remove', [$community->id, $requester->id]) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">Decline</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('Decline') }}</button>
                         </form>
                     </div>
                 @endforeach
@@ -318,18 +388,59 @@
                         <x-avatar :user="$member" />
                         <div>
                             <strong class="d-block text-dark small">{{ $member->name }}</strong>
-                            <small class="text-muted" style="font-size: 0.75rem;">
-                                {{ $member->id === $community->owner_id ? 'Community organizer' : ucfirst($member->pivot->role ?? 'member') }}
-                            </small>
+                            @if ($member->id === $community->owner_id)
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
+                            @elseif (($member->pivot->role ?? 'member') === 'moderator')
+                                <span class="badge rounded-pill community-moderator-badge"><i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>{{ __('Moderator') }}</span>
+                            @else
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ __('Member') }}</small>
+                            @endif
                         </div>
                     </a>
+                    {{-- オーナーだけ: 副管理者にする・外す、オーナーを渡す、メンバーから外す --}}
                     @if (auth()->id() === $community->owner_id && $member->id !== $community->owner_id)
-                        <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
-                            data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-link btn-sm text-muted text-decoration-none">Remove</button>
-                        </form>
+                        @php($isModerator = ($member->pivot->role ?? 'member') === 'moderator')
+                        <div class="dropdown">
+                            {{-- 気づきやすいように、文字付きの枠のボタンにする --}}
+                            <button class="btn btn-sm community-member-menu dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Manage') }} {{ $member->name }}">
+                                <i class="fa-solid fa-user-gear me-1" aria-hidden="true"></i>{{ __('Manage') }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form action="{{ route('community.members.role', [$community->id, $member->id]) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="role" value="{{ $isModerator ? 'member' : 'moderator' }}">
+                                        <button type="submit" class="dropdown-item small">
+                                            <i class="fa-solid fa-shield-halved me-2 text-muted" aria-hidden="true"></i>{{ $isModerator ? __('Remove moderator') : __('Make moderator') }}
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="{{ route('community.owner.transfer', $community->id) }}" method="POST"
+                                        data-confirm="true" data-confirm-message="Make {{ $member->name }} the owner of this community? You will stay as a regular member and can no longer edit the community.">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="user_id" value="{{ $member->id }}">
+                                        <button type="submit" class="dropdown-item small">
+                                            <i class="fa-solid fa-crown me-2 text-muted" aria-hidden="true"></i>{{ __('Make owner') }}
+                                        </button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
+                                        data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="dropdown-item small text-danger">
+                                            <i class="fa-solid fa-user-minus me-2" aria-hidden="true"></i>{{ __('Remove from community') }}
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     @endif
                 </div>
             @endforeach
@@ -339,10 +450,10 @@
     <!-- About タブ -->
     <div class="tab-pane fade" id="about" role="tabpanel" aria-labelledby="about-tab">
         <div class="card bg-white border shadow-sm rounded-3 p-4">
-            <h5 class="fw-bold text-dark h6 mb-3">About this community</h5>
+            <h5 class="fw-bold text-dark h6 mb-3">{{ __('About this community') }}</h5>
             <p class="text-muted small">{!! nl2br(e($community->description)) !!}</p>
             @if ($community->guidelines)
-                <h6 class="fw-bold text-dark mt-4">Welcome & guidelines</h6>
+                <h6 class="fw-bold text-dark mt-4">{{ __('Welcome & guideline') }}</h6>
                 <p class="text-muted small mb-0">{!! nl2br(e($community->guidelines)) !!}</p>
             @endif
         </div>
@@ -664,6 +775,91 @@
         color: #fff;
     }
 
+    /* 画像を添付するボタン */
+    .community-chat-attach {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        place-items: center;
+        padding: 0;
+        border: 1px solid #dee2e6;
+        border-radius: 50%;
+        color: #6c757d;
+        font-size: 1.05rem;
+    }
+
+    .community-chat-attach:hover,
+    .community-chat-attach:focus-within {
+        border-color: #F58634;
+        color: #F58634;
+    }
+
+    /* 送る前の画像の確認 */
+    .community-chat-attachment {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 16px 0;
+        padding: 8px 10px;
+        border: 1px solid #fbd3b4;
+        border-radius: 12px;
+        background: #fff8f2;
+        font-size: 0.82rem;
+    }
+
+    .community-chat-attachment[hidden] {
+        display: none;
+    }
+
+    .community-chat-attachment img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    .community-chat-attachment-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        color: #495057;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .community-chat-attachment-remove {
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+    }
+
+    .community-chat-attachment-remove:hover {
+        color: #dc3545;
+    }
+
+    .community-chat-attachment:not([hidden]) + .community-chat-form {
+        border-top: 0;
+    }
+
+    /* チャットの中の画像（押すと元の大きさで開く） */
+    .community-chat-image {
+        display: block;
+        max-width: min(280px, 100%);
+    }
+
+    .community-chat-image img {
+        display: block;
+        max-width: 100%;
+        max-height: 260px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
+    .community-chat-image + p {
+        margin-top: 6px !important;
+    }
+
     .community-chat-hint {
         padding: 0 16px 10px 32px;
         color: #6c757d;
@@ -691,6 +887,35 @@
     .community-joined-badge {
         background: #fdebdc;
         color: #F58634;
+    }
+
+    /* 副管理者（モデレーター）の印 */
+    .community-moderator-badge {
+        background: #e7f1ff;
+        color: #0a58ca;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    /* メンバーの管理ボタン（オーナーだけに表示）: オレンジの枠で目立たせる */
+    /* Bootstrap のボタンの変数で色を決める（押したとき・メニューを開いたときも同じ色にそろう） */
+    .community-member-menu {
+        --bs-btn-padding-x: 12px;
+        --bs-btn-padding-y: 4px;
+        --bs-btn-font-size: 0.8rem;
+        --bs-btn-font-weight: 600;
+        --bs-btn-border-radius: 999px;
+        --bs-btn-color: #d96a1c;
+        --bs-btn-bg: #fff;
+        --bs-btn-border-color: #F58634;
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: #F58634;
+        --bs-btn-hover-border-color: #F58634;
+        --bs-btn-active-color: #fff;
+        --bs-btn-active-bg: #F58634;
+        --bs-btn-active-border-color: #F58634;
+        --bs-btn-focus-shadow-rgb: 245, 134, 52;
+        white-space: nowrap;
     }
 </style>
 
@@ -816,9 +1041,31 @@
             row.className = 'community-chat-row';
             const bubble = document.createElement('div');
             bubble.className = 'community-chat-bubble';
-            const body = document.createElement('p');
-            body.textContent = message.body;
-            bubble.append(body);
+            // 画像は押すと別のタブで元の大きさのまま開く
+            if (message.image_url) {
+                const imageLink = document.createElement('a');
+                imageLink.className = 'community-chat-image';
+                imageLink.href = message.image_url;
+                imageLink.target = '_blank';
+                imageLink.rel = 'noopener';
+                const image = document.createElement('img');
+                image.src = message.image_url;
+                image.alt = `Photo from ${message.sender.name}`;
+                image.loading = 'lazy';
+                // 画像が読み込まれて高さが変わっても、一番下を見ていたら一番下のままにする
+                image.addEventListener('load', () => {
+                    if (list.scrollHeight - list.scrollTop - list.clientHeight < image.height + 60) {
+                        list.scrollTop = list.scrollHeight;
+                    }
+                }, { once: true });
+                imageLink.append(image);
+                bubble.append(imageLink);
+            }
+            if (message.body) {
+                const body = document.createElement('p');
+                body.textContent = message.body;
+                bubble.append(body);
+            }
 
             const side = document.createElement('div');
             side.className = 'community-chat-side';
@@ -945,7 +1192,8 @@
         const saveEdit = async (editor) => {
             const message = messages.find((candidate) => candidate.id === editing.id);
             const body = editor.querySelector('textarea').value.trim();
-            if (!body) {
+            // 画像付きのメッセージは文字を空にしてもよい
+            if (!body && !message.image_url) {
                 status.textContent = 'A message cannot be empty.';
                 return;
             }
@@ -1093,11 +1341,62 @@
             }
         };
 
+        // 画像の添付（選んだら送る前に小さく表示し、× で取り消せる）
+        const fileInput = form.querySelector('input[type="file"]');
+        const attachment = chat.querySelector('.community-chat-attachment');
+        const maxImageSize = 5 * 1024 * 1024;
+        let previewUrl = null;
+        const clearAttachment = () => {
+            fileInput.value = '';
+            attachment.hidden = true;
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+        };
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                clearAttachment();
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                clearAttachment();
+                status.textContent = 'Please choose an image file.';
+                return;
+            }
+            if (file.size > maxImageSize) {
+                clearAttachment();
+                status.textContent = 'Photos must be 5 MB or smaller.';
+                return;
+            }
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            previewUrl = URL.createObjectURL(file);
+            attachment.querySelector('img').src = previewUrl;
+            attachment.querySelector('.community-chat-attachment-name').textContent = file.name;
+            attachment.hidden = false;
+            status.textContent = '';
+            input.focus();
+        });
+        attachment.querySelector('.community-chat-attachment-remove').addEventListener('click', () => {
+            clearAttachment();
+            input.focus();
+        });
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const message = input.value.trim();
-            if (!message) {
+            const image = fileInput.files[0];
+            if (!message && !image) {
                 return;
+            }
+            // 画像があるときはファイルごと送れる FormData で送る
+            const payload = new FormData();
+            payload.append('message', message);
+            if (image) {
+                payload.append('image', image);
             }
             button.disabled = true;
             try {
@@ -1106,15 +1405,16 @@
                     credentials: 'same-origin',
                     headers: {
                         Accept: 'application/json',
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({ message }),
+                    body: payload,
                 });
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data.message);
+                    // 入力の確認で弾かれたときは、最初のエラーの文を出す
+                    throw new Error(Object.values(data.errors ?? {}).flat()[0] ?? data.message);
                 }
+                clearAttachment();
                 // 送信の間に届いた他の人のメッセージを先に取り込んでから自分の分を足す
                 await loadMessages();
                 appendMessage(data.message);

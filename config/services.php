@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'libretranslate' => [
+        'url' => env('LIBRETRANSLATE_URL', 'http://localhost:5001'),
+        'key' => env('LIBRETRANSLATE_API_KEY'),
+    ],
+
+    'google_translate' => [
+        'enabled' => env('GOOGLE_TRANSLATE_ENABLED', true),
+    ],
+
 ];

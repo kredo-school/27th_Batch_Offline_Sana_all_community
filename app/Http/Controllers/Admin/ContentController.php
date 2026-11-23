@@ -13,6 +13,7 @@ use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ContentController extends Controller
 {
@@ -20,7 +21,7 @@ class ContentController extends Controller
     {
         $query = Category::with(['translations' => function ($query) {
             $query->where('field', 'name')
-                ->where('target_language', 'ja');
+                ->where('target_language', app()->getLocale());
         }]);
 
         if ($search = trim((string) $request->query('search'))) {
@@ -28,8 +29,7 @@ class ContentController extends Controller
         }
 
         return $this->listing($query, 'Categories', [
-            'Name' => 'name',
-            'Japanese Name' => 'japanese_name',
+            'Name' => 'localized_name',
             'Created' => 'created_at',
         ], [
             'latest' => ['created_at', 'desc'],
@@ -216,19 +216,19 @@ class ContentController extends Controller
     {
         $validated = $request->validate([
             'content' => 'required|string|max:1000',
-            'language' => 'required|string|max:5',
+            'language' => ['required', Rule::in(array_keys(config('app.supported_locales')))],
         ]);
 
         $comment->update($validated);
 
-        return redirect()->route('admin.comments')->with('status', 'Comment updated.');
+        return redirect()->route('admin.comments')->with('status', __('Comment updated.'));
     }
 
     public function destroyComment(Comment $comment)
     {
         $comment->delete();
 
-        return redirect()->route('admin.comments')->with('status', 'Comment deleted.');
+        return redirect()->route('admin.comments')->with('status', __('Comment deleted.'));
     }
 
     public function reviews(Request $request)

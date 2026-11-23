@@ -55,6 +55,8 @@ class CommunityChatController extends Controller
         abort_unless($community->hasMember($request->user()), 403);
 
         $syncedAt = now();
+        // 他の人の発言を削除できるか（オーナー・副管理者）。メッセージごとに調べ直さない
+        $canManage = $community->canManage($request->user());
         $since = rescue(fn () => Carbon::parse($request->query('since')), null, false);
         $deletedIds = $request->filled('since') && $since
             ? $community->messages()->onlyTrashed()->where('deleted_at', '>=', $since)->pluck('id')
@@ -79,8 +81,8 @@ class CommunityChatController extends Controller
             : collect();
 
         return response()->json([
-            'messages' => $messages->map(fn (CommunityMessage $message) => $this->serialize($message, $request->user()->id, $community->owner_id)),
-            'updated_messages' => $updatedMessages->map(fn (CommunityMessage $message) => $this->serialize($message, $request->user()->id, $community->owner_id)),
+            'messages' => $messages->map(fn (CommunityMessage $message) => $this->serialize($message, $request->user()->id, $canManage)),
+            'updated_messages' => $updatedMessages->map(fn (CommunityMessage $message) => $this->serialize($message, $request->user()->id, $canManage)),
             'deleted_ids' => $deletedIds,
             'synced_at' => $syncedAt->toIso8601String(),
         ]);
@@ -94,13 +96,20 @@ class CommunityChatController extends Controller
         $community = Community::findOrFail($id);
         abort_unless($community->hasMember($request->user()), 403);
 
+        // 文字だけ、画像だけ、文字と画像の両方のどれでも送れる
         $validated = $request->validate([
-            'message' => 'required|string|max:2000',
+            'message' => 'nullable|string|max:2000|required_without:image',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ], [
+            'message.required_without' => 'Write a message or attach a photo.',
         ]);
 
         $message = $community->messages()->create([
             'user_id' => $request->user()->id,
-            'message' => trim($validated['message']),
+            'message' => trim((string) ($validated['message'] ?? '')),
+            'image' => $request->hasFile('image')
+                ? $request->file('image')->store('communities/chat', 'public')
+                : null,
         ]);
 
         $recipientIds = $community->memberships()
@@ -123,9 +132,10 @@ class CommunityChatController extends Controller
         }
 
         if ($request->expectsJson()) {
+            $canManage = $community->canManage($request->user());
             $message->load(['user:id,name,username', 'user.profile']);
 
-            return response()->json(['message' => $this->serialize($message, $request->user()->id, $community->owner_id)], 201);
+            return response()->json(['message' => $this->serialize($message, $request->user()->id, $canManage)], 201);
         }
 
         return redirect()->to(route('community.show', $community->id) . '#chat');
@@ -141,16 +151,18 @@ class CommunityChatController extends Controller
         $message = $community->messages()->findOrFail($messageId);
         abort_unless((int) $message->user_id === $request->user()->id, 403);
 
+        // 画像付きのメッセージは、文字を消して画像だけにしてもよい
         $validated = $request->validate([
-            'message' => 'required|string|max:2000',
+            'message' => [$message->image ? 'nullable' : 'required', 'string', 'max:2000'],
         ]);
 
-        $message->update(['message' => trim($validated['message'])]);
+        $message->update(['message' => trim((string) ($validated['message'] ?? ''))]);
 
         if ($request->expectsJson()) {
+            $canManage = $community->canManage($request->user());
             $message->load(['user:id,name,username', 'user.profile']);
 
-            return response()->json(['message' => $this->serialize($message, $request->user()->id, $community->owner_id)]);
+            return response()->json(['message' => $this->serialize($message, $request->user()->id, $canManage)]);
         }
 
         return redirect()->to(route('community.show', $community->id) . '#chat');
@@ -212,19 +224,19 @@ class CommunityChatController extends Controller
             'community_notification_count' => UserNotification::query()
                 ->where('user_id', $userId)
                 ->whereNull('read_at')
-                ->whereIn('type', UserNotification::COMMUNITY_TYPES)
+                ->communityFilter()
                 ->count(),
         ]);
     }
 
     /**
-     * メッセージ削除（送った本人かコミュニティのオーナーだけ）
+     * メッセージ削除（送った本人か、コミュニティのオーナー・副管理者だけ）
      */
     public function destroy(Request $request, $id, $messageId)
     {
         $community = Community::findOrFail($id);
         $message = $community->messages()->findOrFail($messageId);
-        abort_unless(in_array($request->user()->id, [$message->user_id, $community->owner_id], true), 403);
+        abort_unless((int) $message->user_id === $request->user()->id || $community->canManage($request->user()), 403);
 
         $message->delete();
 
@@ -235,7 +247,7 @@ class CommunityChatController extends Controller
         return redirect()->to(route('community.show', $community->id) . '#chat');
     }
 
-    private function serialize(CommunityMessage $message, int $currentUserId, ?int $ownerId = null): array
+    private function serialize(CommunityMessage $message, int $currentUserId, bool $canManage = false): array
     {
         $user = $message->user;
         $avatar = $user?->profile?->avatar;
@@ -246,11 +258,12 @@ class CommunityChatController extends Controller
         return [
             'id' => $message->id,
             'body' => $message->message,
+            'image_url' => $message->imageUrl(),
             'datetime' => $message->created_at?->toIso8601String(),
             'is_mine' => (int) $message->user_id === $currentUserId,
             'is_edited' => (bool) $message->updated_at?->gt($message->created_at),
             'can_edit' => (int) $message->user_id === $currentUserId,
-            'can_delete' => (int) $message->user_id === $currentUserId || $ownerId === $currentUserId,
+            'can_delete' => (int) $message->user_id === $currentUserId || $canManage,
             'update_url' => route('community.chat.update', [$message->community_id, $message->id]),
             'delete_url' => route('community.chat.destroy', [$message->community_id, $message->id]),
             'sender' => [

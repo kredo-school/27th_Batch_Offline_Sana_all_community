@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -25,4 +26,9 @@ class Comment extends Model
     {
         return $this->morphMany(Translation::class, 'translatable');
     }
+
+    public function getLanguageLabelAttribute(): string
+    {
+        return LocalizedValue::language($this->language);
+}
 }

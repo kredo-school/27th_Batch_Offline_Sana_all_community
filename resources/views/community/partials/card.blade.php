@@ -2,11 +2,11 @@
 @php
     $isOwner = auth()->id() === $community->owner_id;
     $memberCount = $community->approved_members_count + ($community->owner_is_member ? 0 : 1);
-    $visibility = [
-        'public' => ['Public', 'status-info'],
-        'approval' => ['Approval required', 'status-warning'],
-        'private' => ['Private', 'status-closed'],
-    ][$community->visibility] ?? ['Public', 'status-info'];
+    $visibilityClass = [
+        'public' => 'status-info',
+        'approval' => 'status-warning',
+        'private' => 'status-closed',
+    ][$community->visibility] ?? 'status-info';
 @endphp
 
 <article class="event-card">
@@ -29,7 +29,7 @@
 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="communityMenu{{ $community->id }}">
                     <li>
-                        <a href="{{ route('community.edit', $community->id) }}" class="dropdown-item">Edit</a>
+                        <a href="{{ route('community.edit', $community->id) }}" class="dropdown-item">{{ __("Edit")}}</a>
                     </li>
                     <li>
                         <hr class="dropdown-divider">
@@ -37,7 +37,7 @@
                     <li>
                         <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
                             data-bs-target="#deleteCommunityModal{{ $community->id }}">
-                            Delete
+                            {{ __('Delete') }}
                         </button>
                     </li>
                 </ul>
@@ -48,9 +48,9 @@
     <div class="event-card-body">
         <div class="event-card-badges">
             @if ($community->category)
-                <span class="badge event-category">{{ $community->category }}</span>
+                <span class="badge event-category">{{ $community->localized_category }}</span>
             @endif
-            <span class="badge event-status {{ $visibility[1] }}">{{ $visibility[0] }}</span>
+            <span class="badge event-status {{ $visibilityClass }}">{{ $community->visibility_label }}</span>
         </div>
 
         <div class="d-flex align-items-center gap-2 mb-2">
@@ -61,9 +61,9 @@
 
         <div class="event-card-footer">
             <span>
-                <i class="fa-solid fa-user-group me-1"></i>{{ $memberCount }} {{ $memberCount === 1 ? 'member' : 'members' }}
+                <i class="fa-solid fa-user-group me-1"></i>{{ $memberCount }} {{ $memberCount === 1 ? __('Member') : __('Members') }}
             </span>
-            <a href="{{ route('community.show', $community->id) }}">View details &gt;</a>
+            <a href="{{ route('community.show', $community->id) }}">{{ __('View details') }} &gt;</a>
         </div>
     </div>
 </article>
