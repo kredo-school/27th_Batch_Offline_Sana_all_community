@@ -119,7 +119,7 @@
             <span class="search-icon">⌕</span>
 
             <input type="search" name="keyword" id="keyword" value="{{ request('keyword') }}" placeholder="Search helps"
-                aria-label="search-help">
+                aria-label="search-help" @include('partials.search-suggest-attributes', ['type' => 'helps'])>
         </div>
 
         @if (request('category_id'))

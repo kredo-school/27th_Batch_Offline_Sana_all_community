@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\SiteSetting;
+use App\Support\Search;
 
 class HomeController extends Controller
 {
@@ -58,40 +59,38 @@ class HomeController extends Controller
             ]);
         }
 
-        $like = "%{$keyword}%";
+        $keyword = mb_substr($keyword, 0, Search::MAX_LENGTH);
 
+        // どの検索もサイト共通のルール（App\Support\Search）で探す
         $users = User::query()
-            ->where(fn ($query) => $query->where('name', 'like', $like)->orWhere('username', 'like', $like))
+            ->search($keyword)
             ->with('profile')
             ->orderBy('name')
             ->limit(12)
             ->get();
 
+        // 招待のみのコミュニティは、関係ない人の検索結果には出さない
         $communities = Community::query()
-            ->where(fn ($query) => $query->where('name', 'like', $like)
-                ->orWhere('description', 'like', $like)
-                ->orWhere('category', 'like', $like))
+            ->visibleTo($request->user())
+            ->search($keyword)
             ->with('owner')
             ->latest()
             ->limit(12)
             ->get();
 
+        // カテゴリーは、どの言語の名前で探しても見つかる
         $categories = Category::query()
-            ->where('name', 'like', $like)
+            ->whereIn('id', Search::categoryIds($keyword))
             ->orderBy('name')
             ->limit(12)
             ->get();
 
+        // 他の人の下書きや非公開のイベントは出さない（自分のものは出す）
         $events = Event::query()
+            ->listedFor($request->user())
             ->whereNull('community_id')
             ->where('end_at', '>=', now())
-            ->where(fn ($query) => $query->where('title', 'like', $like)
-                ->orWhere('description', 'like', $like)
-                ->orWhere('location', 'like', $like)
-                ->orWhereHas('owner', fn ($owner) => $owner
-                    ->where('name', 'like', $like)
-                    ->orWhere('username', 'like', $like))
-                ->orWhereHas('categories', fn ($category) => $category->where('name', 'like', $like)))
+            ->search($keyword)
             ->with(['owner', 'categories'])
             ->orderBy('start_at')
             ->limit(12)

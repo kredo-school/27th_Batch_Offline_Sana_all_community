@@ -34,13 +34,8 @@ class CommunityController extends Controller
                     ->orWhereHas('memberships', fn ($query) => $query->where('user_id', $userId)->where('status', 'approved'));
             });
         })->when($filter === 'owned', fn ($query) => $query->where('owner_id', $userId))
-            ->when($keyword !== '', function ($query) use ($keyword) {
-            $query->where(function ($query) use ($keyword) {
-                $query->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%");
-            });
-        })
+            // 名前・説明・場所・カテゴリー（どの言語の表示名でも）で探す
+            ->when($keyword !== '', fn ($query) => $query->search($keyword))
             ->withCount([
                 'memberships as approved_members_count' => fn ($query) => $query->where('status', 'approved'),
             ])->withExists([
@@ -55,6 +50,8 @@ class CommunityController extends Controller
             ->where('status', 'published')
             ->where('start_at', '>=', now())
             ->whereHas('community', fn ($query) => $query->visibleTo($request->user()))
+            // 検索中・サイドバーで絞り込み中は、一覧に出ているコミュニティのイベントだけにする
+            ->when($keyword !== '' || $filter !== null, fn ($query) => $query->whereIn('community_id', $communities->pluck('id')))
             ->orderBy('start_at')
             ->limit(10)
             ->get();

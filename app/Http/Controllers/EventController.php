@@ -45,13 +45,8 @@ class EventController extends Controller
 
         $keyword = trim($validated['keyword'] ?? '');
 
-        $query->when($keyword !== '', function ($query) use ($keyword) {
-            $query->where(function ($query) use ($keyword) {
-                $query
-                    ->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%");
-            });
-        });
+        // サイト共通の検索ルール（タイトル・説明・場所・主催者・カテゴリー。言葉を分けると全部を含むもの）
+        $query->when($keyword !== '', fn ($query) => $query->search($keyword));
 
         // search categories
         $query->when(

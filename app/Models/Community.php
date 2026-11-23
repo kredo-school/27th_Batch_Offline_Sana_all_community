@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\LocalizedValue;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -38,6 +39,36 @@ class Community extends Model
 
         return self::LOCALIZED_CATEGORIES[app()->getLocale()][$category]
             ?? __($category);
+    }
+
+    /**
+     * 検索（サイト共通のルール App\Support\Search）: 名前・説明・場所・カテゴリー・主催者（オーナー）
+     * カテゴリーは英語で保存しているので、どの言語の表示名（スポーツ など）で探しても見つかる
+     */
+    public function scopeSearch($query, ?string $keyword)
+    {
+        return Search::apply($query, $keyword, function ($query, string $like, string $word) {
+            $categories = Search::communityCategories($word);
+            // 主催者はイベントと同じく、名前かユーザー名（@ を付けてもよい）で探せる
+            $username = '%'.ltrim($word, '@').'%';
+            $query->where($this->qualifyColumn('name'), 'like', $like)
+                ->orWhere($this->qualifyColumn('description'), 'like', $like)
+                ->orWhere($this->qualifyColumn('location'), 'like', $like)
+                ->orWhere($this->qualifyColumn('category'), 'like', $like)
+                ->when($categories !== [], fn ($query) => $query->orWhereIn($this->qualifyColumn('category'), $categories))
+                ->orWhereHas('owner', fn ($owner) => $owner->where('name', 'like', $like)->orWhere('username', 'like', $username));
+        });
+    }
+
+    /**
+     * プログラムに書いてある、各言語でのカテゴリーの表示名（Creative → クリエイティブ など）
+     */
+    public static function localizedCategoryNames(string $category): array
+    {
+        return array_values(array_filter(array_map(
+            fn (array $names) => $names[$category] ?? null,
+            self::LOCALIZED_CATEGORIES,
+        )));
     }
 
     public function getLocalizedCategoryAttribute(): string

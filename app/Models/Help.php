@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,20 @@ class Help extends Model
         'event_end_at' => 'datetime',
         'application_deadline' => 'date',
     ];
+
+    /**
+     * 検索（サイト共通のルール App\Support\Search）: タイトル・会社名・説明・場所・カテゴリー名
+     */
+    public function scopeSearch($query, ?string $keyword)
+    {
+        return Search::apply($query, $keyword, function ($query, string $like) {
+            $query->where($this->qualifyColumn('title'), 'like', $like)
+                ->orWhere($this->qualifyColumn('company_name'), 'like', $like)
+                ->orWhere($this->qualifyColumn('description'), 'like', $like)
+                ->orWhere($this->qualifyColumn('location'), 'like', $like)
+                ->orWhereHas('category', fn ($category) => $category->where('name', 'like', $like));
+        });
+    }
 
     /**
      * 求人を作成したユーザー

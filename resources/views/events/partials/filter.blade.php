@@ -118,7 +118,7 @@
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
             <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="Search events"
-                aria-label="search-event">
+                aria-label="search-event" @include('partials.search-suggest-attributes', ['type' => 'events'])>
         </div>
 
         @if (request('category'))

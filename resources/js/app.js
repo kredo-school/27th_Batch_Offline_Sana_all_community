@@ -1,4 +1,5 @@
 import './bootstrap';
+import './search-suggest';
 import { Modal } from 'bootstrap';
 
 const confirmationModalElement = document.querySelector('#action-confirmation-modal');

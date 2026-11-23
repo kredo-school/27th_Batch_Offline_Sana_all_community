@@ -1345,7 +1345,7 @@
                         <div class="modal-body">
                             <label class="form-label" for="global-search-input">{{ __('Search events, communities, users, and categories') }}</label>
                             <input id="global-search-input" class="form-control" type="search" name="search"
-                                value="{{ request('search') }}" placeholder="{{ __('Search') }}" required autofocus>
+                                value="{{ request('search') }}" placeholder="{{ __('Search') }}" required autofocus @include('partials.search-suggest-attributes', ['type' => 'all'])>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
