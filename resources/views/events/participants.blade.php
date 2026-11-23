@@ -63,9 +63,9 @@
 
             @forelse ($pending as $participant)
                 <div class="participant-row">
-                    <div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a></a>
                     <div class="flex-grow-1">
-                        <div>{{ $participant->user->name ?? 'Unknown' }}</div>
+                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
                         <div class="participant-help">Requested {{ $participant->requested_at?->diffForHumans() }}</div>
                     </div>
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
@@ -90,9 +90,9 @@
 
         @forelse ($approved as $participant)
             <div class="participant-row">
-                <div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div>
+                <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a>
                 <div>
-                    <div>{{ $participant->user->name ?? 'Unknown' }}</div>
+                    <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
                     <div class="participant-help">Joined {{ $participant->responded_at?->diffForHumans() }}</div>
                 </div>
             </div>
@@ -107,9 +107,9 @@
 
             @foreach ($rejected as $participant)
                 <div class="participant-row">
-                    <div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a>
                     <div class="flex-grow-1">
-                        <div>{{ $participant->user->name ?? 'Unknown' }}</div>
+                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
                     </div>
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
                         @csrf
