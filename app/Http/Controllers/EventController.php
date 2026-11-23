@@ -445,14 +445,27 @@ class EventController extends Controller
         }
         $participant->save();
 
+        $user = Auth::user();
+
         if ($event->approval_required) {
-            $user = Auth::user();
+            // 承認が必要なイベント → ホストに「参加申請が来た」と知らせる
             UserNotification::create([
                 'user_id' => $event->owner_id,
                 'sender_name' => $user->username ?: $user->name,
                 'type' => 'event_join_request',
                 'title' => 'Event registration request',
                 'message' => "{$user->name} requested to join '{$event->title}'.",
+                'related_type' => Event::class,
+                'related_id' => $event->id,
+            ]);
+        } else {
+            // 承認不要のイベント → ホストに「参加者が増えた」と知らせる
+            UserNotification::create([
+                'user_id' => $event->owner_id,
+                'sender_name' => $user->username ?: $user->name,
+                'type' => 'event_joined',
+                'title' => 'New participant',
+                'message' => "{$user->name} joined '{$event->title}'.",
                 'related_type' => Event::class,
                 'related_id' => $event->id,
             ]);
