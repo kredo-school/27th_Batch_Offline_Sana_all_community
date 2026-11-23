@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Edit Event'))
+
 @section('sidebar', $event->community_id ? 'community' : 'events')
 
 @section('content')
@@ -110,18 +112,18 @@
                 <a href="{{ route('community.show', $event->community) }}"
                     class="text-decoration-none fw-semibold text-dark">{{ $event->community->name }}</a>
             @else
-                <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">Events</a>
+                <a href="{{ route('events.index') }}" class="text-decoration-none fw-semibold text-dark">{{ __('Events') }}</a>
             @endif
             <span class="mx-2">&gt;</span>
-            <span class="text-muted">Edit an event</span>
+            <span class="text-muted">{{ __('Edit event') }}</span>
         </nav>
 
         {{-- title --}}
-        <p class="text-primary fw-semibold small mb-1">EDIT EVENT</p>
-        <h1 class="fw-normal mb-1">Edit your event.</h1>
-        <p class="event-form-help mb-4">Start to edit your event.</p>
+        <p class="text-primary text-uppercase fw-semibold small mb-1">{{ __('Edit Event') }}</p>
+        <h1 class="fw-normal mb-1">{{ __('Edit event') }}</h1>
+        <p class="event-form-help mb-4">{{ __('Update the event details below.') }}</p>
 
-        <form action="{{ route('events.update', $event) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('events.update', $event) }}" method="POST" enctype="multipart/form-data" lang="{{ app()->getLocale() }}">
             @csrf
             @method('PUT')
 
@@ -130,21 +132,21 @@
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">01</div>
                     <div>
-                        <h5 class="mb-0">Event basics</h5>
-                        <p class="event-form-help mb-0">Please give some basic information about your event.</p>
+                        <h5 class="mb-0">{{ __('Event basics') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please give some basic information about your event.') }}</p>
                     </div>
                 </div>
 
                 {{-- Title --}}
                 <div class="mb-4">
                     <div class="d-flex justify-content-between">
-                        <label for="title" class="event-form-label">Title</label>
-                        <span class="event-form-required">REQUIRED</span>
+                        <label for="title" class="event-form-label">{{ __('Title') }}</label>
+                        <span class="event-form-required">{{ __('REQUIRED') }}</span>
                     </div>
                     <input type="text" name="title" id="title"
                         class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $event->title) }}"
-                        maxlength="60" placeholder="Title">
-                    <small class="event-form-help">Maximum 60 characters.</small>
+                        maxlength="60" placeholder="{{ __('Title') }}">
+                    <small class="event-form-help">{{ __('Maximum 60 characters.') }}</small>
                     @error('title')
                         <div class="text-danger small">{{ $message }}</div>
                     @enderror
@@ -154,12 +156,12 @@
                     {{-- Category --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="category_id" class="event-form-label">Category</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="category_id" class="event-form-label">{{ __('Category') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <select name="category_id" id="category_id"
                             class="form-select @error('category_id') is-invalid @enderror">
-                            <option value="" hidden>Select category</option>
+                            <option value="" hidden>{{ __('Select category') }}</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" @selected(old('category_id', $selectedCategoryId) == $category->id)>
                                     {{ $category->localized_name }}
@@ -174,24 +176,24 @@
                     {{-- Participation fee → price --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="price" class="event-form-label">Participation fee (per person)</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="price" class="event-form-label">{{ __('Participation fee (per person)') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <input type="number" name="price" id="price"
                             class="form-control @error('price') is-invalid @enderror"
-                            value="{{ old('price', $event->price) }}" min="0" step="1" placeholder="e.g. 500">
-                        <small class="event-form-help">If it is free, please enter 0.</small>
+                            value="{{ old('price', $event->price) }}" min="0" step="1" placeholder="{{ __('e.g. 500') }}">
+                        <small class="event-form-help">{{ __('If it is free, please enter 0.') }}</small>
                         @error('price')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                         {{-- Fee note --}}
-                        <label for="fee_note" class="event-form-label mt-3">Fee note <span
-                                class="event-form-help">(optional)</span></label>
+                        <label for="fee_note" class="event-form-label mt-3">{{ __('Fee note') }} <span
+                                class="event-form-help">({{ __('optional') }})</span></label>
                         <input type="text" name="fee_note" id="fee_note" maxlength="100"
                             class="form-control @error('fee_note') is-invalid @enderror"
                             value="{{ old('fee_note', $event->fee_note) }}"
-                            placeholder="e.g. Order individually, approx. 220 PHP~">
-                        <small class="event-form-help">If the cost varies, enter 0 above and explain here.</small>
+                            placeholder="{{ __('e.g. Order individually, approx. 220 PHP~') }}">
+                        <small class="event-form-help">{{ __('If the cost varies, enter 0 above and explain here.') }}</small>
                         @error('fee_note')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -200,13 +202,14 @@
                     {{-- Start date → start_at --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="start_at" class="event-form-label">Start date</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="start_at" class="event-form-label">{{ __('Start date') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <input type="datetime-local" name="start_at" id="start_at"
-                            class="form-control @error('start_at') is-invalid @enderror"
+                            lang="{{ app()->getLocale() }}" class="form-control @error('start_at') is-invalid @enderror"
                             value="{{ old('start_at', $toInput($event->start_at)) }}">
-                        @error('start_at')
+                        <small class="event-form-help" data-date-preview-for="start_at"></small>
+                    @error('start_at')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
@@ -214,13 +217,14 @@
                     {{-- End date → end_at --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="end_at" class="event-form-label">End date</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="end_at" class="event-form-label">{{ __('End date') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <input type="datetime-local" name="end_at" id="end_at"
-                            class="form-control @error('end_at') is-invalid @enderror"
+                            lang="{{ app()->getLocale() }}" class="form-control @error('end_at') is-invalid @enderror"
                             value="{{ old('end_at', $toInput($event->end_at)) }}">
-                        <small class="event-form-help">If it is one day, enter the same date as the start date.</small>
+                        <small class="event-form-help" data-date-preview-for="end_at"></small>
+                    <small class="event-form-help">{{ __('If it is one day, enter the same date as the start date.') }}</small>
                         @error('end_at')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -229,13 +233,14 @@
                     {{-- Register closed → join_till --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="join_till" class="event-form-label">Registration closes</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="join_till" class="event-form-label">{{ __('Registration closes') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <input type="datetime-local" name="join_till" id="join_till"
-                            class="form-control @error('join_till') is-invalid @enderror"
+                            lang="{{ app()->getLocale() }}" class="form-control @error('join_till') is-invalid @enderror"
                             value="{{ old('join_till', $toInput($event->join_till)) }}">
-                        @error('join_till')
+                        <small class="event-form-help" data-date-preview-for="join_till"></small>
+                    @error('join_till')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
@@ -243,15 +248,15 @@
                     {{-- Capacity --}}
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
-                            <label for="capacity" class="event-form-label">Capacity</label>
-                            <span class="event-form-required">REQUIRED</span>
+                            <label for="capacity" class="event-form-label">{{ __('Capacity') }}</label>
+                            <span class="event-form-required">{{ __('REQUIRED') }}</span>
                         </div>
                         <input type="number" name="capacity" id="capacity"
                             class="form-control @error('capacity') is-invalid @enderror"
                             value="{{ old('capacity', $event->capacity) }}" min="1"
-                            placeholder="Number of people">
+                            placeholder="{{ __('Number of people') }}">
                         @error('capacity')
-                            <div class="text-danger small">{{ $message }}</div>
+                            <div class="text-danger small">{{ __($message) }}</div>
                         @enderror
                     </div>
                 </div>
@@ -259,15 +264,15 @@
                 {{-- Description --}}
                 <div class="mt-4">
                     <div class="d-flex justify-content-between">
-                        <label for="description" class="event-form-label">Description</label>
-                        <span class="event-form-required">REQUIRED</span>
+                        <label for="description" class="event-form-label">{{ __('Description') }}</label>
+                        <span class="event-form-required">{{ __('REQUIRED') }}</span>
                     </div>
                     <textarea name="description" id="description" rows="4" maxlength="500"
                         class="form-control @error('description') is-invalid @enderror"
-                        placeholder="What is this event? Who should join?">{{ old('description', $event->description) }}</textarea>
-                    <small class="event-form-help">Help people understand what to expect. Maximum 500 characters.</small>
+                        placeholder="{{ __('What is this event? Who should join?') }}">{{ old('description', $event->description) }}</textarea>
+                    <small class="event-form-help">{{ __('Help people understand what to expect. Maximum 500 characters.') }}</small>
                     @error('description')
-                        <div class="text-danger small">{{ $message }}</div>
+                        <div class="text-danger small">{{ __($message) }}</div>
                     @enderror
                 </div>
             </div>
@@ -277,29 +282,29 @@
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">02</div>
                     <div>
-                        <h5 class="mb-0">Location</h5>
-                        <p class="event-form-help mb-0">Please give the event address.</p>
+                        <h5 class="mb-0">{{ __('Location') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please give the event address.') }}</p>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between">
-                    <label for="location" class="event-form-label">Address</label>
-                    <span class="event-form-required">REQUIRED</span>
+                    <label for="location" class="event-form-label">{{ __('Address') }}</label>
+                    <span class="event-form-required">{{ __('REQUIRED') }}</span>
                 </div>
                 <input type="text" name="location" id="location"
                     class="form-control @error('location') is-invalid @enderror"
                     value="{{ old('location', $event->location) }}" maxlength="60"
-                    placeholder="e.g. Apas, Cebu City, Philippines">
-                <small class="event-form-help">Maximum 60 characters.</small>
+                    placeholder="{{ __('e.g. Apas, Cebu City, Philippines') }}">
+                <small class="event-form-help">{{ __('Maximum 60 characters.') }}</small>
                 @error('location')
                     <div class="text-danger small">{{ $message }}</div>
                 @enderror
                 {{-- 地図で場所を選ぶ --}}
                 <div class="d-flex align-items-center gap-2 mt-3 mb-2">
                     <button type="button" id="location-search-btn" class="btn btn-outline-secondary btn-sm">
-                        <i class="fa-solid fa-magnifying-glass"></i> Find on map
+                        <i class="fa-solid fa-magnifying-glass"></i> {{ __('Find on map')}}
                     </button>
-                    <small class="event-form-help">Or click on the map to choose a place.</small>
+                    <small class="event-form-help">{{ __('Or click on the map to choose a place.')}}</small>
                 </div>
                 <div id="location-map" style="height: 320px; border-radius: 8px;"></div>
             </div>
@@ -309,23 +314,23 @@
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">03</div>
                     <div>
-                        <h5 class="mb-0">Event identity</h5>
-                        <p class="event-form-help mb-0">Please add a visual that helps this event stand out.</p>
+                        <h5 class="mb-0">{{ __('Event identity') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please add a visual that helps this event stand out.') }}</p>
                     </div>
                 </div>
 
-                <label for="image" class="event-form-label">Cover image</label>
+                <label for="image" class="event-form-label">{{ __('Cover image') }}</label>
                 <div class="mb-3 {{ $event->image ? '' : 'd-none' }}" id="image-preview-wrapper">
                     <img src="{{ $event->image ? asset('storage/' . $event->image) : '' }}" id="image-preview"
-                        alt="Cover image preview" class="rounded border"
+                        alt="{{ __('Cover image preview') }}" class="rounded border"
                         style="max-width: 320px; width: 100%; height: auto;">
                 </div>
 
                 <input type="file" name="image" id="image" accept="image/*"
                     class="form-control @error('image') is-invalid @enderror">
-                <small class="event-form-help">JPG or PNG, up to 2MB. Leave empty to keep the current image.</small>
+                <small class="event-form-help">{{ __('JPG or PNG, up to 2MB.') }} {{ __('Leave empty to keep the current image.') }}</small>
                 @error('image')
-                    <div class="text-danger small">{{ $message }}</div>
+                    <div class="text-danger small">{{ __($message) }}</div>
                 @enderror
 
                 <script>
@@ -337,15 +342,41 @@
                         document.getElementById('image-preview-wrapper').classList.remove('d-none');
                     });
                 </script>
-            </div>
+                <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const locale = @json(app()->getLocale());
+                    const supportedLocale = Intl.DateTimeFormat.supportedLocalesOf(locale)[0] || 'en';
+                    const formatter = new Intl.DateTimeFormat(supportedLocale, { dateStyle: 'long', timeStyle: 'short' });
+
+                    document.querySelectorAll('[data-date-preview-for]').forEach(preview => {
+                        const input = document.getElementById(preview.dataset.datePreviewFor);
+                        if (!input) return;
+
+                        const update = () => {
+                            if (!input.value) {
+                                preview.textContent = '';
+                                return;
+                            }
+
+                            const date = new Date(input.value);
+                            preview.textContent = Number.isNaN(date.getTime()) ? '' : formatter.format(date);
+                        };
+
+                        input.addEventListener('input', update);
+                        input.addEventListener('change', update);
+                        update();
+                    });
+                });
+            </script>
+        </div>
 
             {{-- 04 Language --}}
             <div class="event-form-section">
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">04</div>
                     <div>
-                        <h5 class="mb-0">Language</h5>
-                        <p class="event-form-help mb-0">Please select the language used in this event.</p>
+                        <h5 class="mb-0">{{ __('Language') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please select the language used in this event.') }}</p>
                     </div>
                 </div>
 
@@ -368,8 +399,8 @@
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">05</div>
                     <div>
-                        <h5 class="mb-0">Visibility</h5>
-                        <p class="event-form-help mb-0">Please select who can find and join this event.</p>
+                        <h5 class="mb-0">{{ __('Visibility') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please select who can find and join this event.') }}</p>
                     </div>
                 </div>
 
@@ -377,20 +408,20 @@
                     <label class="event-option">
                         <input type="radio" name="visibility" value="public" class="form-check-input me-2"
                             @checked(old('visibility', $event->visibility) === 'public')>
-                        <strong>All users</strong>
-                        <div class="event-form-help ms-4">Anyone can find, view and join this event.</div>
+                        <strong>{{ __('All users') }}</strong>
+                        <div class="event-form-help ms-4">{{ __('Anyone can find, view and join this event.') }}</div>
                     </label>
                     <label class="event-option">
                         <input type="radio" name="visibility" value="members" class="form-check-input me-2"
                             @checked(old('visibility', $event->visibility) === 'members')>
-                        <strong>Logged-in users</strong>
-                        <div class="event-form-help ms-4">Only logged-in users can find, view and join this event.</div>
+                        <strong>{{ __('Logged-in users') }}</strong>
+                        <div class="event-form-help ms-4">{{ __('Only logged-in users can find, view and join this event.') }}</div>
                     </label>
                     <label class="event-option">
                         <input type="radio" name="visibility" value="followers" class="form-check-input me-2"
                             @checked(old('visibility', $event->visibility) === 'followers')>
-                        <strong>Followers only</strong>
-                        <div class="event-form-help ms-4">Only your followers can find and join this event.</div>
+                        <strong>{{ __('Followers only') }}</strong>
+                        <div class="event-form-help ms-4">{{ __('Only your followers can find and join this event.') }}</div>
                     </label>
                 </div>
                 @error('visibility')
@@ -403,8 +434,8 @@
                 <div class="d-flex gap-3 mb-4">
                     <div class="event-form-step">06</div>
                     <div>
-                        <h5 class="mb-0">Approval</h5>
-                        <p class="event-form-help mb-0">Please select whether you approve each person who joins.</p>
+                        <h5 class="mb-0">{{ __('Approval') }}</h5>
+                        <p class="event-form-help mb-0">{{ __('Please select whether you approve each person who joins.') }}</p>
                     </div>
                 </div>
 
@@ -412,14 +443,14 @@
                     <label class="event-option">
                         <input type="radio" name="approval_required" value="1" class="form-check-input me-2"
                             @checked(old('approval_required', (string) (int) $event->approval_required) === '1')>
-                        <strong>Required</strong>
-                        <div class="event-form-help ms-4">People can join this event after you approve them.</div>
+                        <strong>{{ __('Required') }}</strong>
+                        <div class="event-form-help ms-4">{{ __('People can join this event after you approve them.') }}</div>
                     </label>
                     <label class="event-option">
                         <input type="radio" name="approval_required" value="0" class="form-check-input me-2"
                             @checked(old('approval_required', (string) (int) $event->approval_required) === '0')>
-                        <strong>Not required</strong>
-                        <div class="event-form-help ms-4">People can join this event right away.</div>
+                        <strong>{{ __('Not required') }}</strong>
+                        <div class="event-form-help ms-4">{{ __('People can join this event right away.') }}</div>
                     </label>
                 </div>
                 @error('approval_required')
@@ -429,8 +460,8 @@
 
             {{-- button --}}
             <div class="d-flex justify-content-end gap-2">
-                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary px-4">Cancel</a>
-                <button type="submit" class="btn btn-primary px-4">Edit event</button>
+                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary px-4">{{ __('Cancel') }}</a>
+                <button type="submit" class="btn btn-primary px-4">{{ __('Edit event') }}</button>
             </div>
         </form>
     </div>

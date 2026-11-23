@@ -284,7 +284,11 @@
         <div class="event-card-footer">
             <time datetime="{{ $event->start_at?->format('Y-m-d') ?? '' }}">
                 {{ __('Held on') }}
-                {{ $event->start_at?->format('M d, Y') ?? __('Date TBD') }}
+                @if ($event->start_at)
+                    {{ $event->start_at->copy()->locale(app()->getLocale())->isoFormat('LL') ?: $event->start_at->format('F j, Y') }}
+                @else
+                    {{ __('Date TBD') }}
+                @endif
             </time>
             <a href="{{ route('events.show', $event->id) }}">{{ __('View details') }} &gt;</a>
         </div>

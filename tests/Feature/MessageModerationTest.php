@@ -93,10 +93,13 @@ class MessageModerationTest extends TestCase
             ->get(route('messages.index'))
             ->assertOk()
             ->assertSee('>1</span>', false);
+        $this->get(route('messages.index'))
+            ->assertSee('class="unread-row js-open-message-chat message-list-row"', false);
 
         $this->getJson(route('messages.conversation', $sender))
             ->assertOk()
-            ->assertJsonPath('unread_count', 0);
+            ->assertJsonPath('unread_count', 0)
+            ->assertJsonPath('read_count', 1);
 
         $this->assertDatabaseMissing('messages', [
             'sender_id' => $sender->id,
@@ -105,7 +108,8 @@ class MessageModerationTest extends TestCase
         ]);
         $this->get(route('messages.index'))
             ->assertOk()
-            ->assertViewHas('unreadMessagesCount', 0);
+            ->assertViewHas('unreadMessagesCount', 0)
+            ->assertDontSee('class="unread-row js-open-message-chat message-list-row"', false);
     }
 
     public function test_user_can_unblock_a_participant_from_messages_and_profile(): void

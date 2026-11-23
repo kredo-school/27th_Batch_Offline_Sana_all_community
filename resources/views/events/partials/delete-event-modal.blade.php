@@ -12,12 +12,12 @@
 
             <div class="modal-body">
                 <p>
-                    Are you sure you want to delete
-                    <strong>"{{ $event->title }}"</strong>?
+                    {{ __('Are you sure you want to delete')}}
+                    <strong>"{{ __('$event->title') }}"</strong>?
                 </p>
 
                 <p class="text-danger mb-0">
-                    This action cannot be undone.
+                    {{ __('This action cannot be undone.')}}
                 </p>
             </div>
 
@@ -31,7 +31,7 @@
                     @method('DELETE')
 
                     <button type="submit" class="btn btn-danger">
-                        Delete
+                        {{ __('Delete')}}
                     </button>
                 </form>
             </div>

@@ -381,7 +381,7 @@
                                                     <strong>{{ __('Deleted user') }}</strong>
                                                 @endif
                                                 @if ($review->created_at)
-                                                    <time datetime="{{ $review->created_at->toIso8601String() }}">{{ $review->created_at->format('M j, Y') }}</time>
+                                                    <time datetime="{{ $review->created_at->toIso8601String() }}">{{ $review->created_at->copy()->locale(app()->getLocale())->isoFormat('LL') ?: $review->created_at->format('F j, Y') }}</time>
                                                 @endif
                                             </div>
                                             <div class="profile-review-rating" aria-label="{{ $review->rating }} {{ __('out of 5 stars') }}">

@@ -12,7 +12,7 @@
             --admin-teal: #35c6c5;
             display: grid;
             grid-template-columns: 210px minmax(0, 1fr);
-            min-height: calc(100vh - 74px);
+            min-height: calc(100vh - 70px);
             color: var(--admin-ink);
             background: #f5f8f7;
         }

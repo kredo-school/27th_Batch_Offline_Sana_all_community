@@ -152,7 +152,9 @@ class AdminLanguageWordsTest extends TestCase
             ->get(route('admin.languages.index', ['locale' => 'ja']))
             ->assertOk()
             ->assertSee('Hello')
-            ->assertSee('こんにちは');
+            ->assertSee('こんにちは')
+            ->assertSee('data-confirm-message="この単語を削除する?"', false)
+            ->assertDontSee('onclick="return confirm', false);
 
         $this->actingAs($admin)
             ->get(route('admin.languages.create'))

@@ -1,0 +1,47 @@
+<?php
+
+return [
+    'required' => 'The :attribute field is required.',
+    'required_with' => 'The :attribute field is required when :values is present.',
+    'email' => 'The :attribute must be a valid email address.',
+    'unique' => 'The :attribute has already been taken.',
+    'string' => 'The :attribute must be a string.',
+    'integer' => 'The :attribute must be an integer.',
+    'numeric' => 'The :attribute must be a number.',
+    'boolean' => 'The :attribute field must be true or false.',
+    'array' => 'The :attribute must be an array.',
+    'date' => 'The :attribute is not a valid date.',
+    'before_or_equal' => 'The :attribute must be a date before or equal to :date.',
+    'min' => [
+        'numeric' => 'The :attribute must be at least :min.',
+        'string' => 'The :attribute must be at least :min characters.',
+    ],
+    'max' => [
+        'numeric' => 'The :attribute may not be greater than :max.',
+        'string' => 'The :attribute may not be greater than :max characters.',
+    ],
+    'between' => [
+        'numeric' => 'The :attribute must be between :min and :max.',
+    ],
+    'in' => 'The selected :attribute is invalid.',
+    'image' => 'The :attribute must be an image.',
+    'mimes' => 'The :attribute must be a file of type: :values.',
+    'prohibited' => 'The :attribute field is prohibited.',
+    'attributes' => [
+        'name' => 'name',
+        'username' => 'username',
+        'email' => 'email',
+        'preferred_language' => 'preferred language',
+        'birthday_year' => 'birth year',
+        'birthday_month' => 'birth month',
+        'birthday_day' => 'birth day',
+        'birthday' => 'birthday',
+        'avatar' => 'profile photo',
+        'cover_image' => 'cover image',
+        'bio' => 'bio',
+        'country' => 'country',
+        'region' => 'region / city',
+        'occupation' => 'occupation',
+        'gender' => 'gender',
+    ],
+];

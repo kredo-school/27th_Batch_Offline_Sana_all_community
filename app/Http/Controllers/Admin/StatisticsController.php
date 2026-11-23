@@ -16,6 +16,54 @@ class StatisticsController extends Controller
         $totalCategoryViews = DB::table('category_views')->count();
         $trackedCategories = DB::table('category_views')->distinct()->count('category_id');
 
+        $periodOptions = [
+            'week' => 'Week',
+            'month' => 'Month',
+            'year' => 'Year',
+            'three-years' => '3 years',
+        ];
+        $requestedPeriod = $request->query('period', 'week');
+        $chartPeriod = is_string($requestedPeriod) && array_key_exists($requestedPeriod, $periodOptions)
+            ? $requestedPeriod
+            : 'week';
+        $monthlyBuckets = in_array($chartPeriod, ['year', 'three-years'], true);
+        $bucketCount = match ($chartPeriod) {
+            'week' => 7,
+            'month' => 30,
+            'year' => 12,
+            default => 36,
+        };
+        $chartStart = $monthlyBuckets
+            ? today()->startOfMonth()->subMonths($bucketCount - 1)
+            : today()->subDays($bucketCount - 1)->startOfDay();
+        $chartEnd = now();
+        $bucketExpression = $monthlyBuckets ? 'SUBSTR(created_at, 1, 7)' : 'DATE(created_at)';
+        $chartBuckets = collect(range(0, $bucketCount - 1))->map(function (int $offset) use ($chartStart, $monthlyBuckets) {
+            $date = $chartStart->copy();
+
+            if ($monthlyBuckets) {
+                $date->addMonths($offset);
+            } else {
+                $date->addDays($offset);
+            }
+
+            return (object) [
+                'key' => $date->format($monthlyBuckets ? 'Y-m' : 'Y-m-d'),
+                'label' => $date->format($monthlyBuckets ? 'm/y' : 'm/d'),
+                'title' => $date->format($monthlyBuckets ? 'F Y' : 'M j, Y'),
+            ];
+        });
+        $seriesFromCounts = function ($counts) use ($chartBuckets) {
+            return $chartBuckets->map(function ($bucket) use ($counts) {
+                return (object) [
+                    'key' => $bucket->key,
+                    'label' => $bucket->label,
+                    'title' => $bucket->title,
+                    'count' => (int) $counts->get($bucket->key, 0),
+                ];
+            });
+        };
+
         $detail = $request->query('detail');
         $detailSections = ['categories', 'pages', 'active-users', 'recent-page-views'];
         $detail = in_array($detail, $detailSections, true) ? $detail : null;
@@ -53,6 +101,69 @@ class StatisticsController extends Controller
 
         $topCategories = $loadSection($topCategoriesQuery, 'categories');
 
+        $loggedInUserCounts = DB::table('page_views')
+            ->selectRaw("$bucketExpression as period, COUNT(DISTINCT user_id) as metric_count")
+            ->whereNotNull('user_id')
+            ->whereBetween('created_at', [$chartStart, $chartEnd])
+            ->groupByRaw($bucketExpression)
+            ->pluck('metric_count', 'period');
+        $loggedInUserSeries = $seriesFromCounts($loggedInUserCounts);
+
+        $newUserCounts = DB::table('users')
+            ->selectRaw("$bucketExpression as period, COUNT(*) as metric_count")
+            ->whereNull('deleted_at')
+            ->whereBetween('created_at', [$chartStart, $chartEnd])
+            ->groupByRaw($bucketExpression)
+            ->pluck('metric_count', 'period');
+        $newUserSeries = $seriesFromCounts($newUserCounts);
+
+        $makeLineChart = function (string $title, $series) {
+            $maxCount = max(1, (int) $series->max('count'));
+            $lastIndex = max(1, $series->count() - 1);
+            $points = $series->values()->map(function ($bucket, int $index) use ($maxCount, $lastIndex) {
+                return (object) [
+                    'x' => number_format(36 + ($index / $lastIndex) * 674, 2, '.', ''),
+                    'y' => number_format(150 - (($bucket->count / $maxCount) * 120), 2, '.', ''),
+                    'title' => $bucket->title,
+                    'count' => $bucket->count,
+                ];
+            });
+
+            return (object) [
+                'title' => $title,
+                'series' => $series,
+                'maxCount' => $maxCount,
+                'points' => $points,
+                'path' => $points->map(function ($point) {
+                    return $point->x.','.$point->y;
+                })->implode(' '),
+            ];
+        };
+        $lineCharts = [
+            $makeLineChart('Logged-in page viewers', $loggedInUserSeries),
+            $makeLineChart('New users', $newUserSeries),
+        ];
+
+        $topCategoryChart = DB::table('category_views')
+            ->join('categories', 'category_views.category_id', '=', 'categories.id')
+            ->select('categories.id', 'categories.name', DB::raw('COUNT(*) as view_count'))
+            ->whereBetween('category_views.created_at', [$chartStart, $chartEnd])
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('view_count')
+            ->orderBy('categories.name')
+            ->limit(10)
+            ->get();
+        $maxCategoryChartCount = max(1, (int) $topCategoryChart->max('view_count'));
+
+        $usersByPreferredLanguage = DB::table('users')
+            ->select('preferred_language', DB::raw('COUNT(*) as user_count'))
+            ->whereNull('deleted_at')
+            ->groupBy('preferred_language')
+            ->orderByDesc('user_count')
+            ->orderBy('preferred_language')
+            ->get();
+        $maxPreferredLanguageCount = max(1, (int) $usersByPreferredLanguage->max('user_count'));
+
         $pageActivity = DB::table('page_views')
             ->select('user_id', DB::raw('COUNT(*) as page_view_count'))
             ->whereNotNull('user_id')
@@ -85,23 +196,6 @@ class StatisticsController extends Controller
 
         $activeUsers = $loadSection($activeUsersQuery, 'active-users');
 
-        $dailyCategoryCounts = DB::table('category_views')
-            ->selectRaw('DATE(created_at) as view_date, COUNT(*) as view_count')
-            ->where('created_at', '>=', today()->subDays(6)->startOfDay())
-            ->groupByRaw('DATE(created_at)')
-            ->orderBy('view_date')
-            ->pluck('view_count', 'view_date');
-
-        $dailyCategoryViews = collect(range(0, 6))->map(function ($offset) use ($dailyCategoryCounts) {
-            $date = today()->subDays(6 - $offset)->toDateString();
-
-            return (object) [
-                'date' => $date,
-                'view_count' => (int) $dailyCategoryCounts->get($date, 0),
-            ];
-        });
-        $maxDailyCategoryViews = max(1, (int) $dailyCategoryViews->max('view_count'));
-
         $recentPageViewsQuery = DB::table('page_views')
             ->leftJoin('users', 'page_views.user_id', '=', 'users.id')
             ->select('page_views.url', 'page_views.ip_address', 'page_views.created_at', 'users.name as user_name')
@@ -115,13 +209,20 @@ class StatisticsController extends Controller
             'uniquePageViewUsers',
             'totalCategoryViews',
             'trackedCategories',
+            'periodOptions',
+            'chartPeriod',
+            'loggedInUserSeries',
+            'newUserSeries',
+            'lineCharts',
+            'topCategoryChart',
+            'maxCategoryChartCount',
+            'usersByPreferredLanguage',
+            'maxPreferredLanguageCount',
             'detail',
             'hasMore',
             'topPages',
             'topCategories',
             'activeUsers',
-            'dailyCategoryViews',
-            'maxDailyCategoryViews',
             'recentPageViews'
         ));
     }

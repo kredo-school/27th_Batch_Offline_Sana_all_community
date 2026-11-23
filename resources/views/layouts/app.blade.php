@@ -37,6 +37,10 @@
 
     {{-- ヘッダー用のスタイル --}}
 <style>
+        html[lang="ceb"] {
+            font-size: 87.5%;
+        }
+
         /* コミュニティのページにいる間、上の COMMUNITY をオレンジにする */
         .nav-link.community-nav-active {
             color: #F58634;
@@ -533,6 +537,10 @@
             padding-left: 0.35rem;
         }
 
+        .language-dropdown-toggle { font-size: 1.1rem; }
+        .language-dropdown-menu { min-width: 8rem; padding-block: 0.25rem; }
+        .language-dropdown-menu .dropdown-item { padding: 0.35rem 0.85rem; font-size: 0.9rem; }
+
         .navbar-icon-group + .navbar-icon-group {
             margin-left: -0.35rem;
         }
@@ -813,6 +821,9 @@
             position: sticky;
             top: 0;
             z-index: 1100;
+            min-height: 70px;
+            padding-top: 0.375rem;
+            padding-bottom: 0.375rem;
             background-color: #fff;
         }
     </style>
@@ -924,9 +935,14 @@
                                 <ul class="list-unstyled d-flex flex-wrap align-items-center mb-0 mt-3">
                                     @isset($categories)
                                         @foreach ($categories as $value => $label)
+                                            @php
+                                                $isHelpCategory = strcasecmp((string) $label, 'Help') === 0
+                                                    || strcasecmp((string) $label, (string) \App\Models\Category::localizeName('Help')) === 0
+                                                    || strcasecmp((string) $value, 'Help') === 0;
+                                            @endphp
                                             <li class="me-3 h5 fw-bold header-list {{ app()->getLocale() === 'ceb' ? 'header-list-compact' : '' }}">
                                                 <a class="dropdown-item nav-link text-dark {{ (string) request('category') === (string) $value ? 'active' : '' }}"
-                                                    href="{{ route('events.index', ['category' => $value]) }}">
+                                                    href="{{ $isHelpCategory ? route('helps.index') : route('events.index', ['category' => $value]) }}">
                                                     {{ $label }}
                                                 </a>
                                             </li>
@@ -943,12 +959,12 @@
                             </li>
 
                                  <li class="nav-item nav-link dropdown my-auto ms-1 mt-2 category-nav">
-                                    <button id="languageDropdown" class="nav-link dropdown-toggle text-dark fs-5" type="button"
+                                    <button id="languageDropdown" class="nav-link dropdown-toggle text-dark language-dropdown-toggle" type="button"
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-language me-1 text-dark" aria-hidden="true"></i>
                                         {{ config('app.supported_locales')[app()->getLocale()] ?? config('app.supported_locales.en') }}
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                                    <ul class="dropdown-menu dropdown-menu-end language-dropdown-menu" aria-labelledby="languageDropdown">
                                         @foreach (config('app.supported_locales') as $code => $label)
                                             <li><form method="POST" action="{{ route('language.update') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}"><button type="submit" class="dropdown-item">{{ $label }}</button></form></li>
                                         @endforeach
@@ -1131,17 +1147,15 @@
                                                         @php
                                                             $communityNotificationUrl = $communityNotification->type === 'community_message' && $communityNotification->related_id
                                                                 ? route('community.show', $communityNotification->related_id).'#chat'
-                                                                : (in_array($communityNotification->type, ['community_join_approved', 'community_approval'], true) && $communityNotification->related_id
-                                                                    ? route('community.show', $communityNotification->related_id)
-                                                                    : route('notifications.show', $communityNotification));
+                                                                : route('notifications.show', $communityNotification);
                                                         @endphp
                                                         <li class="dropdown-content bg-white"
                                                             @if ($communityNotification->type === 'community_message') data-community-chat-notification="{{ $communityNotification->related_id }}" @endif>
                                                             <a href="{{ $communityNotificationUrl }}"
                                                                 class="dropdown-item text-wrap border-bottom text-start {{ $communityNotification->read_at ? '' : 'dropdown-item--unread fw-semibold' }}">
                                                                 @if ($communityNotification->type === 'event_cancelled')
-                                                                    {{-- コミュニティのイベントの中止: コミュニティ名、イベント名、理由 --}}
-                                                                    <span class="d-block">{{ $communityNotification->related?->community?->name ?? __('Community') }}</span>
+                                                                    {{-- イベント中止通知: コミュニティ名またはイベント名、イベント名、理由 --}}
+                                                                    <span class="d-block">{{ $communityNotification->related?->community?->name ?? __('Event') }}</span>
                                                                     <span class="d-block small text-danger">{{ __('Event cancelled') }}: {{ $communityNotification->related?->title }}</span>
                                                                     @if ($communityNotification->related?->cancel_reason)
                                                                         <span class="d-block small text-secondary">{{ __('Reason') }}: {{ \Illuminate\Support\Str::limit($communityNotification->related->cancel_reason, 80) }}</span>

@@ -44,29 +44,29 @@
             !request()->boolean('my_help')
                 ? 'active'
                 : '' }}">
-            Top Page
+            {{ __('Top Page') }}
         </a>
 
 
         <a href="{{ route('helps.index', ['bookmark' => 1]) }}"
             class="{{ request()->boolean('bookmark') ? 'active' : '' }}">
-            Bookmark
+            {{ __('Bookmark') }}
         </a>
 
         <a href="{{ route('helps.index', ['registered' => 1]) }}"
             class="{{ request()->boolean('registered') ? 'active' : '' }}">
-            Already Register
+            {{ __('Already Register') }}
         </a>
 
         <a href="{{ route('helps.index', ['confirmed' => 1]) }}"
             class="{{ request()->boolean('confirmed') ? 'active' : '' }}">
-            Confirmed help
+            {{ __('Confirmed help') }}
         </a>
 
         @if ($hasMyhelps)
             <a href="{{ route('helps.index', ['my_help' => 1]) }}"
                 class="{{ request()->boolean('my_help') ? 'active' : '' }}">
-                My help
+                {{ __('My help') }}
             </a>
         @endif
     </nav>

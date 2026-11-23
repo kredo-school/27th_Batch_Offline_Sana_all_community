@@ -10,7 +10,7 @@
         --admin-line: #d8e7e4;
         display: grid;
         grid-template-columns: 210px minmax(0, 1fr);
-        min-height: calc(100vh - 74px);
+        min-height: calc(100vh - 70px);
         color: var(--admin-ink);
         background: #f5f8f7;
     }
@@ -18,10 +18,10 @@
     .admin-dashboard .admin-sidebar {
         position: fixed;
         inset-inline-start: 0;
-        top: 74px;
+        top: 70px;
         z-index: 100;
         width: 210px;
-        height: calc(100vh - 74px);
+        height: calc(100vh - 70px);
         overflow-y: auto;
         padding: 24px 14px;
         border-inline-end: 1px solid var(--admin-line);
@@ -224,12 +224,13 @@
                                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                 </a>
                                 <form action="{{ route('admin.languages.destroy', ['locale' => $locale, 'key' => $key]) }}"
-                                    method="POST" class="d-inline">
+                                    method="POST" class="d-inline" data-confirm="true"
+                                    data-confirm-action="{{ __('Delete') }}"
+                                    data-confirm-message="{{ __('Delete this word?') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger"
-                                        title="{{ __('Delete') }}"
-                                        onclick="return confirm('{{ __('Delete this word?') }}')">
+                                        title="{{ __('Delete') }}">
                                         <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>

@@ -15,7 +15,8 @@
                     @if ($review->review_kind === 'host' && $review->event?->owner)
                         <a class="profile-written-host" href="{{ route('profile.show', $review->event->owner_id) }}">{{ $review->event->owner->name }}</a>
                     @endif
-                    <time datetime="{{ \Illuminate\Support\Carbon::parse($review->created_at)->toIso8601String() }}">{{ \Illuminate\Support\Carbon::parse($review->created_at)->format('M j, Y') }}</time>
+                    @php($reviewDate = \Illuminate\Support\Carbon::parse($review->created_at))
+                    <time datetime="{{ $reviewDate->toIso8601String() }}">{{ $reviewDate->locale(app()->getLocale())->isoFormat('LL') ?: $reviewDate->format('F j, Y') }}</time>
                 </div>
                 <div class="profile-review-rating" aria-label="{{ $review->rating }} {{ __('out of 5 stars') }}">
                     <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}<span class="profile-review-unfilled">{{ str_repeat('★', 5 - $review->rating) }}</span></span>

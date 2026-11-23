@@ -2,7 +2,7 @@
 
 @section('sidebar', 'helps')
 
-@section('title', 'Help Top')
+@section('title', __('Help Top'))
 
 @section('content')
     <style>
@@ -200,7 +200,7 @@
                 @include('helps.partials.card', ['help' => $help])
             @empty
                 <div class="no-helps-container">
-                    <h3 class="text-muted text-center mb-0">Not Help Yet</h3>
+                    <h3 class="text-muted text-center mb-0">{{ __('Not Help Yet') }}</h3>
                 </div>
             @endforelse
             <div class="modal fade" id="deleteHelpModal" tabindex="-1" aria-labelledby="deleteHelpModalLabel"
@@ -209,25 +209,25 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="deleteHelpModalLabel">
-                                Are you sure delete this Help?
+                                {{ __('Are you sure delete this Help?') }}
                             </h5>
 
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                         </div>
 
                         <div class="modal-body">
                             <p>
-                                Delete "<span id="deleteHelpName"></span>".
+                                {{ __('Delete') }} "<span id="deleteHelpName"></span>".
                             </p>
 
                             <p class="text-danger mb-0">
-                                This action cannot be undone.
+                                {{ __('This action cannot be undone.') }}
                             </p>
                         </div>
 
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                Cancel
+                                {{ __('Cancel') }}
                             </button>
 
                             <form id="deleteHelpForm" method="POST">
@@ -235,7 +235,7 @@
                                 @method('DELETE')
 
                                 <button type="submit" class="btn btn-danger">
-                                    Delete
+                                    {{ __('Delete') }}
                                 </button>
                             </form>
                         </div>
