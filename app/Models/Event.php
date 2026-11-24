@@ -29,6 +29,7 @@ class Event extends Model
         'visibility',
         'status',
         'image',
+        'image_crop',
         'owner_id',
     ];
 
@@ -40,7 +41,24 @@ class Event extends Model
             'end_at' => 'datetime',
             'price' => 'decimal:2',
             'approval_required' => 'boolean',
+            'image_crop' => 'array',
         ];
+    }
+        
+    public function imageStyle(): string
+    {
+        $crop = $this->image_crop;
+
+        if (empty($crop)) {
+            return 'object-fit: cover;';
+        }
+
+        $zoom = (float) ($crop['zoom'] ?? 1);
+        $x = (float) ($crop['x'] ?? 50);
+        $y = (float) ($crop['y'] ?? 50);
+
+        return "object-fit: contain; object-position: {$x}% {$y}%; "
+            . "transform: scale({$zoom}); transform-origin: {$x}% {$y}%;";
     }
 
     public function owner()

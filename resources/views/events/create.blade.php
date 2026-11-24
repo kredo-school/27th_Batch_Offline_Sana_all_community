@@ -264,6 +264,7 @@
             <input type="file" name="image" id="image" accept="image/*" class="form-control @error('image') is-invalid @enderror">
             <small class="event-form-help">{{ __('JPG or PNG, up to 2MB.') }}</small>
             @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
+            @include('events.partials.image-crop-editor', ['imageUrl' => null, 'crop' => []])
         </div>
 
         {{-- 言語・公開範囲・承認はイベントページの作成だけで選ぶ（コミュニティ内は既定値で作る） --}}

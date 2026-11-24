@@ -315,12 +315,6 @@
                 </div>
 
                 <label for="image" class="event-form-label">Cover image</label>
-                <div class="mb-3 {{ $event->image ? '' : 'd-none' }}" id="image-preview-wrapper">
-                    <img src="{{ $event->image ? asset('storage/' . $event->image) : '' }}" id="image-preview"
-                        alt="Cover image preview" class="rounded border"
-                        style="max-width: 320px; width: 100%; height: auto;">
-                </div>
-
                 <input type="file" name="image" id="image" accept="image/*"
                     class="form-control @error('image') is-invalid @enderror">
                 <small class="event-form-help">JPG or PNG, up to 2MB. Leave empty to keep the current image.</small>
@@ -328,15 +322,10 @@
                     <div class="text-danger small">{{ $message }}</div>
                 @enderror
 
-                <script>
-                    document.getElementById('image').addEventListener('change', function(e) {
-                        const file = e.target.files[0];
-                        if (!file) return;
-
-                        document.getElementById('image-preview').src = URL.createObjectURL(file);
-                        document.getElementById('image-preview-wrapper').classList.remove('d-none');
-                    });
-                </script>
+                @include('events.partials.image-crop-editor', [
+                    'imageUrl' => $event->image ? asset('storage/' . $event->image) : null,
+                    'crop' => $event->image_crop ?? [],
+                ])
             </div>
 
             {{-- 04 Language --}}
@@ -479,7 +468,7 @@
                 try {
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=en&lat=${e.latlng.lat}&lon=${e.latlng.lng}`
-                        );
+                    );
                     const data = await res.json();
                     input.value = shortAddress(data);
                 } catch (err) {
@@ -494,7 +483,7 @@
                 try {
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`
-                        );
+                    );
                     const results = await res.json();
                     if (results.length) {
                         const lat = parseFloat(results[0].lat);

@@ -226,10 +226,12 @@
         @php
             $eventImageUrl = $event->image
                 ? (str_starts_with($event->image, 'https://') || str_starts_with($event->image, 'http://')
-                    ? $event->image : asset('storage/'.$event->image))
+                    ? $event->image
+                    : asset('storage/' . $event->image))
                 : asset('images/onlylogo.jpg');
         @endphp
-        <img src="{{ $eventImageUrl }}" alt="{{ $event->title }}" class="event-card-image">
+        <img src="{{ $eventImageUrl }}" alt="{{ $event->title }}" class="event-card-image"
+            style="{{ $event->imageStyle() }}">
 
         @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
             {{-- My Event --}}
@@ -258,7 +260,8 @@
                     </button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="favorite-button" aria-label="{{ __('Please log in to bookmark this') }}">
+                <a href="{{ route('login') }}" class="favorite-button"
+                    aria-label="{{ __('Please log in to bookmark this') }}">
                     ♡
                 </a>
             @endauth

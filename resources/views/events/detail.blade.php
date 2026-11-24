@@ -228,7 +228,8 @@
                 {{-- cover image --}}
                 <div class="event-cover">
                     @if ($event->image)
-                        <img src="{{ asset('storage/' . $event->image) }}" alt="{{ $event->title }}">
+                        <img src="{{ asset('storage/' . $event->image) }}" alt="{{ $event->title }}"
+                            style="{{ $event->imageStyle() }}">
                     @else
                         <div class="event-cover-empty">{{ __('No image') }}</div>
                     @endif
