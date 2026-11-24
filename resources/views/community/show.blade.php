@@ -644,6 +644,14 @@
         white-space: pre-wrap;
     }
 
+    .community-chat-translation {
+        margin-top: 6px !important;
+        padding-top: 6px;
+        border-top: 1px solid #dce4e0;
+        color: #174e45;
+        font-size: 0.9em;
+    }
+
     /* 発言の横の時刻と削除ボタン */
     .community-chat-side {
         display: flex;
@@ -1065,6 +1073,10 @@
                 const body = document.createElement('p');
                 body.textContent = message.body;
                 bubble.append(body);
+                const translation = document.createElement('p');
+                translation.className = 'community-chat-translation';
+                translation.hidden = true;
+                bubble.append(translation);
             }
 
             const side = document.createElement('div');
@@ -1077,6 +1089,16 @@
                 const edited = document.createElement('span');
                 edited.textContent = 'edited';
                 side.append(edited);
+            }
+            if (message.body) {
+                const translate = document.createElement('button');
+                translate.type = 'button';
+                translate.className = 'community-chat-translate';
+                translate.dataset.translateUrl = message.translate_url;
+                translate.title = @json(__('Translate'));
+                translate.setAttribute('aria-label', @json(__('Translate')));
+                translate.innerHTML = '<i class="fa-solid fa-language" aria-hidden="true"></i>';
+                side.append(translate);
             }
             if (message.can_edit) {
                 const edit = document.createElement('button');
@@ -1443,6 +1465,42 @@
             if (edit) {
                 const id = Number(edit.closest('[data-message-id]').dataset.messageId);
                 startEditing(messages.find((message) => message.id === id));
+            }
+        });
+
+        list.addEventListener('click', async (event) => {
+            const translate = event.target.closest('.community-chat-translate');
+            if (!translate || translate.disabled) {
+                return;
+            }
+            const item = translate.closest('[data-message-id]');
+            const result = item?.querySelector('.community-chat-translation');
+            if (!item || !result) {
+                return;
+            }
+
+            translate.disabled = true;
+            status.textContent = @json(__('Searching...'));
+            try {
+                const response = await fetch(translate.dataset.translateUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || @json(__('Translation is unavailable right now.')));
+                }
+                result.textContent = data.translation;
+                result.hidden = false;
+                status.textContent = '';
+            } catch (error) {
+                status.textContent = error.message || @json(__('Translation is unavailable right now.'));
+            } finally {
+                translate.disabled = false;
             }
         });
 

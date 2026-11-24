@@ -3,13 +3,13 @@
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">
                     <h3 class="h1 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-guide-title">
-                        Community Guideline
+                        {{ __('Community Guidelines') }}
                     </h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
-                    @if (!empty($siteSettings['policy_guidelines']))
-                        <p>{!! nl2br(e($siteSettings['policy_guidelines'])) !!}</p>
+                    @if (!empty($localizedPolicies['guidelines'] ?? ''))
+                        <p>{!! nl2br(e($localizedPolicies['guidelines'])) !!}</p>
                     @else
                     <p>
                     <strong>コミュニティガイドライン</strong><br>

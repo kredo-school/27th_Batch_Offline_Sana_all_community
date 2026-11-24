@@ -107,6 +107,17 @@ class NotificationController extends Controller
             return redirect()->route('events.participants', $notification->related_id);
         }
 
+        if ($notification->type === 'help_application' && $notification->related_id !== null) {
+            return redirect()->route('helps.applications.index', $notification->related_id);
+        }
+
+        if (in_array($notification->type, [
+            'help_application_accepted',
+            'help_application_rejected',
+        ], true) && $notification->related_id !== null) {
+            return redirect()->route('helps.show', $notification->related_id);
+        }
+
         if ($notification->type === 'event_comment' && $notification->related_id !== null) {
             return redirect()->route('events.show', $notification->related_id);
         }
@@ -133,10 +144,10 @@ class NotificationController extends Controller
         if ($notification->type === 'event_cancelled') {
             $event = Event::find($notification->related_id);
 
-            // コミュニティを抜けるなどして見られなくなったイベントなら、コミュニティの通知一覧へ
+            // Keep this notification in the general notification flow if the event is no longer visible.
             return $event && $event->isVisibleTo(Auth::user())
                 ? redirect()->route('events.show', $event->id)
-                : redirect()->route('notifications.index', ['type' => 'community']);
+                : redirect()->route('notifications.index');
         }
 
         return view('notifications.show', compact('notification'));

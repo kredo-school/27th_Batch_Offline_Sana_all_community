@@ -174,6 +174,13 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		body.textContent = message.body;
 		bubble.append(body);
 
+		if (message.body) {
+			const translation = document.createElement('p');
+			translation.className = 'message-chat-translation';
+			translation.hidden = true;
+			bubble.append(translation);
+		}
+
 		if (message.sent_at) {
 			const time = document.createElement('time');
 			time.textContent = message.sent_at;
@@ -185,9 +192,19 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 
 		item.append(bubble);
 
-		if (message.is_mine) {
+		if (message.body) {
 			const actions = document.createElement('div');
 			actions.className = 'message-chat-actions';
+			const translateButton = document.createElement('button');
+			translateButton.type = 'button';
+			translateButton.dataset.messageAction = 'translate';
+			translateButton.dataset.translateUrl = message.translate_url;
+			translateButton.setAttribute('aria-label', chatPanel.dataset.translateLabel);
+			translateButton.title = chatPanel.dataset.translateLabel;
+			translateButton.innerHTML = '<i class="fa-solid fa-language" aria-hidden="true"></i>';
+			actions.append(translateButton);
+
+			if (message.is_mine) {
 			const editButton = document.createElement('button');
 			editButton.type = 'button';
 			editButton.dataset.messageAction = 'edit';
@@ -201,6 +218,7 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 			deleteButton.title = 'Delete message';
 			deleteButton.innerHTML = '<i class="fa-solid fa-trash" aria-hidden="true"></i>';
 			actions.append(editButton, deleteButton);
+			}
 			bubble.append(actions);
 		}
 
@@ -276,6 +294,37 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 				}
 			}
 
+			return;
+		}
+
+		const translateButton = event.target.closest('[data-message-action="translate"]');
+		if (translateButton) {
+			const item = translateButton.closest('.message-chat-item');
+			const result = item?.querySelector('.message-chat-translation');
+			if (!item || !result || translateButton.disabled) {
+				return;
+			}
+
+			translateButton.disabled = true;
+			chatStatus.textContent = chatPanel.dataset.translationLoading;
+			try {
+				const response = await fetch(translateButton.dataset.translateUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: requestHeaders,
+				});
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(data.message || chatPanel.dataset.translationError);
+				}
+				result.textContent = data.translation;
+				result.hidden = false;
+				chatStatus.textContent = '';
+			} catch (error) {
+				chatStatus.textContent = error.message || chatPanel.dataset.translationError;
+			} finally {
+				translateButton.disabled = false;
+			}
 			return;
 		}
 
@@ -444,3 +493,41 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		}
 	});
 }
+
+document.addEventListener('click', async (event) => {
+	const button = event.target.closest('.content-translate-button');
+	if (!button || button.disabled) {
+		return;
+	}
+
+	const container = button.closest('.content-translation-source')?.parentElement || button.parentElement;
+	const result = container?.querySelector('.content-translation-result');
+	if (!result || !button.dataset.translationUrl) {
+		return;
+	}
+
+	button.disabled = true;
+	result.hidden = false;
+	result.textContent = button.dataset.translationLoading || 'Searching...';
+
+	try {
+		const response = await fetch(button.dataset.translationUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				Accept: 'application/json',
+				'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+				'X-Requested-With': 'XMLHttpRequest',
+			},
+		});
+		const data = await response.json();
+		if (!response.ok) {
+			throw new Error(data.message || button.dataset.translationError || 'Translation is unavailable right now.');
+		}
+		result.textContent = data.translation;
+	} catch (error) {
+		result.textContent = error.message || button.dataset.translationError || 'Translation is unavailable right now.';
+	} finally {
+		button.disabled = false;
+	}
+});

@@ -3,13 +3,13 @@
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">
                     <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-job-title">
-                        Job Posting Policy
+                        {{ __('Job posting policy') }}
                     </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
-                    @if (!empty($siteSettings['policy_job']))
-                        <p>{!! nl2br(e($siteSettings['policy_job'])) !!}</p>
+                    @if (!empty($localizedPolicies['job'] ?? ''))
+                        <p>{!! nl2br(e($localizedPolicies['job'])) !!}</p>
                     @else
                     <p>
                         <strong>求人掲載ポリシー</strong> <br>

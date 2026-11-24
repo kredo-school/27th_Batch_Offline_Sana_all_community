@@ -211,7 +211,7 @@
                 ]),
             ) }}"
                 class="category-button {{ (string) request('category_id') === (string) $category->id ? 'active' : '' }}">
-                {{ $category->name }}
+                {{ __($category->name) }}
             </a>
         @endforeach
     </div>

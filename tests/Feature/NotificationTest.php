@@ -208,6 +208,23 @@ class NotificationTest extends TestCase
         $this->assertNotNull($notification->fresh()->read_at);
     }
 
+    public function test_help_application_result_notifications_open_the_help_page(): void
+    {
+        foreach (['help_application_accepted', 'help_application_rejected'] as $type) {
+            $user = User::factory()->create();
+            $notification = UserNotification::create([
+                'user_id' => $user->id,
+                'type' => $type,
+                'title' => 'Help application result',
+                'related_id' => 123,
+            ]);
+
+            $this->actingAs($user)
+                ->get(route('notifications.show', $notification))
+                ->assertRedirect(route('helps.show', 123));
+        }
+    }
+
     public function test_notification_detail_page_displays_general_notifications(): void
     {
         $user = User::factory()->create();

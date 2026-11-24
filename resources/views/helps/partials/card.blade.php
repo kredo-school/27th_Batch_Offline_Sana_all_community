@@ -254,7 +254,14 @@
         }
     }
 
-    $rewardLabel = collect([$help->reward_type, $help->reward_amount])
+    $rewardTypeLabel = match ($help->reward_type) {
+        'hourly' => __('Hourly'),
+        'fixed' => __('Fixed reward'),
+        'negotiable' => __('Negotiable'),
+        default => $help->reward_type,
+    };
+
+    $rewardLabel = collect([$rewardTypeLabel, $help->reward_amount])
         ->filter(fn($value) => filled($value))
         ->implode(' / ');
 @endphp
@@ -305,24 +312,24 @@
         <div class="help-card-badges">
             @if ($help->category)
                 <span class="badge help-category">
-                    {{ $help->category->name }}
+                    {{ __($help->category->name) }}
                 </span>
             @endif
 
             @if ($help->requester_type)
                 <span class="badge help-status">
-                    {{ $help->requester_type }}
+                    {{ __($help->requester_type) }}
                 </span>
             @endif
 
             @if ($help->status)
                 <span class="badge help-status">
-                    {{ $help->status }}
+                    {{ __($help->status) }}
                 </span>
             @endif
 
             <span class="badge help-status {{ $deadlineClass }}">
-                {{ $deadlineLabel }}
+                {{ __($deadlineLabel) }}
             </span>
         </div>
 

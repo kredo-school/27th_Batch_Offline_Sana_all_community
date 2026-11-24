@@ -3,13 +3,13 @@
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">
                     <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-term-title">
-                        Terms and privacy
+                        {{ __('Terms and Privacy') }}
                     </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
-                    @if (!empty($siteSettings['policy_terms']))
-                        <p>{!! nl2br(e($siteSettings['policy_terms'])) !!}</p>
+                    @if (!empty($localizedPolicies['terms'] ?? ''))
+                        <p>{!! nl2br(e($localizedPolicies['terms'])) !!}</p>
                     @else
                     <p>
                         <strong>TERMS OF USE </strong> <br>

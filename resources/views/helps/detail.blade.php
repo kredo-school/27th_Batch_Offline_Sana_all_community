@@ -139,7 +139,14 @@
             }
         }
 
-        $rewardLabel = collect([$help->reward_type, $help->reward_amount])
+        $rewardTypeLabel = match ($help->reward_type) {
+            'hourly' => __('Hourly'),
+            'fixed' => __('Fixed reward'),
+            'negotiable' => __('Negotiable'),
+            default => $help->reward_type,
+        };
+
+        $rewardLabel = collect([$rewardTypeLabel, $help->reward_amount])
             ->filter(fn($value) => filled($value))
             ->implode(' / ');
     @endphp
@@ -152,13 +159,13 @@
 
         @if (session('success'))
             <div class="alert alert-success">
-                {{ session('success') }}
+                {{ __(session('success')) }}
             </div>
         @endif
 
         @if (session('error'))
             <div class="alert alert-danger">
-                {{ session('error') }}
+                {{ __(session('error')) }}
             </div>
         @endif
 
@@ -181,7 +188,7 @@
                         </span>
                     @else
                         <span class="help-status">
-                            {{ $statusLabel }}
+                            {{ __($statusLabel) }}
                         </span>
                     @endif
                 </div>
@@ -191,19 +198,19 @@
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         @if ($help->category)
                             <span class="help-badge">
-                                {{ $help->category->name }}
+                                {{ __($help->category->name) }}
                             </span>
                         @endif
 
                         @if ($help->requester_type)
                             <span class="help-badge-secondary">
-                                {{ $help->requester_type }}
+                                {{ __($help->requester_type) }}
                             </span>
                         @endif
 
                         @if ($help->status)
                             <span class="help-badge-secondary">
-                                {{ $statusLabel }}
+                                {{ __($statusLabel) }}
                             </span>
                         @endif
                     </div>
@@ -226,7 +233,7 @@
                                     {{ __('Category') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->category?->name ?? __('Not specified') }}
+                                    {{ __($help->category?->name) ?? __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -238,7 +245,7 @@
                                     {{ __('Requester type') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->requester_type ?: __('Not specified') }}
+                                    {{ __($help->requester_type) ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -274,7 +281,7 @@
                                     {{ __('Reward') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $rewardLabel ?: __('Not specified') }}
+                                    {{ __($rewardLabel) ?: __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -288,9 +295,9 @@
                                 <div class="help-info-value">
                                     @if (!is_null($help->capacity))
                                         @if ($help->capacity == 1)
-                                            {{ __(':count person', ['count' => $help->capacity]) }}
+                                            {{ __('Capacity :count person', ['count' => $help->capacity]) }}
                                         @else
-                                            {{ __(':count people', ['count' => $help->capacity]) }}
+                                            {{ __('Capacity :count people', ['count' => $help->capacity]) }}
                                         @endif
                                     @else
                                         {{ __('Not specified') }}

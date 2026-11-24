@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $notification->title ?: __('Notification'))
+@section('title', $notification->localized_title ?: __('Notification'))
 
 @section('content')
     <div class="container py-5">
@@ -15,7 +15,7 @@
                         {{ $notification->created_at?->format('M j, Y g:i A') }}
                     </p>
                     <h1 class="h4 mb-3">
-                        {{ $notification->title ?: $notification->type_label }}
+                        {{ $notification->localized_title ?: $notification->type_label }}
                     </h1>
 
                     @if ($notification->sender_name)
@@ -24,8 +24,8 @@
                         </p>
                     @endif
 
-                    @if ($notification->message)
-                        <p class="mb-4">{{ $notification->message }}</p>
+                    @if ($notification->localized_message)
+                        <p class="mb-4">{{ $notification->localized_message }}</p>
                     @endif
 
                     @if (in_array($notification->type, ['event_join_approved', 'event_join_request'], true)

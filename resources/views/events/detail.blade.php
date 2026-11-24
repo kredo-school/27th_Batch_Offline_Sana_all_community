@@ -224,7 +224,7 @@
             <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to events') }}</a>
         @endif
         @if (session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger">{{ __(session('error')) }}</div>
         @endif
         @if ($isCancelled)
             <div class="alert alert-danger">
@@ -396,7 +396,17 @@
                                         <span class="event-help ms-1">{{ $formatRelativeTime($review->created_at) }}</span>
                                     </div>
                                     @if ($review->comment)
-                                        <div style="white-space: pre-line;">{{ $review->comment }}</div>
+                                        <div class="content-translation-source" style="white-space: pre-line;">{{ $review->comment }}</div>
+                                        @auth
+                                            <button type="button" class="btn btn-link btn-sm p-0 content-translate-button"
+                                                data-translation-url="{{ route('reviews.translate', $review) }}"
+                                                data-translation-loading="{{ __('Searching...') }}"
+                                                data-translation-error="{{ __('Translation is unavailable right now.') }}"
+                                                aria-label="{{ __('Translate') }}" title="{{ __('Translate') }}">
+                                                <i class="fa-solid fa-language" aria-hidden="true"></i> {{ __('Translate') }}
+                                            </button>
+                                            <div class="small text-secondary mt-1 content-translation-result" hidden></div>
+                                        @endauth
                                     @endif
                                 </div>
                             </div>
@@ -451,7 +461,17 @@
                                         @endif
                                         <span class="event-help ms-1">{{ $formatRelativeTime($comment->created_at) }}</span>
                                     </div>
-                                    <div style="white-space: pre-line;">{{ $comment->content }}</div>
+                                    <div class="content-translation-source" style="white-space: pre-line;">{{ $comment->content }}</div>
+                                    @auth
+                                        <button type="button" class="btn btn-link btn-sm p-0 content-translate-button"
+                                            data-translation-url="{{ route('comments.translate', $comment) }}"
+                                            data-translation-loading="{{ __('Searching...') }}"
+                                            data-translation-error="{{ __('Translation is unavailable right now.') }}"
+                                            aria-label="{{ __('Translate') }}" title="{{ __('Translate') }}">
+                                            <i class="fa-solid fa-language" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="small text-secondary mt-1 content-translation-result" hidden></div>
+                                    @endauth
                                 </div>
                                 @if ($canDeleteComment)
                                     <button type="button" class="btn btn-link text-secondary p-0 align-self-start"

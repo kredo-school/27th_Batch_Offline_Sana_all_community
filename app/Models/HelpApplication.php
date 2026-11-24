@@ -11,7 +11,7 @@ class HelpApplication extends Model
     use HasFactory;
 
     protected $fillable = [
-        'job_id',
+        'help_id',
         'user_id',
         'cover_letter',
         'status',
@@ -27,7 +27,7 @@ class HelpApplication extends Model
      */
     public function help(): BelongsTo
     {
-        return $this->belongsTo(Help::class, 'job_id');
+        return $this->belongsTo(Help::class, 'help_id');
     }
 
     /**

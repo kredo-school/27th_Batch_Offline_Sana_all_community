@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Help;
 use App\Models\HelpApplication;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -60,6 +61,16 @@ class HelpApplicationController extends Controller
             'cover_letter' => $validated['cover_letter'] ?? null,
             'status' => 'pending',
             'applied_at' => now(),
+        ]);
+
+        UserNotification::create([
+            'user_id' => $help->user_id,
+            'sender_name' => Auth::user()->name,
+            'type' => 'help_application',
+            'title' => 'New help application',
+            'message' => Auth::user()->name.' applied to your help "'.$help->title.'".',
+            'related_type' => Help::class,
+            'related_id' => $help->id,
         ]);
 
         return redirect()
@@ -130,9 +141,23 @@ class HelpApplicationController extends Controller
             'status' => $validated['status'],
         ]);
 
+        $accepted = $validated['status'] === 'accepted';
+
+        UserNotification::create([
+            'user_id' => $application->user_id,
+            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'type' => $accepted ? 'help_application_accepted' : 'help_application_rejected',
+            'title' => $accepted ? 'Help application accepted' : 'Help application rejected',
+            'message' => $accepted
+                ? "Your application for '{$help->title}' was accepted."
+                : "Your application for '{$help->title}' was rejected.",
+            'related_type' => Help::class,
+            'related_id' => $help->id,
+        ]);
+
         return back()->with(
             'success',
-            $validated['status'] === 'accepted'
+            $accepted
                 ? 'Applicant accepted.'
                 : 'Applicant rejected.'
         );

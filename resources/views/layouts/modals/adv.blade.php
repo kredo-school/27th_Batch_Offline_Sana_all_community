@@ -3,13 +3,13 @@
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">
                     <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-adv-title">
-                        Business Advertising Policy
+                        {{ __('Business Advertising Policy') }}
                     </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
-                    @if (!empty($siteSettings['policy_advertising']))
-                        <p>{!! nl2br(e($siteSettings['policy_advertising'])) !!}</p>
+                    @if (!empty($localizedPolicies['advertising'] ?? ''))
+                        <p>{!! nl2br(e($localizedPolicies['advertising'])) !!}</p>
                     @else
                     <p>
                         <strong>店舗・事業者広告ポリシー</strong> <br>

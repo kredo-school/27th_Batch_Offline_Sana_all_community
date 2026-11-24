@@ -11,8 +11,8 @@
 @endphp
 
 <div id="crop-editor" class="mt-3 {{ $imageUrl ? '' : 'd-none' }}" data-has-crop="{{ $hasCrop ? '1' : '0' }}">
-    <div class="event-form-label mb-1">Adjust cover position</div>
-    <small class="event-form-help d-block mb-2">Drag the image to reposition it, or use the sliders below.</small>
+    <div class="event-form-label mb-1">{{ __('Adjust cover position')}}</div>
+    <small class="event-form-help d-block mb-2">{{ __('Drag the image to reposition it, or use the sliders below.')}}</small>
 
     {{-- プレビュー（詳細ページと同じ横長の形） --}}
     <div id="crop-frame"
@@ -23,25 +23,25 @@
 
     {{-- スライダー --}}
     <div class="row g-2 align-items-center mt-3">
-        <label for="crop-zoom" class="col-4 col-md-3 mb-0">Zoom</label>
+        <label for="crop-zoom" class="col-4 col-md-3 mb-0">{{ __('Zoom')}}</label>
         <div class="col">
             <input type="range" id="crop-zoom" class="form-range" min="1" max="10" step="0.01" value="{{ $zoom }}">
         </div>
     </div>
     <div class="row g-2 align-items-center">
-        <label for="crop-x" class="col-4 col-md-3 mb-0">Horizontal position</label>
+        <label for="crop-x" class="col-4 col-md-3 mb-0">{{ __('Horizontal position')}}</label>
         <div class="col">
             <input type="range" id="crop-x" class="form-range" min="0" max="100" step="0.1" value="{{ $x }}">
         </div>
     </div>
     <div class="row g-2 align-items-center">
-        <label for="crop-y" class="col-4 col-md-3 mb-0">Vertical position</label>
+        <label for="crop-y" class="col-4 col-md-3 mb-0">{{ __('Vertical position')}}</label>
         <div class="col">
             <input type="range" id="crop-y" class="form-range" min="0" max="100" step="0.1" value="{{ $y }}">
         </div>
     </div>
 
-    <button type="button" id="crop-reset" class="btn btn-outline-secondary btn-sm mt-2">Reset position</button>
+    <button type="button" id="crop-reset" class="btn btn-outline-secondary btn-sm mt-2">{{ __('Reset position')}}</button>
 
     {{-- 実際に送信される値 --}}
     <input type="hidden" name="image_crop[zoom]" id="crop-zoom-input" value="{{ $zoom }}">

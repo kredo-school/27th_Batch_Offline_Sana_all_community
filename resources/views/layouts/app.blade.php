@@ -212,6 +212,14 @@
             white-space: pre-wrap;
         }
 
+        .message-chat-translation {
+            margin-top: 6px !important;
+            padding-top: 6px;
+            border-top: 1px solid #cbd8d3;
+            color: #174e45;
+            font-size: 0.9em;
+        }
+
         .message-chat-item time {
             display: block;
             margin-top: 4px;
@@ -1089,12 +1097,12 @@
                                                                 @if ($notification->type === 'community_message')
                                                                     <span class="d-block">{{ $notification->related?->name ?? __('Community') }}</span>
                                                                 @else
-                                                                    <span class="d-block">{{ $notification->title ?: $notification->type_label }}</span>
+                                                                    <span class="d-block">{{ $notification->localized_title ?: $notification->type_label }}</span>
                                                                     @if ($notification->sender_name)
                                                                         <span class="d-block small text-muted">{{ __('From') }}: {{ $notification->sender_name }}</span>
                                                                     @endif
-                                                                    @if ($notification->message)
-                                                                        <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->message, 100) }}</span>
+                                                                    @if ($notification->localized_message)
+                                                                        <span class="d-block small text-secondary">{{ \Illuminate\Support\Str::limit($notification->localized_message, 100) }}</span>
                                                                     @endif
                                                                 @endif
                                                                 @if ($notification->created_at)
@@ -1440,7 +1448,10 @@
                     </div>
                 </div>
             </div>
-            <aside id="message-chat-panel" class="message-chat-panel" role="dialog" aria-labelledby="message-chat-title" hidden>
+            <aside id="message-chat-panel" class="message-chat-panel" role="dialog" aria-labelledby="message-chat-title"
+                data-translate-label="{{ __('Translate') }}"
+                data-translation-loading="{{ __('Searching...') }}"
+                data-translation-error="{{ __('Translation is unavailable right now.') }}" hidden>
                 <header class="message-chat-header">
                     <h2 id="message-chat-title">{{ __('Conversation') }}</h2>
                     <button type="button" class="message-chat-close" data-close-message-chat aria-label="{{ __('Close conversation') }}">

@@ -79,7 +79,7 @@
             </h2>
 
             <span class="text-muted small">
-                {{ $applications->total() }} applications
+                {{ $applications->total() }} {{ __('applications')}}
             </span>
         </div>
 
@@ -101,7 +101,7 @@
                             </div>
 
                             <div class="text-muted small">
-                                Applied
+                                {{ __('Applied')}}
                                 {{ $application->applied_at?->locale(app()->getLocale())->isoFormat('lll') }}
                             </div>
                         </div>

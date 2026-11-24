@@ -49,6 +49,11 @@ class LibreTranslateService
         $baseUrl = rtrim($configuredUrl, '/');
         $apiKey  = config('services.libretranslate.key');
 
+        $sourceLang = $this->resolveSourceLanguage($text, $sourceLang, $baseUrl, $apiKey);
+        if ($sourceLang === null) {
+            return null;
+        }
+
         $payload = [
             'q'      => $text,
             'source' => $sourceLang,
@@ -61,7 +66,8 @@ class LibreTranslateService
         }
 
         try {
-            $response = Http::timeout(10)
+            $response = Http::connectTimeout(5)
+                ->timeout(15)
                 ->acceptJson()
                 ->post("{$baseUrl}/translate", $payload);
 
@@ -75,6 +81,44 @@ class LibreTranslateService
             ]);
         } catch (\Throwable $e) {
             Log::error('LibreTranslate connection failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    private function resolveSourceLanguage(
+        string $text,
+        string $sourceLang,
+        string $baseUrl,
+        mixed $apiKey,
+    ): ?string {
+        if (strtolower($sourceLang) !== 'auto') {
+            return strtolower($sourceLang);
+        }
+
+        $payload = ['q' => $text];
+        if (! empty($apiKey)) {
+            $payload['api_key'] = $apiKey;
+        }
+
+        try {
+            $response = Http::connectTimeout(5)
+                ->timeout(10)
+                ->acceptJson()
+                ->post("{$baseUrl}/detect", $payload);
+
+            $detected = $response->json();
+            $language = is_array($detected) ? ($detected[0]['language'] ?? null) : null;
+            if ($response->successful() && is_string($language) && preg_match('/^[a-z]{2,3}$/i', $language)) {
+                return strtolower($language);
+            }
+
+            Log::warning('LibreTranslate language detection failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LibreTranslate language detection connection failed: ' . $e->getMessage());
         }
 
         return null;
