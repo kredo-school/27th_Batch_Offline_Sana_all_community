@@ -427,7 +427,7 @@
                                 @csrf
                                 <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
                                     placeholder="{{ __('Write a comment') }}" maxlength="500" required>
-                                <button type="submit" class="btn btn-primary">{{ __('Post comment') }}</button>
+                                <button type="submit" class="btn btn-primary text-nowrap flex-shrink-0">{{ __('Post comment') }}</button>
                             </form>
                             @error('content')
                                 <div class="text-danger small">{{ $message }}</div>
