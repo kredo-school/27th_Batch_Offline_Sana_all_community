@@ -20,7 +20,7 @@ class Category extends Model
             'Sell' => '売る',
             'Buy' => '買う',
             'Learn' => '学習',
-            'Help' => '助けて！',
+            'Help' => 'ヘルプ',
             'Advertisement' => '広告',
         ],
         'es' => [

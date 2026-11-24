@@ -20,7 +20,7 @@ class HelpBookmarkController extends Controller
         );
 
         HelpBookmark::firstOrCreate([
-            'Help_id' => $help->id,
+            'help_id' => $help->id,
             'user_id' => Auth::id(),
         ]);
 

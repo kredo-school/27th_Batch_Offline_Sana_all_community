@@ -171,6 +171,7 @@ class MessageController extends Controller
             'is_mine' => (int) $message->sender_id === $currentUserId,
             'update_url' => route('messages.update', $message),
             'delete_url' => route('messages.destroy', $message),
+            'translate_url' => route('messages.translate', $message),
             'sender' => [
                 'name' => $sender?->name,
                 'username' => $sender?->username ?: $sender?->name,

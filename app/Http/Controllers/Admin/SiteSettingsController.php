@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\SiteSetting;
+use App\Services\LocalizedPolicyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,7 +19,7 @@ class SiteSettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request, LocalizedPolicyService $policies)
     {
         $data = $request->validate([
             'header_category_order' => ['nullable', 'array'],
@@ -35,7 +36,13 @@ class SiteSettingsController extends Controller
 
         SiteSetting::put('header_category_order', array_values(array_filter($data['header_category_order'] ?? [])));
         foreach (['policy_terms', 'policy_guidelines', 'policy_report', 'policy_event', 'policy_job', 'policy_advertising', 'policy_p2p'] as $key) {
-            SiteSetting::put($key, $data[$key] ?? '');
+            $value = $data[$key] ?? '';
+            $previous = (string) SiteSetting::get($key, '');
+            SiteSetting::put($key, $value);
+
+            if ($value !== $previous) {
+                $policies->translateAndStore((string) str_replace('policy_', '', $key), $value);
+            }
         }
 
         if ($request->hasFile('home_background')) {

@@ -131,7 +131,7 @@
 
                     @error('title')
                         <div class="text-danger small">
-                            {{ $message }}
+                            {{ __($message) }}
                         </div>
                     @enderror
                 </div>
@@ -144,7 +144,7 @@
                         </label>
 
                         <span class="help-form-required">
-                            REQUIRED
+                            {{ __('REQUIRED')}}
                         </span>
                     </div>
 
@@ -163,7 +163,7 @@
                                     <input type="radio" name="requester_type" value="{{ $value }}"
                                         class="form-check-input me-2" @checked(old('requester_type') === $value) required>
 
-                                    {{ $label }}
+                                    {{ __($label) }}
                                 </label>
                             </div>
                         @endforeach
@@ -223,7 +223,7 @@
 
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>
-                                {{ $category->name }}
+                                {{ __($category->name) }}
                             </option>
                         @endforeach
                     </select>

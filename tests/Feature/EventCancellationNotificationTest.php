@@ -58,25 +58,25 @@ class EventCancellationNotificationTest extends TestCase
         $this->assertSame(0, UserNotification::whereIn('user_id', [$rejected->id, $owner->id])->count());
     }
 
-    public function test_cancel_notification_is_listed_with_community_notifications_not_the_bell(): void
+    public function test_cancel_notification_is_listed_with_general_notifications_not_the_community_dropdown(): void
     {
         [$event, $owner, $approved] = $this->eventWithParticipants();
         $this->actingAs($owner)->patch(route('events.cancel', $event), ['cancel_reason' => 'Storm warning']);
 
-        // ヘッダーのコミュニティ通知欄に、コミュニティ名・イベント名・理由が出る
+        // ヘッダーの一般通知欄にイベント名と理由が出る
         $this->actingAs($approved)
             ->get(route('profile.show', $approved->id))
             ->assertOk()
-            ->assertSeeInOrder(['Beach Club', 'Event cancelled: Beach Cleanup', 'Reason: Storm warning'])
-            ->assertDontSee('<span class="d-block">Event cancelled</span>', false);
+            ->assertSeeInOrder(['Event cancelled', 'Beach Cleanup', 'Storm warning'])
+            ->assertDontSee('Beach Club', false);
 
-        // 通知一覧のコミュニティの絞り込みにも含まれ、一般の絞り込みには含まれない
+        // 通知一覧の一般側に含まれ、コミュニティの絞り込みには含まれない
         $this->actingAs($approved)
             ->get(route('notifications.index', ['type' => 'community']))
-            ->assertViewHas('records', fn ($records) => $records->pluck('type')->contains('event_cancelled'));
-        $this->actingAs($approved)
-            ->get(route('notifications.index', ['type' => 'general']))
             ->assertViewHas('records', fn ($records) => ! $records->pluck('type')->contains('event_cancelled'));
+        $this->actingAs($approved)
+            ->get(route('notifications.index'))
+            ->assertViewHas('records', fn ($records) => $records->pluck('type')->contains('event_cancelled'));
     }
 
     public function test_cancelling_an_event_outside_communities_notifies_approved_and_pending_participants(): void
@@ -107,8 +107,7 @@ class EventCancellationNotificationTest extends TestCase
         $this->actingAs($approved)
             ->get(route('profile.show', $approved->id))
             ->assertOk()
-            ->assertSee('<span class="d-block">Event</span>', false)
-            ->assertSeeInOrder(['Event cancelled: Beach Cleanup', 'Reason: Storm warning']);
+            ->assertSeeInOrder(['Event cancelled', 'Beach Cleanup', 'Storm warning']);
     }
 
     public function test_no_notifications_when_the_cancel_is_refused(): void

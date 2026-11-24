@@ -3,13 +3,13 @@
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">
                     <h1 class="h1 mb-0 modal-title text-white d-flex align-items-center w-100 justify-content-center" id="modal-event-title">
-                        Event Organizer Terms
+                        {{ __('Event organizer term') }}
                     </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-start">
-                    @if (!empty($siteSettings['policy_event']))
-                        <p>{!! nl2br(e($siteSettings['policy_event'])) !!}</p>
+                    @if (!empty($localizedPolicies['event'] ?? ''))
+                        <p>{!! nl2br(e($localizedPolicies['event'])) !!}</p>
                     @else
                     <p>
                         <strong>イベント開催者規約</strong> <br>

@@ -11,9 +11,12 @@ use App\Models\Message;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\SiteSetting;
+use App\Services\MissingTranslationService;
+use App\Services\LocalizedPolicyService;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(MissingTranslationService::class);
+        $this->app->singleton(LocalizedPolicyService::class);
     }
 
     /**
@@ -33,6 +37,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Lang::handleMissingKeysUsing(function (
+            string $key,
+            array $replace,
+            ?string $locale,
+            bool $fallback,
+        ): ?string {
+            // A browser request must never wait on external translation
+            // providers while rendering a page. Explicit translation flows
+            // (such as policy revisions) call the service directly.
+            if (app()->bound('request')) {
+                return null;
+            }
+
+            return app(MissingTranslationService::class)->translate($key, $locale);
+        });
+
         Relation::morphMap([
             'comment' => Comment::class,
             'category' => Category::class,
@@ -203,6 +223,15 @@ class AppServiceProvider extends ServiceProvider
             $followedMessageRecipients = $messageRecipients->whereIn('id', $followedRecipientIds)->values();
             $otherMessageRecipients = $messageRecipients->whereNotIn('id', $followedRecipientIds)->values();
 
+            $policySettings = SiteSetting::query()
+                ->whereIn('key', [
+                    'policy_terms', 'policy_guidelines', 'policy_report', 'policy_event',
+                    'policy_job', 'policy_advertising', 'policy_p2p',
+                ])
+                ->pluck('value', 'key')
+                ->mapWithKeys(fn ($value, $key): array => [str_replace('policy_', '', $key) => $value])
+                ->all();
+
             $view->with([
                 'categories' => $categories,
                 'chats' => $chats,
@@ -218,6 +247,7 @@ class AppServiceProvider extends ServiceProvider
                 'hasMyEvents' => $hasMyEvents,
                 'hasMyCommunities' => $hasMyCommunities,
                 'siteSettings' => SiteSetting::query()->pluck('value', 'key'),
+                'localizedPolicies' => app(LocalizedPolicyService::class)->localizedPolicies($policySettings, app()->getLocale()),
             ]);
         });
 

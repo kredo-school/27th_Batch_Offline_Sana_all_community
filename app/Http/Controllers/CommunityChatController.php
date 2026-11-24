@@ -266,6 +266,7 @@ class CommunityChatController extends Controller
             'can_delete' => (int) $message->user_id === $currentUserId || $canManage,
             'update_url' => route('community.chat.update', [$message->community_id, $message->id]),
             'delete_url' => route('community.chat.destroy', [$message->community_id, $message->id]),
+            'translate_url' => route('community.chat.translate', [$message->community_id, $message->id]),
             'sender' => [
                 'id' => (int) $message->user_id,
                 'name' => $message->senderName(),

@@ -18,7 +18,6 @@ class UserNotification extends Model
         'community_invite',
         'community_moderator_added',
         'community_ownership_transferred',
-        'event_cancelled',
     ];
 
     protected $fillable = ['user_id', 'recipient_label', 'sender_name', 'type', 'title', 'message', 'related_type', 'related_id', 'read_at'];
@@ -62,5 +61,55 @@ class UserNotification extends Model
     public function getTypeLabelAttribute(): string
     {
         return LocalizedValue::notificationType($this->type);
+    }
+
+    public function getLocalizedTitleAttribute(): ?string
+    {
+        $generatedTitles = [
+            'help_application' => ['New help application', 'New help application'],
+            'help_application_accepted' => ['Help application accepted', 'Help application accepted'],
+            'help_application_rejected' => ['Help application rejected', 'Help application rejected'],
+            'event_comment' => ['New event comment', 'Event comment'],
+            'event_join_request' => ['Event registration request', 'Event join request'],
+            'event_joined' => ['New participant', 'Event join approved'],
+            'event_join_approved' => ['Event registration approved', 'Event join approved'],
+            'event_join_rejected' => ['Event registration declined', 'Declined'],
+            'participant_cancelled' => ['Participant cancelled', 'Participant cancelled'],
+            'event_cancelled' => ['Event cancelled', 'Event cancelled'],
+            'event_updated' => ['Event updated', 'Update'],
+            'community_join_request' => ['Community join request', 'Community join request'],
+            'community_join_approved' => ['Community join request approved', 'Community join approved'],
+            'community_join_declined' => ['Community join request declined', 'Community join declined'],
+            'community_invite' => ['Community invitation', 'Community invitation'],
+            'community_moderator_added' => ['You are now a moderator', 'Moderator added'],
+            'community_ownership_transferred' => ['You are now the community owner', 'Ownership transferred'],
+            'community_message' => ['New community message', 'Community message'],
+        ];
+
+        [$sourceTitle, $localizedKey] = $generatedTitles[$this->type] ?? [$this->title, null];
+
+        return $this->title === $sourceTitle && $localizedKey !== null
+            ? (app()->getLocale() === 'en' ? $sourceTitle : __($localizedKey))
+            : $this->title;
+    }
+
+    public function getLocalizedMessageAttribute(): ?string
+    {
+        $helpTitle = $this->related?->title;
+
+        return match ($this->type) {
+            'help_application' => __(':name applied to your help ":help".', [
+                'name' => $this->sender_name,
+                'help' => $helpTitle,
+            ]),
+            'help_application_accepted' => __('Your application for ":help" was accepted.', [
+                'help' => $helpTitle,
+            ]),
+            'help_application_rejected' => __('Your application for ":help" was rejected.', [
+                'help' => $helpTitle,
+            ]),
+            'event_cancelled' => $this->message,
+            default => $this->message,
+        };
     }
 }

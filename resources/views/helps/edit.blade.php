@@ -145,7 +145,7 @@
                         </label>
 
                         <span class="help-form-required">
-                            REQUIRED
+                            {{ __('REQUIRED')}}
                         </span>
                     </div>
 
@@ -166,7 +166,7 @@
                                     <input type="radio" name="requester_type" value="{{ $value }}"
                                         class="form-check-input me-2" @checked($requesterType === $value) required>
 
-                                    {{ $label }}
+                                    {{ __($label) }}
                                 </label>
                             </div>
                         @endforeach
@@ -231,7 +231,7 @@
 
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected($categoryId == $category->id)>
-                                {{ $category->name }}
+                                {{ __($category->name) }}
                             </option>
                         @endforeach
                     </select>

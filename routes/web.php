@@ -10,6 +10,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JoinedCommunityController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MessageTranslationController;
+use App\Http\Controllers\ContentTranslationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\ContentController;
@@ -65,6 +67,8 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('messages.conversation');
     Route::post('/messages/{user}', [MessageController::class, 'send'])
         ->name('messages.send');
+    Route::post('/messages/{message}/translate', [MessageTranslationController::class, 'direct'])
+        ->name('messages.translate');
     Route::patch('/messages/{message}', [MessageController::class, 'update'])
         ->name('messages.update');
     Route::post('/messages/{user}/block', [MessageController::class, 'block'])
@@ -126,6 +130,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/community/{id}/chat/read', [CommunityChatController::class, 'markRead'])->name('community.chat.read');
     Route::patch('/community/{id}/chat/{message}', [CommunityChatController::class, 'update'])->name('community.chat.update');
     Route::delete('/community/{id}/chat/{message}', [CommunityChatController::class, 'destroy'])->name('community.chat.destroy');
+    Route::post('/community/{id}/chat/{message}/translate', [MessageTranslationController::class, 'community'])->name('community.chat.translate');
+    Route::post('/comments/{comment}/translate', [ContentTranslationController::class, 'comment'])->name('comments.translate');
+    Route::post('/reviews/{review}/translate', [ContentTranslationController::class, 'review'])->name('reviews.translate');
+    Route::post('/host-reviews/{review}/translate', [ContentTranslationController::class, 'hostReview'])->name('host-reviews.translate');
 
     // コミュニティへの参加・退会・参加申請の承認
     Route::post('/community/{id}/join', [CommunityMembershipController::class, 'join'])->name('community.join');

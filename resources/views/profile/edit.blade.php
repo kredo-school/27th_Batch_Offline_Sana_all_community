@@ -19,7 +19,7 @@
         </header>
         <div class="profile-editor-main">
             @if ($errors->any())
-                <div class="alert alert-danger" role="alert"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+                <div class="alert alert-danger" role="alert"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ __($error) }}</li>@endforeach</ul></div>
             @endif
             <form action="{{ route('profile.profile.update') }}" method="POST" enctype="multipart/form-data" id="profile-edit-form" lang="{{ app()->getLocale() }}">
                 @csrf
@@ -155,7 +155,7 @@
                     <div class="profile-identity">
                         <h1 id="preview-name">{{ old('name', $user->name) }}</h1>
                         <p class="profile-handle" id="preview-username">{{ '@'.old('username', $user->username) }}</p>
-                        <p class="profile-bio" id="preview-bio">{{ old('bio', $user->profile?->bio) ?: 'Welcome to my profile!' }}</p>
+                        <p class="profile-bio" id="preview-bio">{{ old('bio', $user->profile?->bio) ?: __('Welcome to my profile!') }}</p>
                     </div>
                     <dl class="profile-stats">@foreach (['Events Joined' => $user->attending_events_count, 'Events Hosted' => $user->events_owned_count, 'Followers' => $user->followers_count, 'Following' => $user->following_count] as $label => $count)<div><dt>{{ __($label) }}</dt><dd>{{ $count }}</dd></div>@endforeach</dl>
                 </div>
