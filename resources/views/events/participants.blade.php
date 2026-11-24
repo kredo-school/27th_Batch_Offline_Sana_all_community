@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', __('Participants') . ' - ' . $event->title)
+
 @section('sidebar', $event->community_id ? 'community' : 'events')
 
 @section('content')
@@ -47,15 +49,15 @@
 
 <div class="container py-4" style="max-width: 760px;">
 
-    <a href="{{ route('events.show', $event) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to event</a>
+    <a href="{{ route('events.show', $event) }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to event') }}</a>
 
     @if (session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
-    <p class="text-primary fw-semibold small mb-1">PARTICIPANTS</p>
+    <p class="text-primary text-uppercase fw-semibold small mb-1">{{ __('Participants') }}</p>
     <h2 class="fw-normal mb-1">{{ $event->title }}</h2>
-    <p class="participant-help mb-4">{{ $approved->count() }}/{{ $event->capacity }} joined</p>
+    <p class="participant-help mb-4">{{ $approved->count() }}/{{ $event->capacity }} {{ __('joined') }}</p>
 
     @if ($isOwner)
         <div class="participant-card">
@@ -63,7 +65,7 @@
 
             @forelse ($pending as $participant)
                 <div class="participant-row">
-                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a></a>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a></a>
                     <div class="flex-grow-1">
                         <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
                         <div class="participant-help">Requested {{ $participant->requested_at?->diffForHumans() }}</div>
@@ -80,7 +82,7 @@
                     </form>
                 </div>
             @empty
-                <p class="participant-help mb-0">No pending requests.</p>
+                <p class="participant-help mb-0">{{ __('No pending requests.') }}</p>
             @endforelse
         </div>
     @endif
@@ -90,14 +92,14 @@
 
         @forelse ($approved as $participant)
             <div class="participant-row">
-                <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a>
+                <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a>
                 <div>
                     <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
-                    <div class="participant-help">Joined {{ $participant->responded_at?->diffForHumans() }}</div>
+                    <div class="participant-help">{{ __('Joined')}} {{ $participant->responded_at?->diffForHumans() }}</div>
                 </div>
             </div>
         @empty
-            <p class="participant-help mb-0">No one has joined yet.</p>
+            <p class="participant-help mb-0">{{ __('No one has joined yet.') }}</p>
         @endforelse
     </div>
 
@@ -107,7 +109,7 @@
 
             @foreach ($rejected as $participant)
                 <div class="participant-row">
-                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? '?', 0, 1)) }}</div></a>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a>
                     <div class="flex-grow-1">
                         <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
                     </div>

@@ -56,7 +56,7 @@
                         </a>
                         <a href="{{ route('community.events.create', $community->id) }}" class="btn btn-primary btn-sm text-white fw-bold px-3">+ {{ __('Post an event') }}</a>
                     @elseif ($membershipStatus === 'approved')
-                        <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-check me-1"></i> Joined</span>
+                        <span class="badge rounded-pill community-joined-badge px-3 py-2"><i class="fa-solid fa-check me-1"></i> {{ __('Joined') }}</span>
                         <form action="{{ route('community.leave', $community->id) }}" method="POST"
                             data-confirm="true" data-confirm-message="Leave this community?">
                             @csrf
@@ -187,7 +187,7 @@
                 @forelse ($community->events as $event)
                     @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
                 @empty
-                    <p class="community-event-empty">There are no upcoming events for this community yet.</p>
+                    <p class="community-event-empty">{{ __('There are no upcoming events for this community yet.')}}</p>
                 @endforelse
             </div>
         </div>
@@ -241,7 +241,7 @@
                         <x-avatar :user="$moderator" />
                         <div>
                             <strong class="d-block text-dark small">{{ $moderator->name }}</strong>
-                            <small class="text-muted" style="font-size: 0.75rem;">Moderator</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ __('Moderator')}}</small>
                         </div>
                     </a>
                 @endforeach
@@ -257,7 +257,7 @@
             @forelse ($allEvents as $event)
                 @include('events.partials.post', ['event' => $event, 'showCommunity' => false])
             @empty
-                <p class="text-muted small mb-0">There are no upcoming events for this community yet.</p>
+                <p class="text-muted small mb-0">{{ __('There are no upcoming events for this community yet.')}}</p>
             @endforelse
         </div>
 
@@ -283,7 +283,7 @@
                 data-community-id="{{ $community->id }}">
                 <div class="community-chat-body">
                     <ol class="community-chat-list" aria-live="polite"></ol>
-                    <div class="community-chat-empty">Loading messages...</div>
+                    <div class="community-chat-empty">{{ __('Loading messages...')}}</div>
                 </div>
                 <div class="community-chat-status" role="status" aria-live="polite"></div>
                 {{-- 送る前に選んだ画像を確認できる（× で取り消し） --}}
@@ -298,7 +298,7 @@
                     @csrf
                     <label class="btn community-chat-attach" title="Attach a photo">
                         <i class="fa-regular fa-image" aria-hidden="true"></i>
-                        <span class="visually-hidden">Attach a photo</span>
+                        <span class="visually-hidden">{{ __('Attach a photo')}}</span>
                         <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
                     </label>
                     <textarea name="message" class="form-control" rows="1" maxlength="2000"
@@ -307,11 +307,11 @@
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
-                <div class="community-chat-hint">Enter to send &middot; Shift + Enter for a new line</div>
+                <div class="community-chat-hint">{{ __('Enter to send')}} &middot; {{ __('Shift + Enter for a new line')}}</div>
             </div>
         @else
             <div class="card bg-white border shadow-sm rounded-3 p-4 text-center">
-                <p class="text-muted small mb-0">Only members of this community can join the chat.</p>
+                <p class="text-muted small mb-0">{{ __('Only members of this community can join the chat.')}}</p>
             </div>
         @endif
     </div>
@@ -419,7 +419,7 @@
                                 </li>
                                 <li>
                                     <form action="{{ route('community.owner.transfer', $community->id) }}" method="POST"
-                                        data-confirm="true" data-confirm-message="Make {{ $member->name }} the owner of this community? You will stay as a regular member and can no longer edit the community.">
+                                        data-confirm="true" data-confirm-message="{{ __('Make')}} {{ $member->name }} {{ __('the owner of this community? You will stay as a regular member and can no longer edit the community.')}}">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="user_id" value="{{ $member->id }}">
@@ -431,7 +431,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
-                                        data-confirm="true" data-confirm-message="Remove {{ $member->name }} from this community?">
+                                        data-confirm="true" data-confirm-message="{{ __('Remove')}} {{ $member->name }} {{ __('from this community?')}}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item small text-danger">

@@ -310,7 +310,7 @@
             <div class="search-input-wrapper">
                 <span class="search-icon">⌕</span>
                 <input type="search" name="search" value="{{ $keyword }}" placeholder="{{ __('Search') }} {{ strtolower(__('Communities')) }}"
-                    aria-label="search-community">
+                    aria-label="search-community" @include('partials.search-suggest-attributes', ['type' => 'communities'])>
             </div>
 
             @if ($filter)
@@ -367,7 +367,8 @@
         @forelse ($upcomingEvents as $event)
             @include('events.partials.post', ['event' => $event])
         @empty
-            <p class="community-upcoming-empty">{{ __('There are no upcoming community events yet.') }}</p>
+            {{-- 検索中・絞り込み中は、一覧に出ているコミュニティのイベントだけを出している --}}
+            <p class="community-upcoming-empty">{{ $keyword !== '' || $filter !== null ? __('No upcoming events from these communities.') : __('There are no upcoming community events yet.') }}</p>
         @endforelse
     </div>
 </div>

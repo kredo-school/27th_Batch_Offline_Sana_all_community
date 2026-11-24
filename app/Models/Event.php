@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\LocalizedValue;
+use App\Support\Search;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -69,6 +70,32 @@ class Event extends Model
     public function community()
     {
         return $this->belongsTo(Community::class);
+    }
+
+    /**
+     * 検索（サイト共通のルール App\Support\Search）: タイトル・説明・場所・主催者・カテゴリー（どの言語の名前でも）
+     */
+    public function scopeSearch($query, ?string $keyword)
+    {
+        return Search::apply($query, $keyword, function ($query, string $like, string $word) {
+            $categoryIds = Search::categoryIds($word);
+            $query->where($this->qualifyColumn('title'), 'like', $like)
+                ->orWhere($this->qualifyColumn('description'), 'like', $like)
+                ->orWhere($this->qualifyColumn('location'), 'like', $like)
+                ->orWhereHas('owner', fn ($owner) => $owner->where('name', 'like', $like)->orWhere('username', 'like', $like))
+                ->when($categoryIds !== [], fn ($query) => $query->orWhereHas('categories', fn ($category) => $category->whereIn('categories.id', $categoryIds)));
+        });
+    }
+
+    /**
+     * 検索の候補や全体検索に出してよいイベント: 公開中で公開設定のもの（自分のイベントは下書きや非公開も出す）
+     */
+    public function scopeListedFor($query, ?User $user)
+    {
+        return $query->visibleTo($user)->where(function ($query) use ($user) {
+            $query->where(fn ($query) => $query->where($this->qualifyColumn('status'), 'published')->where($this->qualifyColumn('visibility'), 'public'))
+                ->when($user, fn ($query) => $query->orWhere($this->qualifyColumn('owner_id'), $user->id));
+        });
     }
 
     // コミュニティ外のイベントは誰にでも見せる。コミュニティのイベントは、そのコミュニティが見える人にだけ見せる
@@ -197,7 +224,7 @@ class Event extends Model
         // 1~3 days left
         if ($daysLeft <= 3) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-urgent',
             ];
         }
@@ -205,14 +232,18 @@ class Event extends Model
         // 4~7 days left
         if ($daysLeft <= 7) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-info',
             ];
         }
 
         // after 8 days left
+        $localizedDate = $joinTill->copy()
+            ->locale(app()->getLocale())
+            ->isoFormat('LL') ?: $joinTill->format('F j, Y');
+
         return [
-            'label' => $joinTill->format('D, M j'),
+            'label' => $localizedDate,
             'class' => 'status-info',
         ];
     }

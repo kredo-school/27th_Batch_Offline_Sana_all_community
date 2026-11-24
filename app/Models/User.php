@@ -56,6 +56,18 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * 検索（サイト共通のルール App\Support\Search）: 名前・ユーザー名（@ を付けて探してもよい）
+     */
+    public function scopeSearch($query, ?string $keyword)
+    {
+        return \App\Support\Search::apply($query, $keyword, function ($query, string $like, string $word) {
+            $username = '%'.ltrim($word, '@').'%';
+            $query->where($this->qualifyColumn('name'), 'like', $like)
+                ->orWhere($this->qualifyColumn('username'), 'like', $username);
+        });
+    }
+
     public function profile()
     {
         return $this->hasOne(Profile::class);

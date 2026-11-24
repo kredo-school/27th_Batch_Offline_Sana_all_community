@@ -117,8 +117,8 @@
     <form action="{{ route('events.index') }}" method="GET" class="event-search-form">
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
-            <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="Search events"
-                aria-label="search-event">
+            <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="{{ __('Search events')}}"
+                aria-label="search-event" @include('partials.search-suggest-attributes', ['type' => 'events'])>
         </div>
 
         @if (request('category'))
@@ -191,11 +191,14 @@
 
         {{-- Categories --}}
         @foreach ($categories as $value => $label)
-            <a href="{{ route('events.index', [
-                'category' => $value,
-                'keyword' => request('keyword'),
-                'sort' => request('sort'),
-            ]) }}"
+            @php
+                $isHelpCategory = strcasecmp((string) $label, (string) \App\Models\Category::localizeName('Help')) === 0;
+            @endphp
+            <a href="{{ $isHelpCategory ? route('helps.index') : route('events.index', [
+                    'category' => $value,
+                    'keyword' => request('keyword'),
+                    'sort' => request('sort'),
+                ]) }}"
                 class="category-button {{ (string) request('category') === (string) $value ? 'active' : '' }}">
                 {{ $label }}
             </a>

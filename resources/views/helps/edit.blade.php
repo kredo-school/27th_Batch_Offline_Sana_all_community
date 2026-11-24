@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('sidebar', 'helps')
-@section('title', 'Edit help')
+@section('title', __('Edit help'))
 
 @section('content')
     <style>
@@ -65,27 +65,27 @@
         {{-- Breadcrumb --}}
         <nav class="mb-4 small">
             <a href="{{ route('helps.index') }}" class="text-decoration-none fw-semibold text-dark">
-                Helps
+                {{ __('Helps') }}
             </a>
 
             <span class="mx-2">&gt;</span>
 
             <span class="text-muted">
-                Edit a help
+                {{ __('Edit a help') }}
             </span>
         </nav>
 
         {{-- Title --}}
         <p class="text-primary fw-semibold small mb-1">
-            Edit help
+            {{ __('Edit help') }}
         </p>
 
         <h1 class="fw-normal mb-1">
-            Edit your help.
+            {{ __('Edit your help.') }}
         </h1>
 
         <p class="help-form-help mb-4">
-            Update the details below and save your changes.
+            {{ __('Update the details below and save your changes.') }}
         </p>
 
         <form action="{{ route('helps.update', $help) }}" method="POST" enctype="multipart/form-data">
@@ -101,11 +101,11 @@
 
                     <div>
                         <h5 class="mb-0">
-                            Help basics
+                            {{ __('Help basics') }}
                         </h5>
 
                         <p class="help-form-help mb-0">
-                            Please give some basic information about the help.
+                            {{ __('Please give some basic information about the help.') }}
                         </p>
                     </div>
                 </div>
@@ -114,20 +114,20 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between">
                         <label for="title" class="help-form-label">
-                            Help title
+                            {{ __('Help title') }}
                         </label>
 
                         <span class="help-form-required">
-                            REQUIRED
+                            {{ __('REQUIRED') }}
                         </span>
                     </div>
 
                     <input type="text" name="title" id="title"
                         class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $help->title) }}"
-                        maxlength="60" placeholder="e.g. Laravel Backend Developer" required>
+                        maxlength="60" placeholder="{{ __('e.g. Laravel Backend Developer') }}" required>
 
                     <small class="help-form-help">
-                        Maximum 60 characters.
+                        {{ __('Maximum 60 characters.') }}
                     </small>
 
                     @error('title')
@@ -141,7 +141,7 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between">
                         <label class="help-form-label">
-                            Requester type
+                            {{ __('Requester type') }}
                         </label>
 
                         <span class="help-form-required">
@@ -154,9 +154,9 @@
                             $requesterType = old('requester_type', $help->requester_type);
 
                             $requesterTypes = [
-                                'individual' => 'Individual',
-                                'shop' => 'Shop',
-                                'company' => 'Company',
+                                'individual' => __('Individual'),
+                                'shop' => __('Shop'),
+                                'company' => __('Company'),
                             ];
                         @endphp
 
@@ -183,21 +183,21 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between">
                         <label for="company_name" class="help-form-label">
-                            Company or display name
+                            {{ __('Company or display name') }}
                         </label>
 
                         <span class="help-form-help">
-                            (optional for individuals)
+                            ({{ __('optional for individuals') }})
                         </span>
                     </div>
 
                     <input type="text" name="company_name" id="company_name"
                         class="form-control @error('company_name') is-invalid @enderror"
                         value="{{ old('company_name', $help->company_name) }}" maxlength="255"
-                        placeholder="e.g. Sana Corporation">
+                        placeholder="{{ __('e.g. Sana Corporation') }}">
 
                     <small class="help-form-help">
-                        Individuals can leave this field blank.
+                        {{ __('Individuals can leave this field blank.') }}
                     </small>
 
                     @error('company_name')
@@ -211,18 +211,18 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between">
                         <label for="category_id" class="help-form-label">
-                            Category
+                            {{ __('Category') }}
                         </label>
 
                         <span class="help-form-required">
-                            REQUIRED
+                            {{ __('REQUIRED') }}
                         </span>
                     </div>
 
                     <select name="category_id" id="category_id"
                         class="form-select @error('category_id') is-invalid @enderror" required>
                         <option value="" hidden>
-                            Select category
+                            {{ __('Select category') }}
                         </option>
 
                         @php
@@ -259,11 +259,11 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
                             <label for="event_start_at" class="help-form-label">
-                                Start date and time
+                                {{ __('Start date and time') }}
                             </label>
 
                             <span class="help-form-required">
-                                REQUIRED
+                                {{ __('REQUIRED') }}
                             </span>
                         </div>
 
@@ -282,11 +282,11 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
                             <label for="event_end_at" class="help-form-label">
-                                End date and time
+                                {{ __('End date and time') }}
                             </label>
 
                             <span class="help-form-required">
-                                REQUIRED
+                                {{ __('REQUIRED') }}
                             </span>
                         </div>
 
@@ -305,11 +305,11 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
                             <label for="reward_type" class="help-form-label">
-                                Reward type
+                                {{ __('Reward type') }}
                             </label>
 
                             <span class="help-form-required">
-                                REQUIRED
+                                {{ __('REQUIRED') }}
                             </span>
                         </div>
 
@@ -320,19 +320,19 @@
                         <select name="reward_type" id="reward_type"
                             class="form-select @error('reward_type') is-invalid @enderror" required>
                             <option value="" hidden>
-                                Select reward type
+                                {{ __('Select reward type') }}
                             </option>
 
                             <option value="hourly" @selected($rewardType === 'hourly')>
-                                Hourly
+                                {{ __('Hourly') }}
                             </option>
 
                             <option value="fixed" @selected($rewardType === 'fixed')>
-                                Fixed reward
+                                {{ __('Fixed reward') }}
                             </option>
 
                             <option value="negotiable" @selected($rewardType === 'negotiable')>
-                                Negotiable
+                                {{ __('Negotiable') }}
                             </option>
                         </select>
 
@@ -346,16 +346,16 @@
                     {{-- Reward amount --}}
                     <div class="col-md-6">
                         <label for="reward_amount" class="help-form-label">
-                            Reward amount
+                            {{ __('Reward amount') }}
                             <span class="help-form-help">
-                                (optional for negotiable)
+                                ({{ __('optional for negotiable') }})
                             </span>
                         </label>
 
                         <input type="number" name="reward_amount" id="reward_amount"
                             class="form-control @error('reward_amount') is-invalid @enderror"
                             value="{{ old('reward_amount', $help->reward_amount) }}" min="0" step="0.01"
-                            placeholder="e.g. 3000">
+                            placeholder="{{ __('e.g. 3000') }}">
 
                         @error('reward_amount')
                             <div class="text-danger small">
@@ -368,11 +368,11 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between">
                             <label for="capacity" class="help-form-label">
-                                Number of helpers
+                                {{ __('Number of helpers') }}
                             </label>
 
                             <span class="help-form-required">
-                                REQUIRED
+                                {{ __('REQUIRED') }}
                             </span>
                         </div>
 
@@ -390,9 +390,9 @@
                     {{-- Application deadline --}}
                     <div class="col-md-6">
                         <label for="application_deadline" class="help-form-label">
-                            Application deadline
+                            {{ __('Application deadline') }}
                             <span class="help-form-help">
-                                (optional)
+                                ({{ __('optional') }})
                             </span>
                         </label>
 
@@ -418,29 +418,29 @@
 
                     <div>
                         <h5 class="mb-0">
-                            Location
+                            {{ __('Location') }}
                         </h5>
 
                         <p class="help-form-help mb-0">
-                            Please provide where the help will take place.
+                            {{ __('Please provide where the help will take place.') }}
                         </p>
                     </div>
                 </div>
 
                 <label for="location" class="help-form-label">
-                    Location
+                    {{ __('Location') }}
                     <span class="help-form-help">
-                        (optional for online help)
+                        ({{ __('optional for online help') }})
                     </span>
                 </label>
 
                 <input type="text" name="location" id="location"
                     class="form-control @error('location') is-invalid @enderror"
                     value="{{ old('location', $help->location) }}" maxlength="100"
-                    placeholder="e.g. Cebu City, Philippines">
+                    placeholder="{{ __('e.g. Cebu City, Philippines') }}">
 
                 <small class="help-form-help">
-                    You can enter a city, country, or office address.
+                    {{ __('You can enter a city, country, or office address.') }}
                 </small>
 
                 @error('location')
@@ -451,9 +451,9 @@
                 {{-- 地図で場所を選ぶ --}}
                 <div class="d-flex align-items-center gap-2 mt-3 mb-2">
                     <button type="button" id="location-search-btn" class="btn btn-outline-secondary btn-sm">
-                        <i class="fa-solid fa-magnifying-glass"></i> Find on map
+                        <i class="fa-solid fa-magnifying-glass"></i> {{ __('Find on map') }}
                     </button>
-                    <small class="help-form-help">Or click on the map to choose a place.</small>
+                    <small class="help-form-help">{{ __('Or click on the map to choose a place.') }}</small>
                 </div>
                 <div id="location-map" style="height: 320px; border-radius: 8px;"></div>
             </div>
@@ -467,32 +467,31 @@
 
                     <div>
                         <h5 class="mb-0">
-                            Help description & requirement
+                            {{ __('Help description & requirement') }}
                         </h5>
 
                         <p class="help-form-help mb-0">
-                            Please provide a detailed description and list the requirements for the type of support you
-                            need.
+                            {{ __('Please provide a detailed description and list the requirements for the type of support you need.') }}
                         </p>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between">
                     <label for="description" class="help-form-label">
-                        Description
+                        {{ __('Description') }}
                     </label>
 
                     <span class="help-form-required">
-                        REQUIRED
+                        {{ __('REQUIRED') }}
                     </span>
                 </div>
 
                 <textarea name="description" id="description" rows="8" maxlength="5000"
                     class="form-control @error('description') is-invalid @enderror"
-                    placeholder="Describe the task, date, location, and what the helper needs to do." required>{{ old('description', $help->description) }}</textarea>
+                    placeholder="{{ __('Describe the task, date, location, and what the helper needs to do.') }}" required>{{ old('description', $help->description) }}</textarea>
 
                 <small class="help-form-help">
-                    Maximum 5,000 characters.
+                    {{ __('Maximum 5,000 characters.') }}
                 </small>
 
                 @error('description')
@@ -503,15 +502,15 @@
 
                 <div class="mt-4">
                     <label for="requirements" class="help-form-label">
-                        Requirements
+                        {{ __('Requirements') }}
                         <span class="help-form-help">
-                            (optional)
+                            ({{ __('optional') }})
                         </span>
                     </label>
 
                     <textarea name="requirements" id="requirements" rows="4" maxlength="2000"
                         class="form-control @error('requirements') is-invalid @enderror"
-                        placeholder="e.g. No experience required. Please wear comfortable clothes.">{{ old('requirements', $help->requirements) }}</textarea>
+                        placeholder="{{ __('e.g. No experience required. Please wear comfortable clothes.') }}">{{ old('requirements', $help->requirements) }}</textarea>
 
                     @error('requirements')
                         <div class="text-danger small">
@@ -531,19 +530,19 @@
 
                     <div>
                         <h5 class="mb-0">
-                            Help image
+                            {{ __('Help image') }}
                         </h5>
 
                         <p class="help-form-help mb-0">
-                            Add an image that represents this help or company.
+                            {{ __('Add an image that represents this help or company.') }}
                         </p>
                     </div>
                 </div>
 
                 <label for="image" class="help-form-label">
-                    Cover image
+                    {{ __('Cover image') }}
                     <span class="help-form-help">
-                        (optional)
+                        ({{ __('optional') }})
                     </span>
                 </label>
 
@@ -551,7 +550,7 @@
                     class="form-control @error('image') is-invalid @enderror">
 
                 <small class="help-form-help">
-                    JPG, PNG, or WebP. Maximum 2MB.
+                    {{ __('JPG, PNG, or WebP. Maximum 2MB.') }}
                 </small>
 
                 @error('image')
@@ -568,17 +567,17 @@
 
             {{-- Public notice --}}
             <div class="alert alert-info">
-                This help will be visible to all users after creation.
+                {{ __('This help will be visible to all users after creation.') }}
             </div>
 
             {{-- Buttons --}}
             <div class="d-flex justify-content-end gap-2">
                 <a href="{{ route('helps.index') }}" class="btn btn-outline-secondary px-4">
-                    Cancel
+                    {{ __('Cancel') }}
                 </a>
 
                 <button type="submit" class="btn btn-primary px-4">
-                    Update Help
+                    {{ __('Update Help') }}
                 </button>
             </div>
         </form>
@@ -651,7 +650,7 @@
                         map.setView([lat, lng], 16);
                         placeMarker(lat, lng);
                     } else {
-                        alert('Place not found. Try a different address.');
+                        alert(@json(__('Place not found. Try a different address.')));
                     }
                 } catch (err) {
                     console.error(err);

@@ -13,7 +13,7 @@
             --show-line: #d8e7e4;
             display: grid;
             grid-template-columns: 210px minmax(0, 1fr);
-            min-height: calc(100vh - 74px);
+            min-height: calc(100vh - 70px);
             color: var(--show-ink);
             background: #f5f8f7;
         }
@@ -235,13 +235,10 @@
                                     ? null
                                     : ($record->type === 'community_message' && $record->related_id
                                         ? route('community.show', $record->related_id).'#chat'
-                                        : (in_array($record->type, ['community_join_approved', 'community_join_declined', 'community_approval'], true) && $record->related_id
-                                            ? route('community.show', $record->related_id)
-                                            : route('notifications.show', $record)));
+                                        : route('notifications.show', $record));
                             @endphp
-                            <tr class="{{ $isUnread ? 'unread-row' : '' }}"
+                            <tr class="{{ trim(($isUnread ? 'unread-row ' : '') . ($chatParticipant ? 'js-open-message-chat message-list-row' : '')) }}"
                                 @if ($chatParticipant)
-                                    class="js-open-message-chat message-list-row"
                                     data-message-chat-url="{{ route('messages.conversation', $chatParticipant->id) }}"
                                     data-message-chat-send-url="{{ route('messages.send', $chatParticipant->id) }}"
                                     data-message-chat-name="{{ $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user') }}"
@@ -281,9 +278,7 @@
                                             @php
                                                 $notificationUrl = $record->type === 'community_message' && $record->related_id
                                                     ? route('community.show', $record->related_id).'#chat'
-                                                    : (in_array($record->type, ['community_join_approved', 'community_join_declined', 'community_approval'], true) && $record->related_id
-                                                        ? route('community.show', $record->related_id)
-                                                        : route('notifications.show', $record));
+                                                    : route('notifications.show', $record);
                                             @endphp
                                             <a href="{{ $notificationUrl }}" class="text-decoration-none text-dark">{{ $value ?: $record->type_label }}</a>
                                         </td>

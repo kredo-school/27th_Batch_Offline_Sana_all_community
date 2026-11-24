@@ -10,7 +10,7 @@
         --admin-line: #d8e7e4;
         display: grid;
         grid-template-columns: 210px minmax(0, 1fr);
-        min-height: calc(100vh - 74px);
+        min-height: calc(100vh - 70px);
         color: var(--admin-ink);
         background: #f5f8f7;
     }
@@ -22,6 +22,27 @@
     }
 
     .admin-sidebar-title {
+        margin: 0 10px 16px;
+        color: var(--admin-muted);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .admin-dashboard .admin-sidebar {
+        position: fixed;
+        inset-inline-start: 0;
+        top: 70px;
+        width: 210px;
+        height: calc(100vh - 70px);
+        overflow-y: auto;
+        z-index: 100;
+        padding: 24px 14px;
+        border-inline-end: 1px solid var(--admin-line);
+        background: #fff;
+    }
+
+    .admin-dashboard .admin-sidebar-title {
         margin: 0 10px 16px;
         color: var(--admin-muted);
         font-size: 11px;
@@ -68,7 +89,7 @@
         color: #98a9a7;
     }
 
-    .admin-main { min-width: 0; padding: 28px 22px 40px; }
+    .admin-main { grid-column: 2; min-width: 0; padding: 28px 22px 40px; }
     .admin-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
     .admin-eyebrow { margin: 0 0 5px; color: #16817e; font-size: 15px; font-weight: 700; text-transform: uppercase; }
     .admin-heading h1 { margin: 0; font-size: 25px; font-weight: 700; }
@@ -96,11 +117,22 @@
     .settings-panel .form-select { border-color: #cbdedb; }
     @media (max-width: 760px) {
         .admin-dashboard { grid-template-columns: minmax(0, 1fr); }
-        .admin-sidebar { padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--admin-line); }
+        .admin-main { grid-column: 1; }
+        .admin-dashboard .admin-sidebar {
+            position: static;
+            width: auto;
+            height: auto;
+            overflow: visible;
+            z-index: auto;
+            padding: 10px 12px;
+            border-inline-end: 0;
+            border-block-end: 1px solid var(--admin-line);
+        }
         .admin-sidebar-title { margin-bottom: 8px; }
         .admin-nav { display: grid; overflow: visible; }
         .admin-nav-link { width: 100%; }
         .admin-main { padding: 22px 12px 32px; }
+
     }
 </style>
 <div class="admin-dashboard">
@@ -140,7 +172,7 @@
             <section class="settings-panel p-4 mb-4">
                 <h2 class="h5">{{ __('Header categories') }}</h2>
                 <p class="text-secondary small">{{ __('Choose the categories shown in the header, in order. Leave a position empty to hide it.') }}</p>
-                @php($ordered = json_decode($settings['header_category_order'] ?? '[]', true) ?: ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs'])
+                @php($ordered = json_decode($settings['header_category_order'] ?? '[]', true) ?: ['Events', 'Meet up', 'Sports', 'Exchange', 'Jobs', 'Help'])
                 @for ($position = 0; $position < max(5, count($ordered)); $position++)
                     <select class="form-select mb-2" name="header_category_order[]" aria-label="{{ __('Header category position') }} {{ $position + 1 }}">
                         <option value="">{{ __('Hidden') }}</option>

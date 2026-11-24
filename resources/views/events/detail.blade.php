@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', $event->title)
+
 @section('sidebar', $event->community_id ? 'community' : 'events')
 
 @section('content')
@@ -167,17 +169,30 @@
         $percent = $event->capacity ? min(100, round(($joined / $event->capacity) * 100)) : 0;
         $daysLeft = (int) floor(now()->diffInDays($event->join_till, false));
         $isOwner = auth()->id() === $event->owner_id;
+        $formatDateTime = function ($date, bool $includeDate = true): string {
+            if (app()->getLocale() === 'ceb') {
+                return $date->format($includeDate ? 'Y-m-d H:i' : 'H:i');
+            }
+
+            return $date->locale(app()->getLocale())
+                ->isoFormat($includeDate ? 'MMM D (ddd) HH:mm' : 'HH:mm');
+        };
+        $formatRelativeTime = function ($date): string {
+            return app()->getLocale() === 'ceb'
+                ? $date->format('Y-m-d H:i')
+                : $date->locale(app()->getLocale())->diffForHumans();
+        };
         $visibilityLabels = [
             'public' => __('All users'),
             'members' => __('Logged-in users'),
             'followers' => __('Followers only'),
         ];
         $dateText =
-            $event->start_at->format('M j (D) H:i') .
+            $formatDateTime($event->start_at) .
             ' ~ ' .
             ($event->start_at->isSameDay($event->end_at)
-                ? $event->end_at->format('H:i')
-                : $event->end_at->format('M j (D) H:i'));
+                ? $formatDateTime($event->end_at, false)
+                : $formatDateTime($event->end_at));
         $priceText = (float) $event->price == 0 ? __('Free') : number_format((float) $event->price) . ' PHP';
         $hasPrice = (float) $event->price > 0;
         $feeNote = trim((string) ($event->fee_note ?? '')) !== '' ? $event->fee_note : null;
@@ -203,7 +218,7 @@
         {{-- back（コミュニティ内のイベントはそのコミュニティへ戻る） --}}
         @if ($event->community)
             <a href="{{ route('community.show', $event->community) }}"
-                class="text-decoration-none text-dark d-inline-block mb-3">&larr; back to
+                class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to') }}
                 {{ $event->community->name }}</a>
         @else
             <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to events') }}</a>
@@ -251,7 +266,7 @@
                 <div class="event-card">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         @if ($category)
-                            <span class="event-category">{{ $category->localized_name }}</span>
+                            <span class="event-category">{{ __($category->localized_name) }}</span>
                         @endif
                         <span class="event-help">{{ $visibilityLabels[$event->visibility] ?? $event->visibility }}</span>
                     </div>
@@ -289,14 +304,14 @@
                         <div class="col-12">
                             <div class="event-info-box">
                                 <div class="event-info-label">{{ __('Registration closes') }}</div>
-                                <div class="event-info-value">{{ $event->join_till->format('M j (D) H:i') }}</div>
+                                <div class="event-info-value">{{ $formatDateTime($event->join_till) }}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center gap-2 mt-3">
                         <span class="event-help">{{ __('Language') }}</span>
-                        <span class="event-lang active-en">{{ strtoupper($event->language) }} {{ $event->language_label }}</span>
+                        <span class="event-lang active-en">{{ $event->language_label }}</span>
                     </div>
                 </div>
 
@@ -341,7 +356,7 @@
                             <form action="{{ route('events.reviews.store', $event) }}" method="POST"
                                 class="border rounded p-3 mb-3">
                                 @csrf
-                                <div class="event-info-label mb-1">How was this event?</div>
+                                <div class="event-info-label mb-1">{{ __('How was this event?')}}</div>
                                 <div class="star-rating mb-2">
                                     @for ($star = 5; $star >= 1; $star--)
                                         <input type="radio" name="rating" id="star{{ $star }}"
@@ -354,15 +369,15 @@
                                 @enderror
 
                                 <textarea name="comment" rows="3" maxlength="500" class="form-control mb-2"
-                                    placeholder="Share your experience (optional)">{{ old('comment') }}</textarea>
+                                    placeholder="{{ __('Share your experience (optional)') }}">{{ old('comment') }}</textarea>
                                 @error('comment')
                                     <div class="text-danger small">{{ $message }}</div>
                                 @enderror
 
-                                <button type="submit" class="btn btn-primary">Post review</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Post review')}}</button>
                             </form>
                         @elseif ($myReview)
-                            <p class="event-help">You have already reviewed this event.</p>
+                            <p class="event-help">{{ __('You have already reviewed this event.')}}</p>
                         @endif
 
                         {{-- レビュー一覧 --}}
@@ -375,10 +390,10 @@
                                     aria-label="{{ __('View profile') }}">{{ strtoupper(substr($review->user->name ?? '?', 0, 1)) }}</a>
                                 <div>
                                     <div>
-                                        <strong>{{ $review->user->name ?? 'Unknown' }}</strong>
+                                        <strong>{{ $review->user->name ?? __('Unknown') }}</strong>
                                         <span
                                             class="review-stars ms-1">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
-                                        <span class="event-help ms-1">{{ $review->created_at->diffForHumans() }}</span>
+                                        <span class="event-help ms-1">{{ $formatRelativeTime($review->created_at) }}</span>
                                     </div>
                                     @if ($review->comment)
                                         <div style="white-space: pre-line;">{{ $review->comment }}</div>
@@ -386,14 +401,14 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="event-help mb-0">No reviews yet.</p>
+                            <p class="event-help mb-0">{{ __('No reviews yet.')}}</p>
                         @endforelse
                     </div>
                 @endif
 
                 {{-- comments --}}
                 <div class="event-card">
-                    <h5>Comments({{ $event->comments->count() }})</h5>
+                    <h5>{{ __('Comments') }} ({{ $event->comments->count() }})</h5>
 
                     @if (!$hasEnded)
                         @auth
@@ -401,17 +416,17 @@
                                 class="d-flex gap-2 mb-1">
                                 @csrf
                                 <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
-                                    placeholder="write a comment....." maxlength="500" required>
-                                <button type="submit" class="btn btn-primary">Post</button>
+                                    placeholder="{{ __('Write a comment') }}" maxlength="500" required>
+                                <button type="submit" class="btn btn-primary">{{ __('Post comment') }}</button>
                             </form>
                             @error('content')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         @else
-                            <p class="event-help">Please log in to write a comment.</p>
+                            <p class="event-help">{{ __('Please log in to write a comment.')}}</p>
                         @endauth
                     @else
-                        <p class="event-help">Comments are closed because this event has ended.</p>
+                        <p class="event-help">{{ __('Comments are closed because this event has ended.')}}</p>
                     @endif
 
                     <div class="mt-3">
@@ -430,18 +445,18 @@
                                     aria-label="{{ __('View profile') }}">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}</a>
                                 <div class="flex-grow-1">
                                     <div>
-                                        <strong>{{ $comment->user->name ?? 'Unknown' }}</strong>
+                                        <strong>{{ $comment->user->name ?? __('Unknown') }}</strong>
                                         @if ($comment->user_id === $event->owner_id)
-                                            <span class="small text-primary ms-1">Host</span>
+                                            <span class="small text-primary ms-1">{{ __('Host')}}</span>
                                         @endif
-                                        <span class="event-help ms-1">{{ $comment->created_at->diffForHumans() }}</span>
+                                        <span class="event-help ms-1">{{ $formatRelativeTime($comment->created_at) }}</span>
                                     </div>
                                     <div style="white-space: pre-line;">{{ $comment->content }}</div>
                                 </div>
                                 @if ($canDeleteComment)
                                     <button type="button" class="btn btn-link text-secondary p-0 align-self-start"
                                         data-bs-toggle="modal" data-bs-target="#deleteComment{{ $comment->id }}"
-                                        aria-label="Delete comment">
+                                        aria-label="{{ __('Delete')}}">
                                         <i class="fa-regular fa-trash-can"></i>
                                     </button>
                                 @endif
@@ -452,32 +467,32 @@
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content border-danger">
                                             <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">Delete the comment</h5>
+                                                <h5 class="modal-title">{{ __('Delete comment')}}</h5>
                                                 <button type="button" class="btn-close btn-close-white"
-                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p class="text-danger mb-3">Are you sure you want to delete this comment?
+                                                <p class="text-danger mb-3">{{ __('Are you sure you want to delete this comment?')}}
                                                 </p>
                                                 <div class="mb-2">
-                                                    <div class="event-info-label">User name</div>
-                                                    <div class="event-info-value">{{ $comment->user->name ?? 'Unknown' }}
+                                                    <div class="event-info-label">{{ __('User name')}}</div>
+                                                    <div class="event-info-value">{{ $comment->user->name ?? __('Unknown') }}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div class="event-info-label">Detail</div>
+                                                    <div class="event-info-label">{{ __('Detail')}}</div>
                                                     <div class="event-info-value" style="white-space: pre-line;">
                                                         {{ $comment->content }}</div>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-outline-secondary"
-                                                    data-bs-dismiss="modal">Cancel</button>
+                                                    data-bs-dismiss="modal">{{ __('Cancel')}}</button>
                                                 <form action="{{ route('events.comments.destroy', [$event, $comment]) }}"
                                                     method="POST">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                    <button type="submit" class="btn btn-danger">{{ __('Delete')}}</button>
                                                 </form>
                                             </div>
                                         </div>
@@ -632,7 +647,7 @@
                             @endif
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                             <button type="submit" class="btn btn-primary">{{ __('Send request') }}</button>
                         </div>
                     </form>

@@ -43,6 +43,10 @@ Route::get('/categories', [CategoryController::class, 'index'])->name('categorie
 Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
 Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
 Route::get('/search', [HomeController::class, 'search'])->name('search');
+// 検索バーの下に出す候補（すべての検索バーで共通）
+Route::get('/search/suggest', \App\Http\Controllers\SearchSuggestionController::class)
+    ->middleware('throttle:120,1')
+    ->name('search.suggest');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
 

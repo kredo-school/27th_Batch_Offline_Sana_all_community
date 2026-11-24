@@ -79,17 +79,36 @@ class EventCancellationNotificationTest extends TestCase
             ->assertViewHas('records', fn ($records) => ! $records->pluck('type')->contains('event_cancelled'));
     }
 
-    public function test_cancelling_an_event_outside_communities_sends_no_notifications(): void
+    public function test_cancelling_an_event_outside_communities_notifies_approved_and_pending_participants(): void
     {
-        [$event, $owner] = $this->eventWithParticipants(inCommunity: false);
+        [$event, $owner, $approved, $pending, $rejected] = $this->eventWithParticipants(inCommunity: false);
 
         $this->actingAs($owner)
             ->patch(route('events.cancel', $event), ['cancel_reason' => 'Storm warning'])
             ->assertRedirect(route('events.show', $event));
 
-        // 中止そのものは今までどおりできる
         $this->assertSame('cancelled', $event->fresh()->status);
-        $this->assertSame(0, UserNotification::count());
+        foreach ([$approved, $pending] as $user) {
+            $notification = UserNotification::where('user_id', $user->id)->sole();
+            $this->assertSame('event_cancelled', $notification->type);
+            $this->assertStringContainsString('Storm warning', $notification->message);
+            $this->assertTrue($notification->related->is($event));
+        }
+        $this->assertSame(0, UserNotification::whereIn('user_id', [$rejected->id, $owner->id])->count());
+    }
+
+    public function test_standalone_event_cancellation_appears_in_the_notification_dropdown(): void
+    {
+        [$event, $owner, $approved] = $this->eventWithParticipants(inCommunity: false);
+
+        $this->actingAs($owner)
+            ->patch(route('events.cancel', $event), ['cancel_reason' => 'Storm warning']);
+
+        $this->actingAs($approved)
+            ->get(route('profile.show', $approved->id))
+            ->assertOk()
+            ->assertSee('<span class="d-block">Event</span>', false)
+            ->assertSeeInOrder(['Event cancelled: Beach Cleanup', 'Reason: Storm warning']);
     }
 
     public function test_no_notifications_when_the_cancel_is_refused(): void

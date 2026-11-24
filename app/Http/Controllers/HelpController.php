@@ -48,16 +48,8 @@ class HelpController extends Controller
                 'user',
                 'category',
             ])
-            ->when($request->filled('keyword'), function ($query) use ($request) {
-                $keyword = $request->input('keyword');
-
-                $query->where(function ($query) use ($keyword) {
-                    $query
-                        ->where('title', 'like', "%{$keyword}%")
-                        ->orWhere('company_name', 'like', "%{$keyword}%")
-                        ->orWhere('location', 'like', "%{$keyword}%");
-                });
-            })
+            // サイト共通の検索ルール（タイトル・会社名・説明・場所・カテゴリー名。言葉を分けると全部を含むもの）
+            ->when($request->filled('keyword'), fn ($query) => $query->search($request->input('keyword')))
             ->when($request->filled('category_id'), function ($query) use ($request) {
                 $query->where(
                     'category_id',

@@ -5,8 +5,8 @@
         left: 0;
         z-index: 100;
         width: 210px;
-        height: calc(100vh - 74px);
-        min-height: calc(100vh - 74px);
+        height: calc(100vh - 70px);
+        min-height: calc(100vh - 70px);
         box-sizing: border-box;
         border-right: 1px solid #d8e7e4;
         background: #fff;

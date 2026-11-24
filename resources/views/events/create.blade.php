@@ -99,7 +99,7 @@
         {{ $community ? __('Fill in the details below to publish your event in :community.', ['community' => $community->name]) : __('Fill in the details below to publish your event.') }}
     </p>
 
-    <form action="{{ $community ? route('community.events.store', $community->id) : route('events.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ $community ? route('community.events.store', $community->id) : route('events.store') }}" method="POST" enctype="multipart/form-data" lang="{{ app()->getLocale() }}">
         @csrf
 
         {{-- 01 Event basics --}}
@@ -168,8 +168,9 @@
                         <label for="start_at" class="event-form-label">{{ __('Start date') }}</label>
                         <span class="event-form-required">{{ __('REQUIRED') }}</span>
                     </div>
-                    <input type="datetime-local" name="start_at" id="start_at" class="form-control @error('start_at') is-invalid @enderror"
+                    <input type="datetime-local" name="start_at" id="start_at" lang="{{ app()->getLocale() }}" class="form-control @error('start_at') is-invalid @enderror"
                            value="{{ old('start_at') }}">
+                    <small class="event-form-help" data-date-preview-for="start_at"></small>
                     @error('start_at') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -179,8 +180,9 @@
                         <label for="end_at" class="event-form-label">{{ __('End date') }}</label>
                         <span class="event-form-required">{{ __('REQUIRED') }}</span>
                     </div>
-                    <input type="datetime-local" name="end_at" id="end_at" class="form-control @error('end_at') is-invalid @enderror"
+                    <input type="datetime-local" name="end_at" id="end_at" lang="{{ app()->getLocale() }}" class="form-control @error('end_at') is-invalid @enderror"
                            value="{{ old('end_at') }}">
+                    <small class="event-form-help" data-date-preview-for="end_at"></small>
                     <small class="event-form-help">{{ __('If it is one day, enter the same date as the start date.') }}</small>
                     @error('end_at') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
@@ -191,8 +193,9 @@
                         <label for="join_till" class="event-form-label">{{ __('Registration closes') }}</label>
                         <span class="event-form-required">{{ __('REQUIRED') }}</span>
                     </div>
-                    <input type="datetime-local" name="join_till" id="join_till" class="form-control @error('join_till') is-invalid @enderror"
+                    <input type="datetime-local" name="join_till" id="join_till" lang="{{ app()->getLocale() }}" class="form-control @error('join_till') is-invalid @enderror"
                            value="{{ old('join_till') }}">
+                    <small class="event-form-help" data-date-preview-for="join_till"></small>
                     @error('join_till') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -427,6 +430,32 @@
         if (input.value.trim()) {
             searchBtn.click();
         }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const locale = @json(app()->getLocale());
+        const supportedLocale = Intl.DateTimeFormat.supportedLocalesOf(locale)[0] || 'en';
+        const formatter = new Intl.DateTimeFormat(supportedLocale, { dateStyle: 'long', timeStyle: 'short' });
+
+        document.querySelectorAll('[data-date-preview-for]').forEach(preview => {
+            const input = document.getElementById(preview.dataset.datePreviewFor);
+            if (!input) return;
+
+            const update = () => {
+                if (!input.value) {
+                    preview.textContent = '';
+                    return;
+                }
+
+                const date = new Date(input.value);
+                preview.textContent = Number.isNaN(date.getTime()) ? '' : formatter.format(date);
+            };
+
+            input.addEventListener('input', update);
+            input.addEventListener('change', update);
+            update();
+        });
     });
 </script>
 @endsection

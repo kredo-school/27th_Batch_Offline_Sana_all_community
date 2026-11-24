@@ -151,13 +151,14 @@
         </div>
 
         <div class="calendar-week">
-            <span>Su</span>
-            <span>Mo</span>
-            <span>Tu</span>
-            <span>We</span>
-            <span>Th</span>
-            <span>Fr</span>
-            <span>Sa</span>
+            @php
+                $calendarWeekStart = \Carbon\Carbon::now()
+                    ->locale(app()->getLocale())
+                    ->startOfWeek(\Carbon\Carbon::SUNDAY);
+            @endphp
+            @for ($weekday = 0; $weekday < 7; $weekday++)
+                <span>{{ $calendarWeekStart->copy()->addDays($weekday)->translatedFormat('D') }}</span>
+            @endfor
         </div>
 
         <div class="calendar-days">

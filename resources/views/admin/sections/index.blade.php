@@ -10,7 +10,7 @@
             --admin-line: #d8e7e4;
             display: grid;
             grid-template-columns: 210px minmax(0, 1fr);
-            min-height: calc(100vh - 74px);
+            min-height: calc(100vh - 70px);
             color: var(--admin-ink);
             background: #f5f8f7;
         }
@@ -20,9 +20,9 @@
         .admin-section-layout .admin-sidebar{
             position: fixed;
             inset-inline-start: 0;
-            top: 74px;
+            top: 70px;
             width: 210px;
-            height: calc(100vh - 74px);
+            height: calc(100vh - 70px);
             overflow-y: auto;
             z-index: 100;
             padding: 24px 14px;

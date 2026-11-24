@@ -21,7 +21,7 @@
             @if ($errors->any())
                 <div class="alert alert-danger" role="alert"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
-            <form action="{{ route('profile.profile.update') }}" method="POST" enctype="multipart/form-data" id="profile-edit-form">
+            <form action="{{ route('profile.profile.update') }}" method="POST" enctype="multipart/form-data" id="profile-edit-form" lang="{{ app()->getLocale() }}">
                 @csrf
                 @method('PATCH')
                 <section class="profile-editor-section" aria-labelledby="profile-photos-heading">
@@ -92,7 +92,8 @@
                                 <select name="birthday_month" aria-label="{{ __('Month') }}" autocomplete="bday-month">
                                     <option value="">{{ __('Month') }}</option>
                                     @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
-                                        <option value="{{ $loop->iteration }}" @selected((int) $birthdayMonth === $loop->iteration)>{{ $month }}</option>
+                                        @php($monthLabel = \Carbon\Carbon::create(now()->year, $loop->iteration, 1)->locale(app()->getLocale())->translatedFormat('F') ?: $month)
+                                        <option value="{{ $loop->iteration }}" @selected((int) $birthdayMonth === $loop->iteration)>{{ $monthLabel }}</option>
                                     @endforeach
                                 </select>
                                 <select name="birthday_day" aria-label="{{ __('Day') }}" autocomplete="bday-day">

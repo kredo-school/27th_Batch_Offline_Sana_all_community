@@ -59,4 +59,90 @@ class AdminStatisticsTest extends TestCase
         $this->assertCount(20, $categories);
         $detailsResponse->assertSee('page=2', false);
     }
+
+    public function test_statistics_charts_show_activity_signups_and_category_views_for_selected_periods(): void
+    {
+        $adminCreatedAt = now()->subYears(4)->toDateTimeString();
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'created_at' => $adminCreatedAt,
+            'updated_at' => $adminCreatedAt,
+        ]);
+        $recentCreatedAt = now()->subDays(2)->setTime(12, 0)->toDateTimeString();
+        $recentUser = User::factory()->create([
+            'preferred_language' => 'ja',
+            'created_at' => $recentCreatedAt,
+            'updated_at' => $recentCreatedAt,
+        ]);
+        $olderCreatedAt = now()->subMonths(2)->setTime(12, 0)->toDateTimeString();
+        $olderUser = User::factory()->create([
+            'preferred_language' => 'en',
+            'created_at' => $olderCreatedAt,
+            'updated_at' => $olderCreatedAt,
+        ]);
+
+        $recentCategory = Category::create(['name' => 'Recent category']);
+        $olderCategory = Category::create(['name' => 'Older category']);
+
+        DB::table('page_views')->insert([
+            ['user_id' => $recentUser->id, 'ip_address' => '192.0.2.1', 'url' => '/recent/1', 'created_at' => $recentCreatedAt],
+            ['user_id' => $recentUser->id, 'ip_address' => '192.0.2.1', 'url' => '/recent/2', 'created_at' => $recentCreatedAt],
+            ['user_id' => $olderUser->id, 'ip_address' => '192.0.2.2', 'url' => '/older', 'created_at' => $olderCreatedAt],
+        ]);
+        DB::table('category_views')->insert([
+            ['user_id' => $recentUser->id, 'session_id' => 'recent', 'category_id' => $recentCategory->id, 'created_at' => $recentCreatedAt],
+            ['user_id' => $recentUser->id, 'session_id' => 'recent', 'category_id' => $recentCategory->id, 'created_at' => $recentCreatedAt],
+            ['user_id' => $olderUser->id, 'session_id' => 'older', 'category_id' => $olderCategory->id, 'created_at' => $olderCreatedAt],
+        ]);
+
+        $weekResponse = $this->actingAs($admin)
+            ->get(route('admin.statistics', ['period' => 'week']))
+            ->assertOk();
+
+        $weekLoggedInUsers = $weekResponse->viewData('loggedInUserSeries');
+        $weekNewUsers = $weekResponse->viewData('newUserSeries');
+        $weekLineCharts = $weekResponse->viewData('lineCharts');
+        $recentDay = now()->subDays(2)->toDateString();
+        $preferredLanguages = $weekResponse->viewData('usersByPreferredLanguage');
+        $this->assertCount(7, $weekLoggedInUsers);
+        $this->assertSame(1, $weekLoggedInUsers->firstWhere('key', $recentDay)->count);
+        $this->assertSame(1, $weekNewUsers->firstWhere('key', $recentDay)->count);
+        $this->assertCount(7, $weekLineCharts[0]->points);
+        $this->assertCount(7, $weekLineCharts[1]->points);
+        $this->assertSame(
+            ['en', 'ja'],
+            $preferredLanguages->pluck('preferred_language')->all()
+        );
+        $this->assertSame([2, 1], $preferredLanguages->pluck('user_count')->map(fn ($count) => (int) $count)->all());
+        $this->assertSame(
+            ['Recent category'],
+            $weekResponse->viewData('topCategoryChart')->pluck('name')->all()
+        );
+
+        $monthResponse = $this->get(route('admin.statistics', ['period' => 'month']))->assertOk();
+        $this->assertCount(30, $monthResponse->viewData('newUserSeries'));
+        $this->assertCount(30, $monthResponse->viewData('lineCharts')[0]->points);
+        $this->assertSame(
+            ['Recent category'],
+            $monthResponse->viewData('topCategoryChart')->pluck('name')->all()
+        );
+
+        $yearResponse = $this->get(route('admin.statistics', ['period' => 'year']))->assertOk();
+        $this->assertCount(12, $yearResponse->viewData('newUserSeries'));
+        $this->assertCount(12, $yearResponse->viewData('lineCharts')[0]->points);
+        $this->assertSame(
+            ['Recent category', 'Older category'],
+            $yearResponse->viewData('topCategoryChart')->pluck('name')->all()
+        );
+        $this->assertSame(2, $yearResponse->viewData('newUserSeries')->sum('count'));
+
+        $threeYearsResponse = $this->get(route('admin.statistics', ['period' => 'three-years']))->assertOk();
+        $this->assertCount(36, $threeYearsResponse->viewData('newUserSeries'));
+        $this->assertCount(36, $threeYearsResponse->viewData('lineCharts')[0]->points);
+        $this->assertSame(
+            ['Recent category', 'Older category'],
+            $threeYearsResponse->viewData('topCategoryChart')->pluck('name')->all()
+        );
+        $this->assertSame(2, $threeYearsResponse->viewData('newUserSeries')->sum('count'));
+    }
 }

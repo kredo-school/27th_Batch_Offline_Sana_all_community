@@ -1,0 +1,1 @@
+{{-- 検索の入力欄に付けると、文字を打ったときに下に候補が出る（resources/js/search-suggest.js）。$type: all / communities / events / helps --}}data-search-suggest="{{ $type ?? 'all' }}" data-search-suggest-url="{{ route('search.suggest') }}" data-search-suggest-all-text="{{ __('See all results for') }}" data-search-suggest-empty-text="{{ __('No matches') }}"

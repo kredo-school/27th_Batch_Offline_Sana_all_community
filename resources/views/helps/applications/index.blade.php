@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('sidebar', 'helps')
-@section('title', 'Help applications')
+@section('title', __('Help applications'))
 
 @section('content')
     <style>
@@ -44,7 +44,7 @@
 
     <div class="container py-4" style="max-width: 1000px;">
         <a href="{{ route('helps.show', $help) }}" class="text-decoration-none text-dark d-inline-block mb-3">
-            &larr; Back to help
+            &larr; {{ __('Back to help') }}
         </a>
 
         @if (session('success'))
@@ -61,7 +61,7 @@
 
         <div class="mb-4">
             <p class="text-primary fw-semibold small mb-1">
-                Help applications
+                {{ __('Help applications') }}
             </p>
 
             <h1 class="fw-normal mb-1">
@@ -75,7 +75,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="h5 mb-0">
-                Applicants
+                {{ __('Applicants') }}
             </h2>
 
             <span class="text-muted small">
@@ -102,29 +102,29 @@
 
                             <div class="text-muted small">
                                 Applied
-                                {{ $application->applied_at?->format('M d, Y H:i') }}
+                                {{ $application->applied_at?->locale(app()->getLocale())->isoFormat('lll') }}
                             </div>
                         </div>
                     </div>
 
                     @if ($application->status === 'pending')
                         <span class="badge text-bg-warning align-self-start">
-                            Pending
+                            {{ __('Pending') }}
                         </span>
                     @elseif ($application->status === 'accepted')
                         <span class="badge text-bg-success align-self-start">
-                            Accepted
+                            {{ __('Accepted') }}
                         </span>
                     @else
                         <span class="badge text-bg-secondary align-self-start">
-                            Rejected
+                            {{ __('Rejected') }}
                         </span>
                     @endif
                 </div>
 
                 <div class="application-info-box mb-3">
                     <div class="application-label mb-1">
-                        Applicant message
+                        {{ __('Applicant message') }}
                     </div>
 
                     @if ($application->cover_letter)
@@ -133,7 +133,7 @@
                         </div>
                     @else
                         <div class="text-muted small">
-                            No message provided.
+                            {{ __('No message provided.') }}
                         </div>
                     @endif
                 </div>
@@ -152,7 +152,7 @@
                             <input type="hidden" name="status" value="rejected">
 
                             <button type="submit" class="btn btn-outline-danger btn-sm">
-                                Reject
+                                {{ __('Reject') }}
                             </button>
                         </form>
 
@@ -168,7 +168,7 @@
                             <input type="hidden" name="status" value="accepted">
 
                             <button type="submit" class="btn btn-success btn-sm">
-                                Accept
+                                {{ __('Accept') }}
                             </button>
                         </form>
                     </div>
@@ -177,11 +177,11 @@
         @empty
             <div class="application-card text-center py-5">
                 <h3 class="h5 text-muted">
-                    No applications yet
+                    {{ __('No applications yet') }}
                 </h3>
 
                 <p class="text-muted small mb-0">
-                    Applicants will appear here when someone applies.
+                    {{ __('Applicants will appear here when someone applies.') }}
                 </p>
             </div>
         @endforelse

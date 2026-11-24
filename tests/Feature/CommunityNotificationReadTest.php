@@ -74,6 +74,38 @@ class CommunityNotificationReadTest extends TestCase
             ->assertSee('No new community notifications');
     }
 
+    public function test_community_approval_notification_is_read_and_removed_from_community_lists(): void
+    {
+        $user = User::factory()->create();
+        $community = $user->communitiesOwned()->create(['name' => 'Approval Club', 'description' => 'Approved.']);
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'community_join_approved',
+            'title' => 'Community join approved',
+            'related_type' => Community::class,
+            'related_id' => $community->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.show', $user->id))
+            ->assertOk()
+            ->assertSee(route('notifications.show', $notification), false)
+            ->assertSee('Your join request was approved');
+
+        $this->get(route('notifications.index', ['type' => 'community']))
+            ->assertOk()
+            ->assertSee(route('notifications.show', $notification), false);
+
+        $this->get(route('notifications.show', $notification))
+            ->assertRedirect(route('community.show', $community->id));
+
+        $this->assertNotNull($notification->fresh()->read_at);
+        $this->get(route('profile.show', $user->id))
+            ->assertOk()
+            ->assertDontSee('Your join request was approved')
+            ->assertSee('No new community notifications');
+    }
+
     public function test_reading_the_chat_marks_its_message_notifications_read(): void
     {
         $owner = User::factory()->create();
