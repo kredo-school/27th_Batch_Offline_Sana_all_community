@@ -114,6 +114,12 @@ class UpdateHelpRequest extends FormRequest
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
             ],
+
+
+            'image_crop' => ['nullable', 'array'],
+            'image_crop.zoom' => ['nullable', 'numeric', 'min:1', 'max:10'],
+            'image_crop.x' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'image_crop.y' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
     }
 }

@@ -534,6 +534,8 @@
                         {{ $message }}
                     </div>
                 @enderror
+
+                @include('events.partials.image-crop-editor', ['imageUrl' => null, 'crop' => []])
             </div>
 
             {{-- Public notice --}}

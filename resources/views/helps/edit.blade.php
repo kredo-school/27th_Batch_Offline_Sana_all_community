@@ -547,17 +547,6 @@
                     </span>
                 </label>
 
-                @if ($help->image)
-                    <div class="mb-3">
-                        <p class="help-form-label mb-2">
-                            Current cover image
-                        </p>
-
-                        <img src="{{ Storage::url($help->image) }}" alt="{{ $help->title }}" class="img-fluid rounded"
-                            style="max-width: 320px; max-height: 220px; object-fit: cover;">
-                    </div>
-                @endif
-
                 <input type="file" name="image" id="image" accept="image/jpeg,image/png,image/webp"
                     class="form-control @error('image') is-invalid @enderror">
 
@@ -570,6 +559,11 @@
                         {{ $message }}
                     </div>
                 @enderror
+
+                @include('events.partials.image-crop-editor', [
+                    'imageUrl' => $help->image_path ? asset('storage/' . ltrim($help->image_path, '/')) : null,
+                    'crop' => $help->image_crop ?? [],
+                ])
             </div>
 
             {{-- Public notice --}}

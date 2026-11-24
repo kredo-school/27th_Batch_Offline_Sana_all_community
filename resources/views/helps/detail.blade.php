@@ -162,7 +162,7 @@
                 {{-- Cover image --}}
                 <div class="help-cover">
                     @if ($help->image_path)
-                        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}">
+                        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" style="{{ $help->imageStyle() }}">
                     @else
                         <div class="help-cover-empty">
                             No image
@@ -444,13 +444,25 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
-                        <div class="help-avatar">
-                            {{ strtoupper(substr($help->user->name ?? '?', 0, 1)) }}
-                        </div>
+                        @if ($help->user)
+                            <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
+                                <div class="help-avatar">
+                                    {{ strtoupper(substr($help->user->name, 0, 1)) }}
+                                </div>
+                            </a>
+                        @else
+                            <div class="help-avatar">?</div>
+                        @endif
 
                         <div>
                             <div class="fw-semibold">
-                                {{ $help->user->name ?? 'Unknown' }}
+                                @if ($help->user)
+                                    <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
+                                        {{ $help->user->name }}
+                                    </a>
+                                @else
+                                    Unknown
+                                @endif
                             </div>
 
                             <div class="help-help">

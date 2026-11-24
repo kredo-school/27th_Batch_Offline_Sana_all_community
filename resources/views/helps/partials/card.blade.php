@@ -258,7 +258,7 @@
 <article class="help-card">
     {{-- Image --}}
     <div class="help-card-image-wrapper">
-        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" class="help-card-image">
+        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" class="help-card-image" style="{{ $help->imageStyle() }}">
 
         {{-- Help作成者本人：編集・削除メニュー --}}
         @if (auth()->check() && (int) $help->user_id === (int) auth()->id())
