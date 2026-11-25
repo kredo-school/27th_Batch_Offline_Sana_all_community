@@ -124,7 +124,7 @@ class Help extends Model
         // 申込期限終了
         if ($applicationDeadline->lt($today)) {
             return [
-                'label' => 'Application closed',
+                'label' => __('Application closed'),
                 'class' => 'status-closed',
             ];
         }
@@ -134,7 +134,7 @@ class Help extends Model
         // 今日まで
         if ($daysLeft <= 0) {
             return [
-                'label' => 'Today',
+                'label' => __('Today'),
                 'class' => 'status-today',
             ];
         }
@@ -142,7 +142,7 @@ class Help extends Model
         // 残り1〜3日
         if ($daysLeft <= 3) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-urgent',
             ];
         }
@@ -150,14 +150,16 @@ class Help extends Model
         // 残り4〜7日
         if ($daysLeft <= 7) {
             return [
-                'label' => "{$daysLeft} days left",
+                'label' => __(':count days left', ['count' => $daysLeft]),
                 'class' => 'status-info',
             ];
         }
 
         // 8日以上先
         return [
-            'label' => $applicationDeadline->format('D, M j'),
+            'label' => $applicationDeadline
+                ->locale(app()->getLocale())
+                ->isoFormat('ll'),
             'class' => 'status-info',
         ];
     }

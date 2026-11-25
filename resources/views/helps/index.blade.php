@@ -33,6 +33,7 @@
             display: flex;
             flex-direction: column;
             width: 100%;
+            min-width: 0;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
@@ -202,15 +203,15 @@
                 <div class="no-helps-container">
                     @if ($myHelpsOnly)
                         <h3 class="text-muted text-center mb-0">
-                            No your Help yet
+                            {{ __('No your Help yet') }}
                         </h3>
                     @elseif ($bookmarkOnly)
                         <h3 class="text-muted text-center mb-0">
-                            No bookmarked Help yet
+                            {{ __('No bookmarked Help yet') }}
                         </h3>
                     @else
                         <h3 class="text-muted text-center mb-0">
-                            Not Help Yet
+                            {{ __('Not Help Yet') }}
                         </h3>
                     @endif
                 </div>

@@ -256,6 +256,54 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 					credentials: 'same-origin',
 				});
 
+				const mirrorTranslationForm = document.querySelector('#mirror-translation-form');
+				if (mirrorTranslationForm) {
+					const sourceText = mirrorTranslationForm.querySelector('#mirror-source-text');
+					const resultText = mirrorTranslationForm.querySelector('#mirror-result');
+					const status = mirrorTranslationForm.querySelector('#mirror-translation-status');
+					const count = mirrorTranslationForm.querySelector('#mirror-character-count');
+					const submit = mirrorTranslationForm.querySelector('button[type="submit"]');
+
+					sourceText.addEventListener('input', () => {
+						count.textContent = sourceText.value.length;
+					});
+
+					mirrorTranslationForm.addEventListener('submit', async (event) => {
+						event.preventDefault();
+						submit.disabled = true;
+						status.textContent = 'Translating...';
+						resultText.value = '';
+
+						try {
+							const response = await fetch(mirrorTranslationForm.action, {
+								method: 'POST',
+								credentials: 'same-origin',
+								headers: {
+									Accept: 'application/json',
+									'Content-Type': 'application/json',
+									'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+									'X-Requested-With': 'XMLHttpRequest',
+								},
+								body: JSON.stringify({
+									text: sourceText.value,
+									source: mirrorTranslationForm.querySelector('[name="source"]').value,
+									target: mirrorTranslationForm.querySelector('[name="target"]').value,
+								}),
+							});
+							const data = await response.json();
+							if (!response.ok) {
+								throw new Error(data.message || mirrorTranslationForm.dataset.error);
+							}
+							resultText.value = data.translation;
+							status.textContent = '';
+						} catch (error) {
+							status.textContent = error.message || mirrorTranslationForm.dataset.error;
+						} finally {
+							submit.disabled = false;
+						}
+					});
+				}
+
 				if (!response.ok) {
 					throw new Error('Unable to load conversation');
 				}

@@ -242,6 +242,17 @@
             font-size: 20px;
         }
 
+        .header-search-button {
+            border-radius: 0.5rem;
+            transition: box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .header-search-button:hover,
+        .header-search-button:focus-visible {
+            background-color: rgba(192, 245, 245, 0.5) !important;
+            box-shadow: 0 0.25rem 0.75rem rgba(18, 107, 107, 0.28);
+        }
+
         .nav-icons{
             width: 100px;
             height: auto;
@@ -259,10 +270,41 @@
             background-color: rgba(192, 245, 245, 0.5) !important;
         }
 
+        .navbar .account-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            gap: 0.5rem;
+        }
+
+        .navbar .account-dropdown-menu .dropdown-item > i {
+            flex: 0 0 auto;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .navbar .message-dropdown-menu {
+            width: 16rem;
+            min-width: 16rem !important;
+            max-width: calc(100vw - 1rem);
+        }
+
+        .navbar .message-dropdown-menu .js-open-message-chat {
+            white-space: normal;
+        }
+
+        .navbar .message-dropdown-menu .text-break {
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
         .btn-create{
-            width: 6%;
-            height: 20px;
+            width: auto;
+            min-height: 30px;
+            padding: 0.25rem 0.7rem;
             text-align: center !important;
+            font-size: 0.9rem;
         }
 
         .btn-custom-outline:hover,
@@ -552,7 +594,11 @@
             padding-left: 0.35rem;
         }
 
-        .language-dropdown-toggle { font-size: 1.1rem; }
+        .language-dropdown-toggle {
+            position: relative;
+            top: 5px;
+            font-size: 1.1rem;
+        }
         .language-dropdown-menu { min-width: 8rem; padding-block: 0.25rem; }
         .language-dropdown-menu .dropdown-item { padding: 0.35rem 0.85rem; font-size: 0.9rem; }
 
@@ -563,6 +609,7 @@
         .nav-icons{
             width: 150px;
             height: auto;
+            top: 5px;
         }
 
         .category-nav .nav-link:hover,
@@ -587,9 +634,11 @@
         }
 
         .btn-create{
-            width: 6%;
-            height: 20px;
+            width: auto;
+            min-height: 30px;
+            padding: 0.25rem 0.7rem;
             text-align: center !important;
+            font-size: 0.9rem;
         }
 
         .btn-custom-outline:hover,
@@ -625,9 +674,28 @@
             white-space: nowrap;
         }
 
+        .all-navbar .category-nav > ul {
+            flex-wrap: nowrap !important;
+            white-space: nowrap;
+        }
+
         .all-navbar .navbar-icon-group {
             display: flex;
             align-items: center;
+        }
+
+        .all-navbar .nav-link,
+        .all-navbar .btn-create {
+            border-radius: 0.5rem;
+            transition: box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .all-navbar .nav-link:hover,
+        .all-navbar .nav-link:focus-visible,
+        .all-navbar .btn-create:hover,
+        .all-navbar .btn-create:focus-visible {
+            background-color: rgba(192, 245, 245, 0.5) !important;
+            box-shadow: 0 0.25rem 0.75rem rgba(18, 107, 107, 0.28);
         }
 
         .header-list,
@@ -715,13 +783,13 @@
                 border-top: 1px solid #e9ecef;
             }
 
-            /* 上の .all-navbar > .navbar-nav（折り返さない指定）より優先させる */
+            /* Keep the webpage navigation on one horizontal line on narrow screens. */
             .all-navbar .navbar-nav {
                 flex-direction: row !important;
-                flex-wrap: wrap !important;
+                flex-wrap: nowrap !important;
                 align-items: center;
                 gap: 8px;
-                white-space: normal;
+                white-space: nowrap;
             }
 
             .all-navbar .navbar-nav .mt-1,
@@ -731,42 +799,36 @@
                 margin-top: 0 !important;
             }
 
-            /* カテゴリー: 3 列のボタン */
+            /* Categories stay inline instead of becoming a mobile grid. */
             .all-navbar .navbar-nav > .category-nav:first-child {
-                flex: 0 0 100%;
+                flex: 0 0 auto;
             }
 
             .all-navbar .navbar-nav > .category-nav:first-child > ul {
-                display: grid !important;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 6px;
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: 0;
                 margin: 0 !important;
             }
 
             .all-navbar .navbar-nav > .category-nav:first-child > ul > li {
                 margin: 0 !important;
-                font-size: 0.95rem;
+                flex: 0 0 auto;
             }
 
             .all-navbar .navbar-nav > .category-nav:first-child > ul > li > a {
-                padding: 8px 4px;
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                text-align: center;
+                padding: 8px 6px;
                 white-space: nowrap;
             }
 
-            /* Community と View All: 2 つ並びのボタン */
+            /* All other navigation tags remain inline as well. */
             .all-navbar .navbar-nav > .category-nav:not(:first-child):has(> a.nav-link) {
-                flex: 1 1 calc(50% - 4px);
+                flex: 0 0 auto;
             }
 
             .all-navbar .navbar-nav > .category-nav:not(:first-child) > a.nav-link {
-                display: block;
-                padding: 8px 4px;
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                text-align: center;
+                display: flex;
+                padding: 8px 6px;
             }
 
             .all-navbar .navbar-nav > .category-nav:not(:first-child) > a.nav-link .h6 {
@@ -776,10 +838,10 @@
 
             /* 言語は 1 行 */
             .all-navbar .navbar-nav > .nav-item.dropdown:has(#languageDropdown) {
-                flex: 0 0 100%;
+                flex: 0 0 auto;
                 margin-left: 0 !important;
                 padding-top: 4px;
-                border-top: 1px solid #e9ecef;
+                border-top: 0;
             }
 
             /* メッセージ・通知・カレンダー・コミュニティ通知のアイコンを横一列に */
@@ -791,8 +853,8 @@
             .all-navbar .navbar-icon-group .nav-link {
                 display: grid;
                 place-items: center;
-                width: 44px;
-                height: 44px;
+                width: 40px;
+                height: 40px;
                 padding: 0;
                 border: 1px solid #e9ecef;
                 border-radius: 10px;
@@ -817,16 +879,16 @@
             /* CREATE ボタンとユーザーメニュー */
             .all-navbar .btn-create {
                 width: auto;
-                height: 44px;
+                height: 36px;
                 margin-left: auto;
-                padding: 0 18px;
+                padding: 0 12px;
                 font-weight: 600;
             }
 
             .all-navbar .navbar-nav > .dropdown-sm {
-                flex: 0 0 100%;
+                flex: 0 0 auto;
                 padding-top: 4px;
-                border-top: 1px solid #e9ecef;
+                border-top: 0;
             }
         }
     </style>
@@ -836,7 +898,7 @@
             position: sticky;
             top: 0;
             z-index: 1100;
-            min-height: 70px;
+            min-height: 64px;
             padding-top: 0.375rem;
             padding-bottom: 0.375rem;
             background-color: #fff;
@@ -866,8 +928,8 @@
             /* left sidebar */
             .event-sidebar-col {
                 position: sticky;
-                top: 68px; 
-                height: calc(100vh - 68px); 
+                top: 62px;
+                height: calc(100vh - 62px);
                 overflow: visible;
                 background-color: #fff;
                 z-index: 100;
@@ -925,23 +987,18 @@
 <body class="{{ request()->routeIs('profile.show') ? 'profile-overview-page' : '' }}">
     
             <div id="app">
-        <nav class="navbar navbar-expand-xl navbar-light bg-white text-dark">
+        <nav class="navbar navbar-expand navbar-light bg-white text-dark">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}">
-                    <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 45px;">
+                    <img src="{{ asset('images/onlylogo.jpg') }}" alt="Sana All Community" style="height: 40px;">
                     <div class="h5 mb-0 lh-sm">
                         <strong class="fw-bold">Sana ALL</strong><br>
                         <small class="text-muted">Community</small><span class="visually-hidden">EVENTS</span>
                     </div>
                 </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
                 <div class="my-auto">
-                    <div class="collapse navbar-collapse all-navbar" id="navbarSupportedContent">
+                    <div class="navbar-collapse all-navbar" id="navbarSupportedContent">
                         <!-- Right Side Of Navbar -->
                         <ul class="navbar-nav ms-auto my-auto">
 
@@ -972,8 +1029,7 @@
                             <li class="nav-item category-nav mt-2">
                                 <a class="nav-link text-dark dropdown-item {{ request()->routeIs('events.index') && !request()->filled('category') ? 'header-list-active' : '' }}" href="{{ route('events.index') }}"><span class="h6 fw-bold text-dark">{{ __('View All') }}</span></a>
                             </li>
-
-                                 <li class="nav-item nav-link dropdown my-auto ms-1 mt-2 category-nav">
+                                 <li class="nav-item dropdown my-auto ms-1 mt-2 category-nav">
                                     <button id="languageDropdown" class="nav-link dropdown-toggle text-dark language-dropdown-toggle" type="button"
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-language me-1 text-dark" aria-hidden="true"></i>
@@ -1001,8 +1057,8 @@
                                                     @if ($unreadMessagesCount < 1) hidden @endif>{{ $unreadMessagesCount }}</span>
                                             </button>
                                             {{-- show latest messages --}}
-                                            <ul class="dropdown-menu border-primary bg-primary rounded" aria-labelledby="messageDropdown"
-                                                style="max-height: 24rem; min-width: 18rem; overflow-y: auto;">
+                                            <ul class="dropdown-menu message-dropdown-menu border-primary bg-primary rounded" aria-labelledby="messageDropdown"
+                                                style="max-height: 24rem; overflow-y: auto;">
                                                 <li class="bg-primary text-center mb-1"><span class="h5 text-white">{{ __('Messages') }}</span></li>
                                                 @forelse ($chats as $chat)
                                                     <li class="dropdown-content bg-white">
@@ -1229,7 +1285,7 @@
                                     </ul>
                                       <ul class="navbar-icon-group">
                                         <li class="nav-item mt-2">
-                                            <button type="button" class="nav-link btn text-dark link-secondary"
+                                            <button type="button" class="nav-link btn text-dark link-secondary header-search-button"
                                                 data-bs-toggle="modal" data-bs-target="#global-search-modal"
                                                 aria-label="{{ __('Search') }}" title="{{ __('Search') }}">
                                                 <i class="fa-solid fa-magnifying-glass dropdown-icon-lg" aria-hidden="true"></i>
@@ -1250,89 +1306,63 @@
                                         </li>
                                     @endif
                                 @else
-                                    <a href="#" class="btn btn-primary text-white btn-create d-inline-flex align-items-center justify-content-center  mt-2" data-bs-toggle="modal" data-bs-target="#modal-post">
+                                    <a href="#" class="btn btn-primary text-white d-inline-flex align-items-center justify-content-center  mt-2" data-bs-toggle="modal" data-bs-target="#modal-post">
                                         <span>{{ __('Create') }}</span>
                                     </a>
-                                    <li class="nav-item dropdown dropdown-sm">
-
-                                        <a id="navbarDropdown" class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-dark text-nowrap" href="#"
-                                            role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                                            v-pre>
+                                    <li class="nav-item dropdown dropdown-sm category-nav mt-2">
+                                        <a id="navbarDropdown" href="#"
+                                            class="nav-link dropdown-toggle d-flex align-items-center gap-1 text-dark text-nowrap"
+                                            role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                             @if (Auth::user()->profile?->avatar)
                                                 @php
                                                     $avatarPath = Auth::user()->profile->avatar;
                                                     $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                         ? $avatarPath : asset('storage/'.$avatarPath);
                                                 @endphp
-                                                {{-- 代替テキストは、ナビバーの他のアイコンや「Hello, ○○」と同じユーザー名にする --}}
-                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username ?: Auth::user()->name }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username ?: Auth::user()->name }}"
+                                                    class="rounded-circle navbar-avatar" width="30" height="30">
                                             @else
-                                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                                <i class="fa-solid fa-circle-user" aria-hidden="true"></i>
                                             @endif
-                                            {{ __('Hello') }}, {{ Auth::user()->username }}
-                                            <i class="fa-solid fa-list"></i>
+                                            <span>{{ __('Hello') }}, {{ Auth::user()->username }}</span>
                                         </a>
-
-                                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                        <div class="dropdown-menu account-dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                             @if (Auth::user()->role === 'admin')
                                                 <a href="{{ Route::has('admin.users') ? route('admin.users') : '#' }}"
                                                     class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-user-gear"></i> {{ __('Admin') }}
+                                                    <i class="fa-solid fa-user-gear" aria-hidden="true"></i> {{ __('Admin') }}
                                                 </a>
                                             @endif
-
-                                            <a href="{{ route('profile.show', Auth::user()->id) }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-solid fa-circle-user user-menu-icon"></i> {{ __('Profile') }}
+                                            <a href="{{ route('events.index', ['bookmark' => 1]) }}"
+                                                class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
+                                                <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i> {{ __('Bookmark') }}
                                             </a>
-
-                                            <a href="{{ route('events.index', ['bookmark' => 1]) }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-solid fa-book-bookmark user-menu-icon"></i> {{ __('Bookmark') }}
+                                            <a href="{{ route('profile.show', Auth::user()->id) }}"
+                                                class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
+                                                <i class="fa-solid fa-circle-user" aria-hidden="true"></i> {{ __('Profile') }}
                                             </a>
-                                            @if ($hasMyEvents)
-                                                <a href="{{ route('events.index', ['my_event' => 1]) }}"
-                                                    class="{{ request()->boolean('my_event') ? 'active' : '' }} dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> {{ __('My Event') }}
-                                                </a>
-                                                
-                                            @else
-                                                <a href="{{ route('events.index')}}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                    <i class="fa-solid fa-person-walking user-menu-icon"></i> {{ __('Activity') }}
-                                                </a>
-                                            @endif
-                                            
-                                            @if ($hasMyCommunities)
-                                                <a class="dropdown-item d-flex align-items-center gap-2 text-nowrap"
-                                    href="{{ route('community.index', $hasMyCommunities ? ['filter' => 'owned'] : []) }}"><i class="fa-solid fa-people-group user-menu-icon"></i>{{ __('My Community') }}</span></a>
-                                                
-                                            @else
-                                                <a href="{{ route('community.index')}}"
-                                                    class="dropdown-item d-flex align-items-center gap-2 text-nowrap {{ request()->boolean('my_community') ? 'active' : '' }}">
-                                                    <i class="fa-solid fa-people-group user-menu-icon"></i>{{ __('Community') }}
-                                                </a>
-                                            @endif
-                                            {{-- <a href="{{ route('community.index') }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-solid fa-people-group user-menu-icon"></i> Community
-                                            </a> --}}
-
-                                            <a href="{{ route('notifications.index') }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
-                                                <i class="fa-regular fa-message user-menu-icon"></i>
-                                                {{ __('Message') }}
+                                            <a href="{{ $hasMyEvents ? route('events.index', ['my_event' => 1]) : route('events.index') }}"
+                                                class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
+                                                <i class="fa-solid fa-person-walking" aria-hidden="true"></i>
+                                                {{ $hasMyEvents ? __('My Event') : __('Activity') }}
+                                            </a>
+                                            <a href="{{ $hasMyCommunities ? route('community.index', ['filter' => 'owned']) : route('community.index') }}"
+                                                class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
+                                                <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+                                                {{ $hasMyCommunities ? __('My Community') : __('Community') }}
+                                            </a>
+                                            <a href="{{ route('messages.index') }}"
+                                                class="dropdown-item d-flex align-items-center gap-2 text-nowrap">
+                                                <i class="fa-regular fa-message" aria-hidden="true"></i> {{ __('Message') }}
                                             </a>
                                             <hr class="dropdown-divider">
-
-                                            <a class="dropdown-item d-flex align-items-center gap-2 text-nowrap" href="{{ route('logout') }}"
-                                                onclick="event.preventDefault();
-                                                                    document.getElementById('logout-form').submit();">
-                                                <i class="fa-solid fa-right-from-bracket"></i>
-                                                {{ __('Logout') }}
-                                        </a>
-
-                                        <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                            class="d-none">
-                                            @csrf
-                                        </form>
-                                    </div>
-                                </li>
+                                            <a href="{{ route('logout') }}" class="dropdown-item d-flex align-items-center gap-2 text-nowrap"
+                                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> {{ __('Logout') }}
+                                            </a>
+                                            <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+                                        </div>
+                                    </li>
                             @endguest
                         </ul>
                     </div>

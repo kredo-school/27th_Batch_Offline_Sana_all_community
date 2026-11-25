@@ -21,7 +21,7 @@
                     <p>
                         {{ __('Are you sure you want to delete') }}
                         <strong>
-                            "{{ $help->title }}"
+                            "{{ __($help->title) }}"
                         </strong>?
                     </p>
 

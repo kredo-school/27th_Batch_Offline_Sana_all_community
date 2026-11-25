@@ -65,11 +65,11 @@
             </p>
 
             <h1 class="fw-normal mb-1">
-                {{ $help->title }}
+                {{ __($help->title) }}
             </h1>
 
             <p class="text-muted mb-0">
-                {{ $help->company_name }}
+                {{ __($help->company_name) }}
             </p>
         </div>
 
@@ -93,7 +93,7 @@
 
                         <div>
                             <h3 class="h6 mb-1">
-                                {{ $application->user->name ?? 'Unknown user' }}
+                                {{ __($application->user->name ?? 'Unknown user') }}
                             </h3>
 
                             <div class="text-muted small">

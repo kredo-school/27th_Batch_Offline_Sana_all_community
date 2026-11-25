@@ -155,7 +155,7 @@
                 </a>
 
                 <h2 class="calendar-month-title">
-                    {{ $displayMonth }}
+                    {{ __($displayMonth) }}
                 </h2>
 
                 <a href="{{ $nextMonthUrl }}" class="calendar-month-button" aria-label="{{ __('Next month') }}">
@@ -164,13 +164,14 @@
             </div>
 
             <div class="calendar-week">
-                <span>Su</span>
-                <span>Mo</span>
-                <span>Tu</span>
-                <span>We</span>
-                <span>Th</span>
-                <span>Fr</span>
-                <span>Sa</span>
+                @php
+                    $calendarWeekStart = \Carbon\Carbon::now()
+                        ->locale(app()->getLocale())
+                        ->startOfWeek(\Carbon\Carbon::SUNDAY);
+                @endphp
+                @for ($weekday = 0; $weekday < 7; $weekday++)
+                    <span>{{ $calendarWeekStart->copy()->addDays($weekday)->translatedFormat('D') }}</span>
+                @endfor
             </div>
 
             <div class="calendar-days">
@@ -227,7 +228,7 @@
         @if ($hasMyHelps)
             <a href="{{ route('helps.index', ['my_helps' => 1]) }}"
                 class="{{ request()->boolean('my_helps') ? 'active' : '' }}">
-                My Help
+                {{ __('My Help') }}
             </a>
         @endif
     </nav>
