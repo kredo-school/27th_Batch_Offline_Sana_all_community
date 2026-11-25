@@ -12,7 +12,7 @@ class AdminCommunitiesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_communities_list_shows_approved_member_count(): void
+    public function test_admin_communities_list_shows_approved_participant_count_including_owner(): void
     {
         $admin = User::factory()->create([
             'role' => 'admin',
@@ -30,8 +30,8 @@ class AdminCommunitiesTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.communities'))
             ->assertOk()
-            ->assertSee('Members')
-            ->assertViewHas('records', fn ($records) => $records->first()->members_count === 2);
+            ->assertSee(__('Members'))
+            ->assertViewHas('records', fn ($records) => (int) $records->first()->members_count === 3);
     }
 
     public function test_admin_can_view_community_details_with_members(): void
@@ -71,7 +71,7 @@ class AdminCommunitiesTest extends TestCase
             ->assertSee('日本語')
             ->assertSee('approved_member')
             ->assertSee('pending_member')
-            ->assertViewHas('community', fn ($c) => $c->members_count === 1);
+            ->assertViewHas('community', fn ($c) => (int) $c->members_count === 2);
     }
 
     public function test_admin_can_edit_and_delete_a_community(): void

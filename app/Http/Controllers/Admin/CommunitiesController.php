@@ -18,7 +18,10 @@ class CommunitiesController extends Controller
     {
         $query = Community::query()
             ->with('owner')
-            ->withCount(['memberships as members_count' => fn ($query) => $query->where('status', 'approved')]);
+            ->withCount(['memberships as members_count' => fn ($query) => $query->where('status', 'approved')])
+            ->withExists(['memberships as owner_is_member' => fn ($query) => $query
+                ->where('status', 'approved')
+                ->whereColumn('user_id', 'communities.owner_id')]);
 
         if ($search = trim((string) $request->query('search'))) {
             $query->where(function ($q) use ($search) {
@@ -41,6 +44,11 @@ class CommunitiesController extends Controller
         $records = $query->orderBy($column, $direction)
             ->paginate(10)
             ->withQueryString();
+        $records->getCollection()->each(function (Community $community): void {
+            if ((int) $community->owner_is_member === 0) {
+                $community->members_count++;
+            }
+        });
 
         $title = 'Communities';
         $columns = [
@@ -64,7 +72,14 @@ class CommunitiesController extends Controller
         ])->loadCount([
             'memberships as members_count' => fn ($query) => $query->where('status', 'approved'),
             'events',
+        ])->loadExists([
+            'memberships as owner_is_member' => fn ($query) => $query
+                ->where('status', 'approved')
+                ->whereColumn('user_id', 'communities.owner_id'),
         ]);
+        if ((int) $community->owner_is_member === 0) {
+            $community->members_count++;
+        }
         $memberships = $community->memberships()
             ->with('user.profile')
             ->orderByRaw("status = 'approved' desc")

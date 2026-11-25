@@ -51,6 +51,10 @@ Route::get('/search/suggest', \App\Http\Controllers\SearchSuggestionController::
     ->name('search.suggest');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
+Route::get('/translate', [\App\Http\Controllers\TranslationController::class, 'index'])->name('translate');
+Route::post('/translate', [\App\Http\Controllers\TranslationController::class, 'translate'])
+    ->middleware('throttle:30,1')
+    ->name('translate.store');
 
 // Login User Middleware (Daichi)
 

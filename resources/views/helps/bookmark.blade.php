@@ -204,14 +204,14 @@
                         'filterRouteName' => 'helps.bookmarks.index',
                     ])
 
-                    <h1>Bookmark</h1>
+                    <h1>{{ __('Bookmark') }}</h1>
 
                     {{-- イベント一覧グリッド --}}
                     <div class="help-grid">
                         @forelse ($helps as $help)
                             @include('helps.partials.card', ['help' => $help])
                         @empty
-                            <p>Not bookmarked helps.</p>
+                            <p>{{ __('Not bookmarked helps.') }}</p>
                         @endforelse
                     </div>
 

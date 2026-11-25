@@ -206,7 +206,7 @@ class Event extends Model
         // regester closed
         if ($joinTill->lt($today)) {
             return [
-                'label' => 'Registration closed',
+                'label' => __('Registration closed'),
                 'class' => 'status-closed',
             ];
         }
@@ -216,7 +216,7 @@ class Event extends Model
         // Today
         if ($daysLeft <= 0) {
             return [
-                'label' => 'Today',
+                'label' => __('Today'),
                 'class' => 'status-today',
             ];
         }

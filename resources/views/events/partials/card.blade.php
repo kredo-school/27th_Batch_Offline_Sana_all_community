@@ -230,7 +230,7 @@
                     : asset('storage/' . $event->image))
                 : asset('images/onlylogo.jpg');
         @endphp
-        <img src="{{ $eventImageUrl }}" alt="{{ $event->title }}" class="event-card-image"
+        <img src="{{ $eventImageUrl }}" alt="{{ __($event->title) }}" class="event-card-image"
             style="{{ $event->imageStyle() }}">
 
         @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
@@ -271,19 +271,19 @@
     <div class="event-card-body">
         <div class="event-card-badges">
             @foreach ($event->categories as $event_category)
-                <span class="badge event-category">{{ $event_category->localized_name }}</span>
+                <span class="badge event-category">{{ __($event_category->localized_name) }}</span>
             @endforeach
 
             @php
                 $joinTillBadge = $event->join_till_badge;
             @endphp
 
-            <span class="badge event-status {{ $joinTillBadge['class'] }}">
+            <span class="badge event-status {{ __($joinTillBadge['class']) }}">
                 {{ __($joinTillBadge['label']) }}
             </span>
         </div>
-        <h2 class="event-card-title">{{ $event->title }}</h2>
-        <p class="event-card-description">{{ $event->description }}</p>
+        <h2 class="event-card-title">{{ __($event->title) }}</h2>
+        <p class="event-card-description">{{ __($event->description) }}</p>
         <div class="event-card-footer">
             <time datetime="{{ $event->start_at?->format('Y-m-d') ?? '' }}">
                 {{ __('Held on') }}

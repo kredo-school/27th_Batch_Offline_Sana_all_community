@@ -284,7 +284,7 @@
 <article class="help-card">
     {{-- Image --}}
     <div class="help-card-image-wrapper">
-        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" class="help-card-image" style="{{ $help->imageStyle() }}">
+        <img src="{{ $helpImageUrl }}" alt="{{ __($help->title) }}" class="help-card-image" style="{{ $help->imageStyle() }}">
 
         {{-- Help作成者本人：編集・削除メニュー --}}
         @auth
@@ -307,7 +307,7 @@
                         @csrf
                         @method('DELETE')
 
-                        <button type="submit" class="favorite-button active" aria-label="Remove from bookmarks"
+                        <button type="submit" class="favorite-button active" aria-label="{{ __('Remove from bookmarks') }}"
                             aria-pressed="true">
                             ♥
                         </button>
@@ -320,7 +320,7 @@
                         class="bookmark-form">
                         @csrf
 
-                        <button type="submit" class="favorite-button" aria-label="Add to bookmarks" aria-pressed="false">
+                        <button type="submit" class="favorite-button" aria-label="{{ __('Add to bookmarks') }}" aria-pressed="false">
                             ♡
                         </button>
                     </form>
@@ -339,11 +339,11 @@
     <div class="help-card-badges">
         @if (filled($categoryLabel))
             <span class="badge help-category">
-                {{ $categoryLabel }}
+                {{ __($categoryLabel) }}
             </span>
         @else
             <span class="badge help-category">
-                Uncategorized
+                {{ __('Uncategorized') }}
             </span>
         @endif
 
@@ -360,19 +360,19 @@
 
     {{-- タイトル --}}
     <h2 class="help-card-title">
-        {{ $help->title }}
+        {{ __($help->title) }}
     </h2>
 
     {{-- 会社名 --}}
     @if ($help->company_name)
         <p class="mb-2 fw-semibold text-dark">
-            {{ $help->company_name }}
+            {{ __($help->company_name) }}
         </p>
     @endif
 
     {{-- 説明 --}}
     <p class="help-card-description">
-        {{ \Illuminate\Support\Str::limit(strip_tags($help->description), 110) }}
+        {{ __(\Illuminate\Support\Str::limit(strip_tags($help->description), 110)) }}
     </p>
 
     {{-- Help情報 --}}
@@ -387,7 +387,7 @@
         @if ($help->location)
             <div class="mb-1">
                 <span aria-hidden="true">📍</span>
-                {{ $help->location }}
+                {{ __($help->location) }}
             </div>
         @endif
 
@@ -402,9 +402,9 @@
             <div>
                 <span aria-hidden="true">👥</span>
                 @if ($help->capacity == 1)
-                    Capacity {{ $help->capacity }} person
+                    {{ __('Capacity :count person', ['count' => $help->capacity]) }}
                 @else
-                    Capacity {{ $help->capacity }} people
+                    {{ __('Capacity :count people', ['count' => $help->capacity]) }}
                 @endif
             </div>
         @endif
@@ -414,15 +414,15 @@
     <div class="help-card-footer">
         <time datetime="{{ $help->application_deadline?->format('Y-m-d') ?? '' }}">
             @if ($help->application_deadline)
-                Apply by
-                {{ $help->application_deadline->format('M d, Y') }}
+                {{ __('Apply by') }}
+                {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('ll') }}
             @else
-                Open application
+                {{ __('Open application') }}
             @endif
         </time>
 
         <a href="{{ route('helps.show', $help->id) }}">
-            View details &gt;
+            {{ __('View details') }} &gt;
         </a>
     </div>
 </div>

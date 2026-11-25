@@ -78,6 +78,64 @@ final class MissingTranslationService
         return $translations[$locale] ?? $key;
     }
 
+    /**
+     * Persist an externally translated English phrase in every locale file.
+     * Existing keys remain unchanged.
+     */
+    public function persistExternalTranslation(
+        string $englishText,
+        string $targetLocale,
+        string $translatedText,
+    ): void {
+        $englishText = trim($englishText);
+        $targetLocale = strtolower(trim($targetLocale));
+        $translatedText = trim($translatedText);
+
+        if (
+            $englishText === ''
+            || $translatedText === ''
+            || $targetLocale === 'en'
+            || ! array_key_exists($targetLocale, config('app.supported_locales', []))
+        ) {
+            return;
+        }
+
+        $translations = [
+            'en' => $englishText,
+            $targetLocale => $translatedText,
+        ];
+
+        foreach (array_keys(config('app.supported_locales', [])) as $locale) {
+            if ($locale === 'en' || $locale === $targetLocale) {
+                continue;
+            }
+
+            try {
+                $translation = $this->translator->translate($englishText, $locale);
+            } catch (\Throwable $exception) {
+                Log::warning('Automatic translation failed while saving external translation', [
+                    'key' => $englishText,
+                    'target' => $locale,
+                    'error' => $exception->getMessage(),
+                ]);
+                $translation = null;
+            }
+
+            $translations[$locale] = is_string($translation) && trim($translation) !== ''
+                ? trim($translation)
+                : $englishText;
+        }
+
+        try {
+            $this->languageFiles->addMissingKey($englishText, $translations);
+        } catch (\Throwable $exception) {
+            Log::warning('Unable to persist external translation', [
+                'key' => $englishText,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     private function shouldTranslate(string $key): bool
     {
         // Translation keys for PHP groups and package namespaces are not JSON

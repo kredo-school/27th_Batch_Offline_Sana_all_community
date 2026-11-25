@@ -124,6 +124,7 @@
         display: flex;
         flex-direction: column;
         width: 100%;
+        min-width: 0;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }

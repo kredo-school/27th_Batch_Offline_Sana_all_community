@@ -4,16 +4,16 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="deleteEventModalLabel{{ $event->id }}">
-                    Delete event?
+                    {{ __('Delete event?') }}
                 </h5>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
 
             <div class="modal-body">
                 <p>
                     {{ __('Are you sure you want to delete')}}
-                    <strong>"{{ __('$event->title') }}"</strong>?
+                    <strong>"{{ __($event->title) }}"</strong>?
                 </p>
 
                 <p class="text-danger mb-0">
@@ -23,7 +23,7 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Cancel
+                    {{ __('Cancel') }}
                 </button>
 
                 <form method="POST" action="{{ route('events.destroy', ['event' => $event->id]) }}">

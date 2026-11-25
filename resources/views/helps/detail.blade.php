@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('sidebar', 'helps')
-@section('title', $help->title)
+@section('title', __($help->title))
 
 @section('content')
     <style>
@@ -167,6 +167,10 @@
     @php
         $isOwner = auth()->check() && (int) auth()->id() === (int) $help->user_id;
 
+        $helpImageUrl = $help->image_path
+            ? asset('storage/' . ltrim($help->image_path, '/'))
+            : asset('images/onlylogo.jpg');
+
         $isDeadlinePassed = $help->application_deadline && $help->application_deadline->isBefore(today());
 
         $deadlineBadge = $help->application_deadline_badge;
@@ -254,7 +258,7 @@
                 {{-- Cover image --}}
                 <div class="help-cover">
                     @if ($help->image_path)
-                        <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" style="{{ $help->imageStyle() }}">
+                        <img src="{{ $helpImageUrl }}" alt="{{ __($help->title) }}" style="{{ $help->imageStyle() }}">
                     @else
                         <div class="help-cover-empty">
                             {{ __('No image') }}
@@ -292,7 +296,7 @@
                                 {{ __($statusLabel) }} --}}
                         @if ($category && filled($category->name))
                             <span class="help-detail-badge help-detail-category">
-                                {{ $category->name }}
+                                {{ __($category->name) }}
                             </span>
                         @endif
 
@@ -308,12 +312,12 @@
                     </div>
 
                     <h1 class="fw-normal mb-2">
-                        {{ $help->title }}
+                        {{ __($help->title) }}
                     </h1>
 
                     @if ($help->company_name)
                         <p class="text-muted mb-4">
-                            {{ $help->company_name }}
+                            {{ __($help->company_name) }}
                         </p>
                     @endif
 
@@ -349,7 +353,7 @@
                                     {{ __('Location') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ $help->location ?: __('Not specified') }}
+                                    {{ $help->location ? __($help->location) : __('Not specified') }}
                                 </div>
                             </div>
                         </div>
@@ -413,7 +417,7 @@
                         {{ __('Help description') }}
                     </h5>
 
-                    <p class="mb-0" style="white-space: pre-line;">{{ $help->description }}</p>
+                    <p class="mb-0" style="white-space: pre-line;">{{ __($help->description) }}</p>
                 </div>
 
                 {{-- Requirements --}}
@@ -424,7 +428,7 @@
                         </h5>
 
                         <p class="mb-0" style="white-space: pre-line;">
-                            {{ $help->requirements }}
+                            {{ __($help->requirements) }}
                         </p>
                     </div>
                 @endif
@@ -476,15 +480,15 @@
                         </div>
                     @elseif ($myApplication?->status === 'pending')
                         <div class="alert alert-info small mb-0">
-                            Your application is pending approval.
+                            {{ __('Your application is pending approval.') }}
                         </div>
                     @elseif ($myApplication?->status === 'accepted')
                         <div class="alert alert-success small mb-0">
-                            Your application has been approved.
+                            {{ __('Your application has been approved.') }}
                         </div>
                     @elseif ($myApplication?->status === 'rejected')
                         <div class="alert alert-danger small mb-0">
-                            Your application was rejected.
+                            {{ __('Your application was rejected.') }}
                         </div>
                     @elseif (!auth()->check())
                         <a href="{{ route('login') }}" class="btn btn-primary w-100">
@@ -535,7 +539,7 @@
                             src="https://maps.google.com/maps?q={{ urlencode($help->location) }}&output=embed"></iframe>
 
                         <div class="mt-2">
-                            {{ $help->location }}
+                            {{ __($help->location) }}
                         </div>
 
                         <a href="https://www.google.com/maps/dir/?api=1&destination={{ urlencode($help->location) }}"
@@ -566,7 +570,7 @@
                             <div class="fw-semibold">
                                 @if ($help->user)
                                     <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
-                                        {{ $help->user->name }}
+                                        {{ __($help->user->name) }}
                                     </a>
                                 @else
                                     {{ __('Unknown') }}
