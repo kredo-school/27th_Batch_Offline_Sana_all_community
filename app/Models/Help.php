@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Search;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,8 +37,8 @@ class Help extends Model
     protected $casts = [
         'event_start_at' => 'datetime',
         'event_end_at' => 'datetime',
-        'application_deadline' => 'date',
         'image_crop' => 'array',
+        'application_deadline' => 'datetime',
     ];
 
         /**
@@ -59,7 +60,7 @@ class Help extends Model
         return "object-fit: contain; object-position: {$x}% {$y}%; "
             . "transform: scale({$zoom}); transform-origin: {$x}% {$y}%;";
     }
-    
+
     /**
      * 検索（サイト共通のルール App\Support\Search）: タイトル・会社名・説明・場所・カテゴリー名
      */
@@ -92,7 +93,7 @@ class Help extends Model
 
     public function bookmarks(): HasMany
     {
-        return $this->hasMany(HelpBookmark::class);
+        return $this->hasMany(HelpBookmark::class, 'help_id');
     }
 
     public function requester()
@@ -102,6 +103,62 @@ class Help extends Model
 
     public function category()
     {
-        return $this->belongsTo(HelpCategory::class, 'category_id');
+        return $this->belongsTo(HelpCategory::class, 'category_id', 'id');
+    }
+
+    public function getApplicationDeadlineBadgeAttribute(): array
+    {
+        if (!$this->application_deadline) {
+            return [
+                'label' => '-',
+                'class' => 'status-closed',
+            ];
+        }
+
+        $today = Carbon::today(config('app.timezone'));
+
+        $applicationDeadline = Carbon::parse(
+            $this->application_deadline
+        )->startOfDay();
+
+        // 申込期限終了
+        if ($applicationDeadline->lt($today)) {
+            return [
+                'label' => 'Application closed',
+                'class' => 'status-closed',
+            ];
+        }
+
+        $daysLeft = $today->diffInDays($applicationDeadline);
+
+        // 今日まで
+        if ($daysLeft <= 0) {
+            return [
+                'label' => 'Today',
+                'class' => 'status-today',
+            ];
+        }
+
+        // 残り1〜3日
+        if ($daysLeft <= 3) {
+            return [
+                'label' => "{$daysLeft} days left",
+                'class' => 'status-urgent',
+            ];
+        }
+
+        // 残り4〜7日
+        if ($daysLeft <= 7) {
+            return [
+                'label' => "{$daysLeft} days left",
+                'class' => 'status-info',
+            ];
+        }
+
+        // 8日以上先
+        return [
+            'label' => $applicationDeadline->format('D, M j'),
+            'class' => 'status-info',
+        ];
     }
 }

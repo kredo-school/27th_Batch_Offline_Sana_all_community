@@ -283,6 +283,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/helps/{help}/applications/{application}', [HelpApplicationController::class, 'updateStatus'])->name('helps.applications.update-status');
 
     // Bookmark
+    Route::get('/help-bookmarks', [HelpBookmarkController::class, 'index'])->name('helps.bookmarks.index');
     Route::post('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'store'])->name('helps.bookmarks.store');
     Route::delete('/helps/{help}/bookmarks', [HelpBookmarkController::class, 'destroy'])->name('helps.bookmarks.destroy');
 });

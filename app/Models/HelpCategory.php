@@ -21,6 +21,10 @@ class HelpCategory extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $table = 'help_categories';
+
+    protected $primaryKey = 'id';
+
     public function helps(): HasMany
     {
         return $this->hasMany(Help::class, 'category_id');

@@ -200,7 +200,19 @@
                 @include('helps.partials.card', ['help' => $help])
             @empty
                 <div class="no-helps-container">
-                    <h3 class="text-muted text-center mb-0">{{ __('Not Help Yet') }}</h3>
+                    @if ($myHelpsOnly)
+                        <h3 class="text-muted text-center mb-0">
+                            No your Help yet
+                        </h3>
+                    @elseif ($bookmarkOnly)
+                        <h3 class="text-muted text-center mb-0">
+                            No bookmarked Help yet
+                        </h3>
+                    @else
+                        <h3 class="text-muted text-center mb-0">
+                            Not Help Yet
+                        </h3>
+                    @endif
                 </div>
             @endforelse
             <div class="modal fade" id="deleteHelpModal" tabindex="-1" aria-labelledby="deleteHelpModalLabel"

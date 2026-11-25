@@ -1,3 +1,8 @@
+@php
+    $sort = $sort ?? request('sort', 'created_desc');
+    $filterRouteName = $filterRouteName ?? 'helps.index';
+@endphp
+
 <style>
     .help-filters {
         display: flex;
@@ -114,7 +119,7 @@
 
 <section class="help-filters">
     {{-- Search Form --}}
-    <form action="{{ route('helps.index') }}" method="GET" class="help-search-form">
+    <form action="{{ route($filterRouteName) }}" method="GET" class="help-search-form">
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
 
@@ -124,6 +129,14 @@
 
         @if (request('category_id'))
             <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+        @endif
+
+        @if (request()->boolean('bookmarked'))
+            <input type="hidden" name="bookmarked" value="1">
+        @endif
+
+        @if (request()->boolean('my_helps'))
+            <input type="hidden" name="my_helps" value="1">
         @endif
 
         <input type="hidden" name="sort" value="{{ $sort }}">
@@ -145,7 +158,7 @@
                 <li>
                     <a class="dropdown-item {{ $sort === 'deadline_asc' ? 'active' : '' }}"
                         href="{{ route(
-                            'helps.index',
+                            $filterRouteName,
                             array_merge(request()->except('page'), [
                                 'sort' => 'deadline_asc',
                             ]),
@@ -157,7 +170,7 @@
                 <li>
                     <a class="dropdown-item {{ $sort === 'deadline_desc' ? 'active' : '' }}"
                         href="{{ route(
-                            'helps.index',
+                            $filterRouteName,
                             array_merge(request()->except('page'), [
                                 'sort' => 'deadline_desc',
                             ]),

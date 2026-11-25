@@ -5,7 +5,7 @@
         background: #fff;
         box-sizing: border-box;
         position: sticky;
-        top: 70px;
+        top: 85px;
         align-self: flex-start;
         padding-left: 15px;
         padding-right: 15px;

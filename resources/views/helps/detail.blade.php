@@ -108,6 +108,60 @@
             justify-content: center;
             font-weight: 600;
         }
+
+        .help-cover-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            padding: 4px 12px;
+            font-weight: 600;
+            background: #ffffff;
+        }
+
+        .help-detail-badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .help-detail-category {
+            background: #c9e58b;
+            color: #365314;
+        }
+
+        .help-detail-badge.status-today {
+            background: #fda4af;
+            color: #9f1239;
+        }
+
+        .help-detail-badge.status-urgent {
+            background: #fde047;
+            color: #713f12;
+        }
+
+        .help-detail-badge.status-info {
+            background: #7dd3fc;
+            color: #075985;
+        }
+
+        .help-detail-badge.status-closed {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .help-detail-badge.status-accepted {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .help-detail-badge.status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 
     @php
@@ -115,15 +169,38 @@
 
         $isDeadlinePassed = $help->application_deadline && $help->application_deadline->isBefore(today());
 
-        $canApply = auth()->check() && !$isOwner && $help->status === 'published' && !$isDeadlinePassed;
+        $deadlineBadge = $help->application_deadline_badge;
 
-        $helpImageUrl = $help->image_path
-            ? asset('storage/' . ltrim($help->image_path, '/'))
-            : asset('images/onlylogo.jpg');
+        $myApplication = null;
+        $applicationBadge = null;
 
         $statusLabel = $help->status
             ? __(\Illuminate\Support\Str::headline($help->status))
             : __('Unknown');
+
+        if (auth()->check() && $help->relationLoaded('applications')) {
+            $myApplication = $help->applications->first();
+        }
+
+        $applicationBadge = match ($myApplication?->status) {
+            'pending' => [
+                'label' => 'Pending approval',
+                'class' => 'status-info',
+            ],
+            'accepted' => [
+                'label' => 'Approved',
+                'class' => 'status-accepted',
+            ],
+            'rejected' => [
+                'label' => 'Rejected',
+                'class' => 'status-rejected',
+            ],
+            default => null,
+        };
+
+        $canApply =
+            auth()->check() && !$isOwner && !$myApplication && $help->status === 'published' && !$isDeadlinePassed;
+
 
         $eventDateLabel = null;
 
@@ -146,7 +223,9 @@
             default => $help->reward_type,
         };
 
-        $rewardLabel = collect([$rewardTypeLabel, $help->reward_amount])
+        $category = $help->getRelation('category');
+
+        $rewardLabel = collect([$help->reward_type, $help->reward_amount])
             ->filter(fn($value) => filled($value))
             ->implode(' / ');
     @endphp
@@ -196,7 +275,7 @@
                 {{-- Help basics --}}
                 <div class="help-card">
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        @if ($help->category)
+                        {{-- @if ($help->category)
                             <span class="help-badge">
                                 {{ __($help->category->name) }}
                             </span>
@@ -210,7 +289,20 @@
 
                         @if ($help->status)
                             <span class="help-badge-secondary">
-                                {{ __($statusLabel) }}
+                                {{ __($statusLabel) }} --}}
+                        @if ($category && filled($category->name))
+                            <span class="help-detail-badge help-detail-category">
+                                {{ $category->name }}
+                            </span>
+                        @endif
+
+                        <span class="help-detail-badge {{ $deadlineBadge['class'] }}">
+                            {{ __($deadlineBadge['label']) }}
+                        </span>
+
+                        @if ($applicationBadge)
+                            <span class="help-detail-badge {{ $applicationBadge['class'] }}">
+                                {{ __($applicationBadge['label']) }}
                             </span>
                         @endif
                     </div>
@@ -226,20 +318,8 @@
                     @endif
 
                     <div class="row g-2">
-                        {{-- Category --}}
-                        <div class="col-md-6">
-                            <div class="help-info-box">
-                                <div class="help-info-label">
-                                    {{ __('Category') }}
-                                </div>
-                                <div class="help-info-value">
-                                    {{ __($help->category?->name) ?? __('Not specified') }}
-                                </div>
-                            </div>
-                        </div>
-
                         {{-- Requester type --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="help-info-box">
                                 <div class="help-info-label">
                                     {{ __('Requester type') }}
@@ -251,7 +331,7 @@
                         </div>
 
                         {{-- Event date --}}
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <div class="help-info-box">
                                 <div class="help-info-label">
                                     {{ __('Event date') }}
@@ -307,7 +387,7 @@
                         </div>
 
                         {{-- Application deadline --}}
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <div class="help-info-box">
                                 <div class="help-info-label">
                                     {{ __('Application deadline') }}
@@ -315,6 +395,9 @@
                                 <div class="help-info-value">
                                     @if ($help->application_deadline)
                                         {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('LL') }}
+                                        <span class="text-muted">
+                                            ({{ __($deadlineBadge['label']) }})
+                                        </span>
                                     @else
                                         {{ __('No deadline') }}
                                     @endif
@@ -390,6 +473,18 @@
                     @elseif ($isDeadlinePassed)
                         <div class="alert alert-secondary text-center small mb-0">
                             {{ __('Applications are closed.') }}
+                        </div>
+                    @elseif ($myApplication?->status === 'pending')
+                        <div class="alert alert-info small mb-0">
+                            Your application is pending approval.
+                        </div>
+                    @elseif ($myApplication?->status === 'accepted')
+                        <div class="alert alert-success small mb-0">
+                            Your application has been approved.
+                        </div>
+                    @elseif ($myApplication?->status === 'rejected')
+                        <div class="alert alert-danger small mb-0">
+                            Your application was rejected.
                         </div>
                     @elseif (!auth()->check())
                         <a href="{{ route('login') }}" class="btn btn-primary w-100">

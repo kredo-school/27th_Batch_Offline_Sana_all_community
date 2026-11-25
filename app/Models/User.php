@@ -186,4 +186,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(HelpBookmark::class);
     }
+
+    public function bookmarkedHelps()
+    {
+        return $this->belongsToMany(
+            Help::class,
+            'help_bookmarks',
+            'user_id',
+            'help_id'
+        )->withTimestamps();
+    }
 }

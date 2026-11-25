@@ -5,7 +5,14 @@
     @php
         // ページ側で @section('sidebar', 'community'・'events'・'profile') を指定するとサイドバーを出す
         // 指定のない events.* のページはイベント用のサイドバーを出す
-        $sidebar = trim($__env->yieldContent('sidebar')) ?: (request()->routeIs('events.*') ? 'events' : '');
+        $sidebar = trim($__env->yieldContent('sidebar'));
+        if ($sidebar === '') {
+            if (request()->routeIs('events.*')) {
+                $sidebar = 'events';
+            } elseif (request()->routeIs('helps.*')) {
+                $sidebar = 'helps';
+            }
+        }
         $inCommunity = $sidebar === 'community' || request()->routeIs('community.*');
     @endphp
     <meta charset="utf-8">
@@ -1341,6 +1348,8 @@
                         <aside class="col-md-3 col-lg-2 mb-4 mb-md-0 event-sidebar-col event-sidebar-col--{{ $sidebar }}">
                             @include(match ($sidebar) {
                                 'community' => 'community.partials.sidebar',
+                                'events' => 'events.partials.sidebar',
+                                'helps' => 'helps.partials.sidebar',
                                 'profile' => 'profile.partials.sidebar',
                                 default => 'events.partials.sidebar',
                             })

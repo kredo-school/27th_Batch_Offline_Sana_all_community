@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Community;
 use App\Models\Event;
 use App\Models\Follow;
+use App\Models\Help;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -257,6 +258,13 @@ class AppServiceProvider extends ServiceProvider
                 && Event::where('owner_id', Auth::id())->whereNull('community_id')->exists();
 
             $view->with('hasMyEvents', $hasMyEvents);
+        });
+
+        View::composer('helps.partials.sidebar', function ($view) {
+            $hasMyHelps = Auth::check()
+                && Help::where('user_id', Auth::id())->exists();
+
+            $view->with('hasMyHelps', $hasMyHelps);
         });
 
         // Choose either Bootstrap 5 or Bootstrap 4 depending on your frontend

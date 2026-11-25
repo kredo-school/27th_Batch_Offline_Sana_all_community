@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('sidebar', 'helps')
+
 @section('title', __('Edit help'))
 
 @section('content')

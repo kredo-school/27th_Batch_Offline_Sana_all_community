@@ -17,11 +17,11 @@ class HelpBookmark extends Model
 
     public function help(): BelongsTo
     {
-        return $this->belongsTo(Help::class);
+        return $this->belongsTo(Help::class, 'help_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

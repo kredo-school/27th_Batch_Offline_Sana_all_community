@@ -227,18 +227,33 @@
         ? asset('storage/' . ltrim($help->image_path, '/'))
         : asset('images/onlylogo.jpg');
 
-    $deadlineLabel = __('Open');
-    $deadlineClass = 'status-info';
+    $category = $help->getRelationValue('category');
+    $categoryLabel = $category?->getAttribute('name');
 
-    if ($help->application_deadline) {
-        if ($help->application_deadline->isBefore(today())) {
-            $deadlineLabel = __('Closed');
-            $deadlineClass = 'status-closed';
-        } elseif (today()->diffInDays($help->application_deadline) <= 7) {
-            $deadlineLabel = __('Closing soon');
-            $deadlineClass = 'status-urgent';
-        }
+    $deadlineBadge = $help->application_deadline_badge;
+
+    $myApplication = null;
+    $applicationBadge = null;
+
+    if (auth()->check() && $help->relationLoaded('applications')) {
+        $myApplication = $help->applications->first();
     }
+
+    $applicationBadge = match ($myApplication?->status) {
+        'pending' => [
+            'label' => 'Pending approval',
+            'class' => 'status-info',
+        ],
+        'accepted' => [
+            'label' => 'Approved',
+            'class' => 'status-accepted',
+        ],
+        'rejected' => [
+            'label' => 'Rejected',
+            'class' => 'status-rejected',
+        ],
+        default => null,
+    };
 
     $eventDateLabel = null;
 
@@ -272,139 +287,149 @@
         <img src="{{ $helpImageUrl }}" alt="{{ $help->title }}" class="help-card-image" style="{{ $help->imageStyle() }}">
 
         {{-- Help作成者本人：編集・削除メニュー --}}
-        @if (auth()->check() && (int) $help->user_id === (int) auth()->id())
-            @include('helps.partials.help-actions', [
-                'help' => $help,
-            ])
-
-            {{-- ログイン済みの他ユーザー：ブックマーク --}}
-        @elseif (auth()->check())
-            @php
-                $isBookmarked = (bool) ($help->is_bookmarked ?? false);
-            @endphp
-
-            <form method="POST"
-                action="{{ $isBookmarked ? route('helps.bookmarks.destroy', $help) : route('helps.bookmarks.store', $help) }}">
-                @csrf
+        @auth
+            @if ((int) $help->user_id === (int) auth()->id())
+                {{-- Help作成者本人はBookmark不可 --}}
+                @include('helps.partials.help-actions', [
+                    'help' => $help,
+                ])
+            @else
+                @php
+                    $isBookmarked = (int) ($help->is_bookmarked ?? 0) === 1;
+                @endphp
 
                 @if ($isBookmarked)
-                    @method('DELETE')
+                    <form method="POST"
+                        action="{{ route('helps.bookmarks.destroy', [
+                            'help' => $help->id,
+                        ]) }}"
+                        class="bookmark-form">
+                        @csrf
+                        @method('DELETE')
+
+                        <button type="submit" class="favorite-button active" aria-label="Remove from bookmarks"
+                            aria-pressed="true">
+                            ♥
+                        </button>
+                    </form>
+                @else
+                    <form method="POST"
+                        action="{{ route('helps.bookmarks.store', [
+                            'help' => $help->id,
+                        ]) }}"
+                        class="bookmark-form">
+                        @csrf
+
+                        <button type="submit" class="favorite-button" aria-label="Add to bookmarks" aria-pressed="false">
+                            ♡
+                        </button>
+                    </form>
                 @endif
-
-                <button type="submit" class="favorite-button {{ $isBookmarked ? 'active' : '' }}"
-                    aria-label="{{ $isBookmarked ? __('Remove from bookmarks') : __('Add to bookmarks') }}"
-                    aria-pressed="{{ $isBookmarked ? 'true' : 'false' }}">
-                    {{ $isBookmarked ? '♥' : '♡' }}
-                </button>
-            </form>
-
-            {{-- 未ログインユーザー：ハートを表示し、ログイン画面へ遷移 --}}
+            @endif
         @else
             <a href="{{ route('login') }}" class="favorite-button" aria-label="{{ __('Log in to bookmark this help') }}">
                 ♡
             </a>
-        @endif
-    </div>
+        @endauth
+</div>
 
-    {{-- Card body --}}
-    <div class="help-card-body">
-        {{-- カテゴリ・募集者種別・ステータス --}}
-        <div class="help-card-badges">
-            @if ($help->category)
-                <span class="badge help-category">
-                    {{ __($help->category->name) }}
-                </span>
-            @endif
-
-            @if ($help->requester_type)
-                <span class="badge help-status">
-                    {{ __($help->requester_type) }}
-                </span>
-            @endif
-
-            @if ($help->status)
-                <span class="badge help-status">
-                    {{ __($help->status) }}
-                </span>
-            @endif
-
-            <span class="badge help-status {{ $deadlineClass }}">
-                {{ __($deadlineLabel) }}
+{{-- Card body --}}
+<div class="help-card-body">
+    {{-- Category, Status, Deadline --}}
+    <div class="help-card-badges">
+        @if (filled($categoryLabel))
+            <span class="badge help-category">
+                {{ $categoryLabel }}
             </span>
-        </div>
-
-        {{-- タイトル --}}
-        <h2 class="help-card-title">
-            {{ $help->title }}
-        </h2>
-
-        {{-- 会社名 --}}
-        @if ($help->company_name)
-            <p class="mb-2 fw-semibold text-dark">
-                {{ $help->company_name }}
-            </p>
+        @else
+            <span class="badge help-category">
+                Uncategorized
+            </span>
         @endif
 
-        {{-- 説明 --}}
-        <p class="help-card-description">
-            {{ \Illuminate\Support\Str::limit(strip_tags($help->description), 110) }}
-        </p>
+        <span class="badge help-status {{ $deadlineBadge['class'] }}">
+            {{ __($deadlineBadge['label']) }}
+        </span>
 
-        {{-- Help情報 --}}
-        <div class="small text-muted mb-3">
-            @if ($eventDateLabel)
-                <div class="mb-1">
-                    <span aria-hidden="true">📅</span>
-                    {{ $eventDateLabel }}
-                </div>
-            @endif
-
-            @if ($help->location)
-                <div class="mb-1">
-                    <span aria-hidden="true">📍</span>
-                    {{ $help->location }}
-                </div>
-            @endif
-
-            @if ($rewardLabel)
-                <div class="mb-1">
-                    <span aria-hidden="true">🎁</span>
-                    {{ $rewardLabel }}
-                </div>
-            @endif
-
-            @if ($help->capacity)
-                <div>
-                    <span aria-hidden="true">👥</span>
-                    @if ($help->capacity == 1)
-                        {{ __('Capacity :count person', ['count' => $help->capacity]) }}
-                    @else
-                        {{ __('Capacity :count people', ['count' => $help->capacity]) }}
-                    @endif
-                </div>
-            @endif
-        </div>
-
-        {{-- フッター --}}
-        <div class="help-card-footer">
-            <time datetime="{{ $help->application_deadline?->format('Y-m-d') ?? '' }}">
-                @if ($help->application_deadline)
-                    {{ __('Apply by') }}
-                    {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('LL') }}
-                @else
-                    {{ __('Open application') }}
-                @endif
-            </time>
-
-            <a href="{{ route('helps.show', $help->id) }}">
-                {{ __('View details') }} &gt;
-            </a>
-        </div>
+        @if ($applicationBadge)
+            <span class="badge help-status {{ $applicationBadge['class'] }}">
+                {{ __($applicationBadge['label']) }}
+            </span>
+        @endif
     </div>
+
+    {{-- タイトル --}}
+    <h2 class="help-card-title">
+        {{ $help->title }}
+    </h2>
+
+    {{-- 会社名 --}}
+    @if ($help->company_name)
+        <p class="mb-2 fw-semibold text-dark">
+            {{ $help->company_name }}
+        </p>
+    @endif
+
+    {{-- 説明 --}}
+    <p class="help-card-description">
+        {{ \Illuminate\Support\Str::limit(strip_tags($help->description), 110) }}
+    </p>
+
+    {{-- Help情報 --}}
+    <div class="small text-muted mb-3">
+        @if ($eventDateLabel)
+            <div class="mb-1">
+                <span aria-hidden="true">📅</span>
+                {{ $eventDateLabel }}
+            </div>
+        @endif
+
+        @if ($help->location)
+            <div class="mb-1">
+                <span aria-hidden="true">📍</span>
+                {{ $help->location }}
+            </div>
+        @endif
+
+        @if ($rewardLabel)
+            <div class="mb-1">
+                <span aria-hidden="true">🎁</span>
+                {{ $rewardLabel }}
+            </div>
+        @endif
+
+        @if ($help->capacity)
+            <div>
+                <span aria-hidden="true">👥</span>
+                @if ($help->capacity == 1)
+                    Capacity {{ $help->capacity }} person
+                @else
+                    Capacity {{ $help->capacity }} people
+                @endif
+            </div>
+        @endif
+    </div>
+
+    {{-- フッター --}}
+    <div class="help-card-footer">
+        <time datetime="{{ $help->application_deadline?->format('Y-m-d') ?? '' }}">
+            @if ($help->application_deadline)
+                Apply by
+                {{ $help->application_deadline->format('M d, Y') }}
+            @else
+                Open application
+            @endif
+        </time>
+
+        <a href="{{ route('helps.show', $help->id) }}">
+            View details &gt;
+        </a>
+    </div>
+</div>
 </article>
 
 @if (auth()->check() && (int) $help->user_id === (int) auth()->id())
-    @include('helps.partials.delete-help-modal', [
-        'help' => $help,
-    ])
+@include('helps.partials.delete-help-modal', [
+    'help' => $help,
+])
 @endif
