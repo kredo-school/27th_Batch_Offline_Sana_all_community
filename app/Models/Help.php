@@ -157,9 +157,7 @@ class Help extends Model
 
         // 8日以上先
         return [
-            'label' => $applicationDeadline
-                ->locale(app()->getLocale())
-                ->isoFormat('ll'),
+            'label' => \App\Support\LocalizedValue::dateTime($applicationDeadline, 'date'),
             'class' => 'status-info',
         ];
     }

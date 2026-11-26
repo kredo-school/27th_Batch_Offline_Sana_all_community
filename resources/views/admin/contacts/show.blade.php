@@ -88,9 +88,9 @@
                 <p class="text-uppercase small fw-bold text-success mb-1">{{ __('Admin console') }}</p>
                 <h1 class="h3 mb-0">{{ __('Contact Inquiry') }} #{{ $contact->id }}</h1>
                 <p class="text-secondary small mt-2 mb-0">
-                    {{ __('Received') }} {{ $contact->created_at?->translatedFormat('M d, Y H:i') ?? '-' }}
+                    {{ __('Received') }} {{ \App\Support\LocalizedValue::dateTime($contact->created_at) }}
                     @if ($contact->replied_at)
-                        &middot; {{ __('Replied') }} {{ $contact->replied_at->translatedFormat('M d, Y H:i') }}
+                        &middot; {{ __('Replied') }} {{ \App\Support\LocalizedValue::dateTime($contact->replied_at) }}
                     @else
                         &middot; <span class="text-warning fw-bold">{{ __('Not replied yet') }}</span>
                     @endif
@@ -124,7 +124,17 @@
                         </dd>
 
                         <dt class="col-sm-3">{{ __('Detail') }}</dt>
-                        <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $contact->detail }}</dd>
+                        <dd class="col-sm-9">
+                            <div class="content-translation-source" style="white-space: pre-wrap;">{{ $contact->detail }}</div>
+                            <button type="button" class="btn btn-link btn-sm p-0 content-translate-button mt-2"
+                                data-translation-url="{{ route('admin.contacts.translate', $contact) }}"
+                                data-translation-loading="{{ __('Searching...') }}"
+                                data-translation-error="{{ __('Translation is unavailable right now.') }}"
+                                aria-label="{{ __('Translate') }}" title="{{ __('Translate') }}">
+                                <i class="fa-solid fa-language" aria-hidden="true"></i> {{ __('Translate') }}
+                            </button>
+                            <div class="small text-secondary mt-1 content-translation-result" hidden></div>
+                        </dd>
                     </dl>
                 </div>
             </div>
@@ -135,7 +145,7 @@
                     @if ($recipient)
                         <p class="small text-secondary">
                             {{ __('The reply is sent as an') }} <strong>{{ __('Admin') }}</strong> {{ __('notification to') }}
-                            <strong>{{ $recipient->username ?: $recipient->name }}</strong>
+                            <strong>{{ $recipient->username ?: __('Unknown user') }}</strong>
                             {{ __('and appears in their Notifications.') }}
                         </p>
                         <form method="POST" action="{{ route('admin.contacts.reply', $contact) }}">

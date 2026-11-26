@@ -255,14 +255,14 @@ class ProfileController extends Controller
             'following_id' => $user->id,
         ], ['created_at' => now()]);
 
-        return $this->followReturn($request, $user)->with('success', 'You are now following this user.');
+        return $this->followReturn($request, $user)->with('success', __('You are now following this user.'));
     }
 
     public function unfollow(Request $request, User $user)
     {
         $request->user()->following()->detach($user->id);
 
-        return $this->followReturn($request, $user)->with('success', 'You unfollowed this user.');
+        return $this->followReturn($request, $user)->with('success', __('You unfollowed this user.'));
     }
 
     private function followReturn(Request $request, User $user)

@@ -7,7 +7,7 @@
         <div class="card mx-auto">
             <div class="card-body">
                 <a href="{{ route('admin.messages') }}" class="small text-decoration-none">
-                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>Back to messages
+                    <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>{{ __('Back to messages')}}
                 </a>
 
                 <h1 class="h3 mt-3 mb-4">
@@ -23,7 +23,7 @@
                             <div class="d-flex justify-content-between align-items-start gap-3">
                                 <div>
                                     <strong>{{ $item->sender?->username ?? 'Deleted user' }}</strong>
-                                    <span class="text-secondary small ms-2">{{ $item->created_at?->format('M d, Y H:i') }}</span>
+                                    <span class="text-secondary small ms-2">{{ \App\Support\LocalizedValue::dateTime($item->created_at) }}</span>
                                 </div>
                                 <form action="{{ route('admin.messages.destroy', $item) }}" method="POST"
                                     data-confirm="true" data-confirm-action="{{ __('Delete') }}" data-confirm-message="{{ __('Delete this message?') }}">

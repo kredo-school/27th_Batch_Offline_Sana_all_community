@@ -106,7 +106,8 @@ class ExampleTest extends TestCase
         $this->post(route('admin.users.role', $user->id), [
             '_method' => 'PATCH',
             'role' => 'admin',
-        ])->assertRedirect();
+        ])->assertRedirect(route('admin.users'))
+            ->assertSessionHas('status');
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -129,7 +130,8 @@ class ExampleTest extends TestCase
         $this->post(route('admin.users.activate', $user->id), [
             '_method' => 'PATCH',
         ])
-            ->assertRedirect();
+            ->assertRedirect(route('admin.users'))
+            ->assertSessionHas('status');
 
         $this->assertNotSoftDeleted($user);
     }
@@ -182,7 +184,8 @@ class ExampleTest extends TestCase
         $this->patch(route('admin.categories.update', $category), [
             'name' => 'Local Events',
             'name_ja' => '地域イベント',
-        ])->assertRedirect(route('admin.categories.index'));
+        ])->assertRedirect(route('admin.categories.index'))
+            ->assertSessionHas('status');
 
         $this->assertDatabaseHas('categories', [
             'id' => $category->id,

@@ -56,7 +56,7 @@ class ContentController extends Controller
         }
 
         return $this->listing($query, 'Notifications', [
-            'User' => 'user.name',
+            'User' => 'user.username',
             'Type' => 'type',
             'Title' => 'title',
             'Message' => 'message',
@@ -158,7 +158,7 @@ class ContentController extends Controller
 
         UserBlock::unblock((int) $user->id, (int) Auth::id());
 
-        return back()->with('status', 'User unblocked.');
+        return back()->with('status', __('User unblocked.'));
     }
 
     public function destroyMessage(Message $message)
@@ -186,7 +186,7 @@ class ContentController extends Controller
         }
 
         return $this->listing($query, 'Comments', [
-            'User' => 'user.name',
+            'User' => 'user.username',
             'Event' => 'event.title',
             'Comment' => 'content',
             'Created' => 'created_at',
@@ -249,7 +249,7 @@ class ContentController extends Controller
         }
 
         return $this->listing($query, 'Reviews', [
-            'User' => 'user.name',
+            'User' => 'user.username',
             'Event' => 'event.title',
             'Rating' => 'rating',
             'Review' => 'comment',

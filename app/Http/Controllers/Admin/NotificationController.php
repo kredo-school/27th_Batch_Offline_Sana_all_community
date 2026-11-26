@@ -76,7 +76,7 @@ class NotificationController extends Controller
 
     public function create()
     {
-        $users = User::query()->orderBy('name')->get(['id', 'name', 'username']);
+        $users = User::query()->orderBy('username')->get(['id', 'username']);
 
         return view('admin.notifications.create', [
             'users' => $users,
@@ -158,7 +158,7 @@ class NotificationController extends Controller
 
     private function senderName(string $from): string
     {
-        return $from === 'self' ? (Auth::user()->username ?: Auth::user()->name) : 'Admin';
+        return $from === 'self' ? (Auth::user()->username ?: 'Unknown user') : 'Admin';
     }
 
     private function rules(bool $allowRole = false): array

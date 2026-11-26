@@ -349,6 +349,10 @@
                 <span class="admin-count">{{ $all_users->total() }} {{ __('Users') }}</span>
             </header>
 
+            @if (session('status'))
+                <div class="alert alert-success py-2 mt-3" role="status">{{ session('status') }}</div>
+            @endif
+
             <div class="container-fluid mt-4">
             <form class="admin-toolbar" method="GET" action="{{ route('admin.users') }}">
                 <div class="admin-search">
@@ -400,22 +404,22 @@
                                                     $avatarUrl = str_starts_with($avatarPath, 'https://') || str_starts_with($avatarPath, 'http://')
                                                         ? $avatarPath : asset('storage/'.$avatarPath);
                                                 @endphp
-                                                <img src="{{ $avatarUrl }}" alt="{{ Auth::user()->username }}" class="rounded-circle navbar-avatar" width="36" height="36">
+                                                <img src="{{ $avatarUrl }}" alt="{{ $user->username }}" class="rounded-circle navbar-avatar" width="36" height="36">
                                             @else
-                                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                                                {{ strtoupper(substr($user->username ?: '?', 0, 1)) }}
                                             @endif
                                     </span>
                                 </td>
                                 <td class="fw-semibold">
                                     @if (Route::has('profile.show'))
                                         <a href="{{ route('profile.show', $user->id) }}"
-                                            class="text-decoration-none text-dark fw-bold">{{ $user->name }}</a>
+                                            class="text-decoration-none text-dark fw-bold">{{ $user->username ?: __('Unknown user') }}</a>
                                     @else
-                                        <span class="text-dark fw-bold">{{ $user->name }}</span>
+                                        <span class="text-dark fw-bold">{{ $user->username ?: __('Unknown user') }}</span>
                                     @endif
                                 </td>
                                 <td>{{ $user->email }}</td>
-                                <td>{{ $user->created_at?->format('M d, Y') ?? '-' }}</td>
+                                <td>{{ \App\Support\LocalizedValue::dateTime($user->created_at, 'date') }}</td>
                                 <td>{{ $user->preferred_language_label }}</td>
                                 </td>
                                 <td>
@@ -434,19 +438,19 @@
                                             @if ($user->trashed())
                                                 <button type="button" class="btn btn-outline-success btn-sm admin-action-button"
                                                     data-bs-toggle="modal" data-bs-target="#activate-user-{{ $user->id }}"
-                                                    aria-label="{{ __('Activate') }} {{ $user->name }}" title="{{ __('Activate user') }}">
+                                                    aria-label="{{ __('Activate') }} {{ $user->username ?: __('Unknown user') }}" title="{{ __('Activate user') }}">
                                                     <i class="fa-solid fa-user-check"></i>
                                                 </button>
                                             @else
                                                 <button type="button" class="btn btn-outline-danger btn-sm admin-action-button"
                                                     data-bs-toggle="modal" data-bs-target="#deactivate-user-{{ $user->id }}"
-                                                    aria-label="{{ __('Deactivate') }} {{ $user->name }}" title="{{ __('Deactivate user') }}">
+                                                    aria-label="{{ __('Deactivate') }} {{ $user->username ?: __('Unknown user') }}" title="{{ __('Deactivate user') }}">
                                                     <i class="fa-solid fa-user-slash"></i>
                                                 </button>
                                             @endif
                                             <button type="button" class="btn btn-outline-primary btn-sm admin-action-button"
                                                 data-bs-toggle="modal" data-bs-target="#change-role-user-{{ $user->id }}"
-                                                aria-label="{{ $user->role === 'admin' ? __('Change to user') : __('Make admin') }} {{ $user->name }}"
+                                                aria-label="{{ $user->role === 'admin' ? __('Change to user') : __('Make admin') }} {{ $user->username ?: __('Unknown user') }}"
                                                 title="{{ $user->role === 'admin' ? __('Change to user') : __('Make admin') }}">
                                                 <i class="fa-solid fa-user-gear"></i>
                                             </button>

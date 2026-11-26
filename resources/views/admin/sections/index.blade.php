@@ -505,7 +505,7 @@
                                         @elseif ($key === 'category_names')
                                             <td>{{ $value ?: '-' }}</td>
                                         @else
-                                            <td>{{ $value instanceof \DateTimeInterface ? $value->format('M d, Y H:i') : (is_bool($value) ? ($value ? __('Yes') : __('No')) : (is_string($value) ? (\Illuminate\Support\Str::limit($value, 120) ?: '-') : ($value ?? '-'))) }}</td>
+                                            <td>{{ $value instanceof \DateTimeInterface ? \App\Support\LocalizedValue::dateTime($value) : (is_bool($value) ? ($value ? __('Yes') : __('No')) : (is_string($value) ? (\Illuminate\Support\Str::limit($value, 120) ?: '-') : ($value ?? '-'))) }}</td>
                                         @endif
                                     @endforeach
                                                 @if ($title === 'Categories')
@@ -529,10 +529,10 @@
                                  @elseif ($title === 'Events')
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <a href="{{ route('admin.events.show', $record) }}"
+                                            {{-- <a href="{{ route('admin.events.show', $record) }}"
                                                 class="btn btn-outline-secondary btn-sm" aria-label="{{ __('View event :title', ['title' => $record->title]) }}" title="{{ __('View') }}">
                                                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                                            </a>
+                                            </a> --}}
                                             <a href="{{ route('admin.events.edit', $record) }}"
                                                 class="btn btn-outline-primary btn-sm" aria-label="{{ __('Edit event :title', ['title' => $record->title]) }}" title="{{ __('Edit') }}">
                                                 <i class="fa-solid fa-pen" aria-hidden="true"></i>

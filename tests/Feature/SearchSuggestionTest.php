@@ -104,6 +104,25 @@ class SearchSuggestionTest extends TestCase
             ->assertDontSee('Garden Draft');
     }
 
+    public function test_user_search_shows_usernames_while_profiles_keep_names(): void
+    {
+        $viewer = User::factory()->create();
+        $person = User::factory()->create(['name' => 'Private Display Name', 'username' => 'public_handle']);
+
+        $this->actingAs($viewer)
+            ->get(route('search', ['search' => 'public_handle']))
+            ->assertOk()
+            ->assertSee('@public_handle')
+            ->assertDontSee('Private Display Name');
+
+        $this->suggest('all', 'public_handle')
+            ->assertJsonPath('items.0.title', '@public_handle');
+
+        $this->get(route('profile.show', $person))
+            ->assertOk()
+            ->assertSee('Private Display Name');
+    }
+
     public function test_events_page_search_uses_location_and_every_word(): void
     {
         $owner = User::factory()->create();

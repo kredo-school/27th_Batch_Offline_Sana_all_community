@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = chat.querySelector('.home-community-chat-form');
     const input = form.querySelector('textarea');
     const button = form.querySelector('button');
+    const preferredLocale = Intl.DateTimeFormat.supportedLocalesOf(@json(app()->getLocale()))[0] || 'en';
     let lastId = 0;
     let syncedAt = '';
     let loading = false;
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body.textContent = message.body;
         const time = document.createElement('time');
         time.dateTime = message.datetime;
-        time.textContent = new Date(message.datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        time.textContent = new Date(message.datetime).toLocaleTimeString(preferredLocale, { hour: 'numeric', minute: '2-digit' });
         item.append(author, body, time);
         list.append(item);
     };

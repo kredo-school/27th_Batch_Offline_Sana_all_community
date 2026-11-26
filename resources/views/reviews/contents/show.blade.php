@@ -46,11 +46,11 @@
         @foreach ($product->reviews as $reviews)
             <li class="list-group-item border-0 p-0 mb-2">
                 @if($reviews->user->avatar)
-                <img src="{{ $reviews->user->avatar}}" alt="{{ $reviews->user->name }}">
+                <img src="{{ $reviews->user->avatar}}" alt="{{ $reviews->user->username ?: __('Unknown user') }}">
                 @else
                 <i class="fa-solid fa-circle-user"></i>
                 @endif
-                <a href="{{ route('profile.show', $reviews->user->id) }}" class="text-decoration-none text-dark fw-bold">{{ $reviews->user->name}}</a>
+                <a href="{{ route('profile.show', $reviews->user->id) }}" class="text-decoration-none text-dark fw-bold">{{ $reviews->user->username ?: __('Unknown user') }}</a>
                 <span class="d-block fw-bold">
                     @switch($reviews->rating)
                         @case(1)
@@ -87,7 +87,7 @@
                     @csrf
                     @method('DELETE')
 
-                    <span class="text-uppercase text-muted xsmall">Reviewed in {{ date('M d, Y', strtotime($reviews->created_at))}}</span>
+                    <span class="text-uppercase text-muted xsmall">Reviewed in {{ \App\Support\LocalizedValue::dateTime($reviews->created_at, 'date') }}</span>
                     {{-- if the auth is the owner of the reviews, show a delete btn  --}}
                     @if (Auth::user()->id === $reviews->user->id)
                         &middot;

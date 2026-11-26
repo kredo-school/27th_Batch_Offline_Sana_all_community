@@ -88,12 +88,12 @@
                 <div class="d-flex justify-content-between gap-3 mb-3">
                     <div class="d-flex align-items-center gap-3">
                         <div class="applicant-avatar">
-                            {{ strtoupper(substr($application->user->name ?? '?', 0, 1)) }}
+                            {{ strtoupper(substr($application->user?->username ?: '?', 0, 1)) }}
                         </div>
 
                         <div>
                             <h3 class="h6 mb-1">
-                                {{ __($application->user->name ?? 'Unknown user') }}
+                                {{ $application->user?->username ?: __('Unknown user') }}
                             </h3>
 
                             <div class="text-muted small">
@@ -102,7 +102,7 @@
 
                             <div class="text-muted small">
                                 {{ __('Applied')}}
-                                {{ $application->applied_at?->locale(app()->getLocale())->isoFormat('lll') }}
+                                {{ \App\Support\LocalizedValue::dateTime($application->applied_at) }}
                             </div>
                         </div>
                     </div>

@@ -91,7 +91,8 @@ class CategoryController extends Controller
         $this->saveLocalizedName($category, $validated['localized_name'] ?? null);
         $this->saveTranslation($category, 'ja', $validated['name_ja'] ?? null);
 
-        return redirect()->route('admin.categories.index');
+        return redirect()->route('admin.categories.index')
+            ->with('status', __('Category updated successfully.'));
     }
 
     // Delete category

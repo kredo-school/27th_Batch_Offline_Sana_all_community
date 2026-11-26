@@ -53,7 +53,7 @@ class CommunitiesController extends Controller
         $title = 'Communities';
         $columns = [
             'Name' => 'name',
-            'Owner' => 'owner.name',
+            'Owner' => 'owner.username',
             'Members' => 'members_count',
             'Visibility' => 'visibility',
             'Language' => 'language',
@@ -156,7 +156,7 @@ class CommunitiesController extends Controller
             );
         });
 
-        return redirect()->route('admin.communities.edit', $community)
+        return redirect()->route('admin.communities')
             ->with('status', __('Organizer changed.'));
     }
 
@@ -234,7 +234,7 @@ class CommunitiesController extends Controller
             }
         });
 
-        return redirect()->route('admin.communities.edit', $community)
+        return redirect()->route('admin.communities')
             ->with('status', __('Community updated successfully.'));
     }
 
@@ -254,7 +254,7 @@ class CommunitiesController extends Controller
 
         $membership->update(['role' => $validated['role']]);
 
-        return redirect()->route('admin.communities.edit', $community)
+        return redirect()->route('admin.communities')
             ->with('status', __('Community member role updated.'));
     }
 
@@ -267,7 +267,7 @@ class CommunitiesController extends Controller
             ->where('user_id', $member->id)
             ->delete();
 
-        return redirect()->route('admin.communities.edit', $community)
+        return redirect()->route('admin.communities')
             ->with('status', __('Community member removed.'));
     }
 

@@ -12,10 +12,10 @@
             <article class="card shadow-sm">
                 <div class="card-body">
                     <p class="text-muted small mb-2">
-                        {{ $notification->created_at?->format('M j, Y g:i A') }}
+                        {{ \App\Support\LocalizedValue::dateTime($notification->created_at) }}
                     </p>
                     <h1 class="h4 mb-3">
-                        {{ $notification->localized_title ?: $notification->type_label }}
+                        {{ __($notification->localized_title ?: $notification->type_label) }}
                     </h1>
 
                     @if ($notification->sender_name)
@@ -25,7 +25,7 @@
                     @endif
 
                     @if ($notification->localized_message)
-                        <p class="mb-4">{{ $notification->localized_message }}</p>
+                        <p class="mb-4">{{ __($notification->localized_message) }}</p>
                     @endif
 
                     @if (in_array($notification->type, ['event_join_approved', 'event_join_request'], true)

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
 use App\Models\UserNotification;
+use App\Services\MessageTranslationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,6 +41,31 @@ class ContactController extends Controller
         return view('admin.contacts.show', compact('contact', 'recipient'));
     }
 
+    public function translate(
+        Request $request,
+        Contact $contact,
+        MessageTranslationService $translator,
+    ): JsonResponse {
+        $translation = $translator->translate(
+            $contact,
+            $contact->detail,
+            'contact',
+            (string) $request->user()->preferred_language,
+            'detail',
+        );
+
+        if ($translation === null) {
+            return response()->json([
+                'message' => __('Translation is unavailable right now.'),
+            ], 422);
+        }
+
+        return response()->json([
+            'translation' => $translation,
+            'target_language' => $request->user()->preferred_language,
+        ]);
+    }
+
     public function reply(Request $request, Contact $contact)
     {
         $validated = $request->validate([
@@ -66,7 +93,7 @@ class ContactController extends Controller
         $contact->update(['replied_at' => now()]);
 
         return back()->with('status', __('Reply sent to :name.', [
-            'name' => $recipient->username ?: $recipient->name,
+            'name' => $recipient->username ?: 'Unknown user',
         ]));
     }
 }

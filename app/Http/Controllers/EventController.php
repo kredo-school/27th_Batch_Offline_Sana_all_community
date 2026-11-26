@@ -202,8 +202,8 @@ class EventController extends Controller
             $event->category_name = ucfirst($event->category);
 
             $event->status_label = $event->start_at->isToday()
-                ? 'Today'
-                : $event->start_at->diffForHumans();
+                ? __('Today')
+                : \App\Support\LocalizedValue::relativeTime($event->start_at);
 
             $event->status_color = 'blue';
 
@@ -407,10 +407,10 @@ class EventController extends Controller
         foreach ($recipientIds as $recipientId) {
             UserNotification::create([
                 'user_id' => $recipientId,
-                'sender_name' => $commenter->username ?: $commenter->name,
+                'sender_name' => $commenter->username ?: 'Unknown user',
                 'type' => 'event_comment',
                 'title' => 'New event comment',
-                'message' => "{$commenter->name} commented on '{$event->title}'.",
+                'message' => ($commenter->username ?: 'Unknown user')." commented on '{$event->title}'.",
                 'related_type' => Event::class,
                 'related_id' => $event->id,
             ]);
@@ -459,10 +459,10 @@ class EventController extends Controller
             // 承認が必要なイベント → ホストに「参加申請が来た」と知らせる
             UserNotification::create([
                 'user_id' => $event->owner_id,
-                'sender_name' => $user->username ?: $user->name,
+                'sender_name' => $user->username ?: 'Unknown user',
                 'type' => 'event_join_request',
                 'title' => 'Event registration request',
-                'message' => "{$user->name} requested to join '{$event->title}'.",
+                'message' => ($user->username ?: 'Unknown user')." requested to join '{$event->title}'.",
                 'related_type' => Event::class,
                 'related_id' => $event->id,
             ]);
@@ -470,10 +470,10 @@ class EventController extends Controller
             // 承認不要のイベント → ホストに「参加者が増えた」と知らせる
             UserNotification::create([
                 'user_id' => $event->owner_id,
-                'sender_name' => $user->username ?: $user->name,
+                'sender_name' => $user->username ?: 'Unknown user',
                 'type' => 'event_joined',
                 'title' => 'New participant',
-                'message' => "{$user->name} joined '{$event->title}'.",
+                'message' => ($user->username ?: 'Unknown user')." joined '{$event->title}'.",
                 'related_type' => Event::class,
                 'related_id' => $event->id,
             ]);
@@ -497,7 +497,7 @@ class EventController extends Controller
 
         // 承認済みの参加者がキャンセルしたときだけホストに通知
         if ($wasApproved && $event->owner_id !== Auth::id()) {
-            $userName = Auth::user()->username ?? Auth::user()->name;
+            $userName = Auth::user()->username ?: 'Unknown user';
 
             UserNotification::create([
                 'user_id' => $event->owner_id,
@@ -543,7 +543,7 @@ class EventController extends Controller
 
         UserNotification::create([
             'user_id' => $participant->user_id,
-            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'sender_name' => Auth::user()->username ?: 'Unknown user',
             'type' => 'event_join_approved',
             'title' => 'Event registration approved',
             'message' => "Your registration for '{$event->title}' was approved.",
@@ -566,7 +566,7 @@ class EventController extends Controller
 
         UserNotification::create([
             'user_id' => $participant->user_id,
-            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'sender_name' => Auth::user()->username ?: 'Unknown user',
             'type' => 'event_join_rejected',
             'title' => 'Event registration declined',
             'message' => "Your registration for '{$event->title}' was not accepted.",
@@ -620,7 +620,7 @@ class EventController extends Controller
                 ->unique()
                 ->each(fn($userId) => UserNotification::create([
                     'user_id' => $userId,
-                    'sender_name' => $owner->username ?: $owner->name,
+                    'sender_name' => $owner->username ?: 'Unknown user',
                     'type' => 'event_cancelled',
                     'title' => 'Event cancelled',
                     'message' => "The event '{$event->title}' has been cancelled.\nReason: {$event->cancel_reason}",
@@ -780,7 +780,7 @@ class EventController extends Controller
 
         return [
             'calendarDays' => $calendarDays,
-            'displayMonth' => $startOfMonth->copy()->locale(app()->getLocale())->translatedFormat('F Y'),
+            'displayMonth' => \App\Support\LocalizedValue::dateTime($startOfMonth, 'month-year'),
             'previousMonthUrl' => route('events.index', $previousMonthQuery),
             'nextMonthUrl' => route('events.index', $nextMonthQuery),
             'selectedEventDate' => $selectedEventDate,
@@ -869,8 +869,8 @@ class EventController extends Controller
             $event->category_name = ucfirst($event->category);
 
             $event->status_label = $event->start_at->isToday()
-                ? 'Today'
-                : $event->start_at->diffForHumans();
+                ? __('Today')
+                : \App\Support\LocalizedValue::relativeTime($event->start_at);
 
             $event->status_color = 'blue';
             $event->is_bookmarked = true;

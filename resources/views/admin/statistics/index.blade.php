@@ -234,7 +234,7 @@
                                     <tr>
                                         <td class="stats-url">{{ $page->url }}</td>
                                         <td>{{ number_format($page->view_count) }}</td>
-                                        <td>{{ $page->last_viewed_at ? \Carbon\Carbon::parse($page->last_viewed_at)->format('Y-m-d H:i') : '—' }}</td>
+                                        <td>{{ $page->last_viewed_at ? \App\Support\LocalizedValue::dateTime(\Carbon\Carbon::parse($page->last_viewed_at)) : '—' }}</td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="3" class="stats-empty">{{ __('No page view data yet.') }}</td></tr>
@@ -264,7 +264,7 @@
                             <tbody>
                                 @forelse ($activeUsers as $activeUser)
                                     <tr>
-                                        <td>{{ $activeUser->name }}<br><small class="text-muted">{{ $activeUser->email }}</small></td>
+                                        <td>{{ $activeUser->username ?: __('Unknown user') }}<br><small class="text-muted">{{ $activeUser->email }}</small></td>
                                         <td>{{ number_format($activeUser->page_view_count) }}</td>
                                         <td>{{ number_format($activeUser->category_view_count) }}</td>
                                     </tr>
@@ -297,7 +297,7 @@
                                         <td class="stats-url">{{ $pageView->url }}</td>
                                         <td>{{ $pageView->user_name ?? __('Guest') }}</td>
                                         <td><code>{{ $pageView->ip_address }}</code></td>
-                                        <td>{{ \Carbon\Carbon::parse($pageView->created_at)->format('m/d H:i') }}</td>
+                                        <td>{{ \App\Support\LocalizedValue::dateTime(\Carbon\Carbon::parse($pageView->created_at)) }}</td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="4" class="stats-empty">{{ __('No page view data yet.') }}</td></tr>

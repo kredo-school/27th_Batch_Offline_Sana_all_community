@@ -167,8 +167,8 @@
                                     @foreach ($community->unreadMessages as $message)
                                         <a class="community-chat-message community-chat-unread" href="{{ route('community.show', $community->id) }}#chat">
                                             <span class="d-flex justify-content-between gap-3">
-                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: __('Unknown user') }}</span>
-                                                <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
+                                                <span class="community-chat-message-author">{{ $message->user?->username ?: __('Unknown user') }}</span>
+                                                <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ \App\Support\LocalizedValue::dateTime($message->created_at) }}</time>
                                             </span>
                                             <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>
@@ -180,8 +180,8 @@
                                     @forelse ($community->latestMessages as $message)
                                         <a class="community-chat-message" href="{{ route('community.show', $community->id) }}#chat">
                                             <span class="d-flex justify-content-between gap-3">
-                                                <span class="community-chat-message-author">{{ $message->user?->username ?: $message->user?->name ?: __('Unknown user') }}</span>
-                                                <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ $message->created_at?->format('M j, Y g:i A') }}</time>
+                                                <span class="community-chat-message-author">{{ $message->user?->username ?: __('Unknown user') }}</span>
+                                                <time datetime="{{ $message->created_at?->toIso8601String() }}">{{ \App\Support\LocalizedValue::dateTime($message->created_at) }}</time>
                                             </span>
                                             <span class="d-block text-break">{{ $message->previewText() }}</span>
                                         </a>

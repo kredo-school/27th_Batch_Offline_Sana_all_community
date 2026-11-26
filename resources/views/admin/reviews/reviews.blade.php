@@ -32,7 +32,7 @@
             <li class="list-group-item border-0 p-0 mb-2">
             @if (Auth::user()->id === $reviews->user->id)
                 @if($reviews->user->avatar)
-                <img src="{{ $reviews->user->avatar}}" alt="{{ $reviews->user->name }}">
+                <img src="{{ $reviews->user->avatar}}" alt="{{ $reviews->user->username ?: __('Unknown user') }}">
                 @endif
                 <a href="{{ route('products.show', $reviews->product->id)}}" class="text-decoration-none text-dark fw-bold">NAME : {{ $reviews->product->name }} </a>
                
@@ -68,7 +68,7 @@
                 @endif
                 <h5 class="fw-light">{{ $reviews->title }}</h5>
                 <p class="fw-light">{{ $reviews->body }}</p>
-                 <span class="text-uppercase text-muted xsmall">Reviewed in {{ date('M d, Y', strtotime($reviews->created_at))}}</span>
+                 <span class="text-uppercase text-muted xsmall">Reviewed in {{ \App\Support\LocalizedValue::dateTime($reviews->created_at, 'date') }}</span>
 
 
                 {{-- if the auth is the owner of the reviews, show a delete btn  --}}

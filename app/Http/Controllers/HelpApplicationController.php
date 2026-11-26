@@ -65,10 +65,10 @@ class HelpApplicationController extends Controller
 
         UserNotification::create([
             'user_id' => $help->user_id,
-            'sender_name' => Auth::user()->name,
+            'sender_name' => Auth::user()->username ?: 'Unknown user',
             'type' => 'help_application',
             'title' => 'New help application',
-            'message' => Auth::user()->name.' applied to your help "'.$help->title.'".',
+            'message' => (Auth::user()->username ?: 'Unknown user').' applied to your help "'.$help->title.'".',
             'related_type' => Help::class,
             'related_id' => $help->id,
         ]);
@@ -145,7 +145,7 @@ class HelpApplicationController extends Controller
 
         UserNotification::create([
             'user_id' => $application->user_id,
-            'sender_name' => Auth::user()->username ?: Auth::user()->name,
+            'sender_name' => Auth::user()->username ?: 'Unknown user',
             'type' => $accepted ? 'help_application_accepted' : 'help_application_rejected',
             'title' => $accepted ? 'Help application accepted' : 'Help application rejected',
             'message' => $accepted

@@ -43,7 +43,7 @@ class EventsController extends Controller
         $title = 'Events';
         $columns = [
             'Title' => 'title',
-            'Owner' => 'owner.name',
+            'Owner' => 'owner.username',
             'Categories' => 'category_names',
             'Starts' => 'start_at',
             'Join till' => 'join_till',
@@ -102,7 +102,7 @@ class EventsController extends Controller
             NotifyEventParticipantsOnUpdateJob::dispatch($event, $changedFields)->afterCommit();
         }
 
-        return redirect()->route('admin.events.edit', $event)
+        return redirect()->route('admin.events')
             ->with('status', __('Event updated successfully.'));
     }
 

@@ -94,7 +94,8 @@ class AdminCommunitiesTest extends TestCase
             'description' => 'Run together',
             'language' => 'ja',
             'visibility' => 'private',
-        ])->assertRedirect(route('admin.communities.edit', $community));
+        ])->assertRedirect(route('admin.communities'))
+            ->assertSessionHas('status');
 
         $this->assertDatabaseHas('communities', ['id' => $community->id, 'name' => 'Runners', 'visibility' => 'private', 'language' => 'ja']);
 
@@ -153,7 +154,8 @@ class AdminCommunitiesTest extends TestCase
                 'language' => 'ja',
                 'visibility' => 'approval',
             ])
-            ->assertRedirect(route('admin.communities.edit', $community));
+            ->assertRedirect(route('admin.communities'))
+            ->assertSessionHas('status');
 
         $this->assertDatabaseHas('communities', [
             'id' => $community->id,
@@ -175,7 +177,8 @@ class AdminCommunitiesTest extends TestCase
 
         $this->patch(route('admin.communities.members.role', [$community, $member]), [
             'role' => 'moderator',
-        ])->assertRedirect(route('admin.communities.edit', $community));
+        ])->assertRedirect(route('admin.communities'))
+            ->assertSessionHas('status');
         $this->assertDatabaseHas('community_members', [
             'community_id' => $community->id,
             'user_id' => $member->id,
@@ -184,7 +187,8 @@ class AdminCommunitiesTest extends TestCase
         ]);
 
         $this->delete(route('admin.communities.members.remove', [$community, $pending]))
-            ->assertRedirect(route('admin.communities.edit', $community));
+            ->assertRedirect(route('admin.communities'))
+            ->assertSessionHas('status');
         $this->assertDatabaseMissing('community_members', [
             'community_id' => $community->id,
             'user_id' => $pending->id,
@@ -235,7 +239,8 @@ class AdminCommunitiesTest extends TestCase
 
         $this->patch(route('admin.communities.owner.replace', $community), [
             'new_owner_id' => $newOwner->id,
-        ])->assertRedirect(route('admin.communities.edit', $community));
+        ])->assertRedirect(route('admin.communities'))
+            ->assertSessionHas('status');
 
         $this->assertSame($newOwner->id, $community->fresh()->owner_id);
         $this->assertDatabaseHas('community_members', [

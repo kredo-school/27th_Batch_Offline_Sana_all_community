@@ -10,7 +10,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
                 <div class="modal-body">
-                    {{ __('Are you sure you want to activate') }} <span class="fw-bold">{{ $user->name }}</span>
+                    {{ __('Are you sure you want to activate') }} <span class="fw-bold">{{ $user->username ?: __('Unknown user') }}</span>
                 </div>
                 <div class="modal-footer border-0">
                     <form action="{{ route('admin.users.activate', $user->id) }}" method="post">
@@ -37,7 +37,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
                 <div class="modal-body">
-                    {{ __('Are you sure you want to deactivate') }} <span class="fw-bold">{{ $user->name }}</span>
+                    {{ __('Are you sure you want to deactivate') }} <span class="fw-bold">{{ $user->username ?: __('Unknown user') }}</span>
                 </div>
                 <div class="modal-footer border-0">
                     <form action="{{ route('admin.users.deactivate', $user->id) }}" method="post">

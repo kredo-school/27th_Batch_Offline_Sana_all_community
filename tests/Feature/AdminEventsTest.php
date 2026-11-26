@@ -75,7 +75,8 @@ class AdminEventsTest extends TestCase
                 'status' => 'draft',
                 'categories' => [$category->id],
             ])
-            ->assertRedirect(route('admin.events.edit', $event));
+            ->assertRedirect(route('admin.events'))
+            ->assertSessionHas('status');
 
         $this->assertDatabaseHas('events', [
             'id' => $event->id,
@@ -147,7 +148,8 @@ class AdminEventsTest extends TestCase
                 'status' => 'published',
                 'categories' => [$category->id],
             ])
-            ->assertRedirect(route('admin.events.edit', $event));
+            ->assertRedirect(route('admin.events'))
+            ->assertSessionHas('status');
 
         // 参加者への通知の仕事はキュー用のテーブルに積まれ、help（元の求人の jobs）のテーブルには入らない
         $this->assertDatabaseCount('queue_jobs', 1);

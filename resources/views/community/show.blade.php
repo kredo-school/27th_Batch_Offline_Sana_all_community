@@ -230,7 +230,7 @@
                     <a href="{{ route('profile.show', $community->owner->id) }}" class="d-flex align-items-center gap-3 community-profile-link">
                         <x-avatar :user="$community->owner" />
                         <div>
-                            <strong class="d-block text-dark small">{{ $community->owner->name }}</strong>
+                            <strong class="d-block text-dark small">{{ $community->owner->username ?: __('Unknown user') }}</strong>
                             <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
                         </div>
                     </a>
@@ -240,7 +240,7 @@
                     <a href="{{ route('profile.show', $moderator->id) }}" class="d-flex align-items-center gap-3 community-profile-link mt-3">
                         <x-avatar :user="$moderator" />
                         <div>
-                            <strong class="d-block text-dark small">{{ $moderator->name }}</strong>
+                            <strong class="d-block text-dark small">{{ $moderator->username ?: __('Unknown user') }}</strong>
                             <small class="text-muted" style="font-size: 0.75rem;">{{ __('Moderator')}}</small>
                         </div>
                     </a>
@@ -346,7 +346,7 @@
                     @foreach ($invitedMembers as $invitee)
                         <div class="d-flex align-items-center gap-3 py-2 border-bottom">
                             <x-avatar :user="$invitee" />
-                            <strong class="text-dark small flex-grow-1">{{ $invitee->username ?: $invitee->name }}</strong>
+                            <strong class="text-dark small flex-grow-1">{{ $invitee->username ?: __('Unknown user') }}</strong>
                             <form action="{{ route('community.members.remove', [$community->id, $invitee->id]) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
@@ -365,7 +365,7 @@
                 @foreach ($pendingMembers as $requester)
                     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
                         <x-avatar :user="$requester" />
-                        <strong class="text-dark small flex-grow-1">{{ $requester->name }}</strong>
+                        <strong class="text-dark small flex-grow-1">{{ $requester->username ?: __('Unknown user') }}</strong>
                         <form action="{{ route('community.members.approve', [$community->id, $requester->id]) }}" method="POST">
                             @csrf
                             @method('PATCH')
@@ -387,7 +387,7 @@
                     <a href="{{ route('profile.show', $member->id) }}" class="d-flex align-items-center gap-3 flex-grow-1 community-profile-link">
                         <x-avatar :user="$member" />
                         <div>
-                            <strong class="d-block text-dark small">{{ $member->name }}</strong>
+                            <strong class="d-block text-dark small">{{ $member->username ?: __('Unknown user') }}</strong>
                             @if ($member->id === $community->owner_id)
                                 <small class="text-muted" style="font-size: 0.75rem;">{{ __('Community Organizer') }}</small>
                             @elseif (($member->pivot->role ?? 'member') === 'moderator')
@@ -403,7 +403,7 @@
                         <div class="dropdown">
                             {{-- 気づきやすいように、文字付きの枠のボタンにする --}}
                             <button class="btn btn-sm community-member-menu dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Manage') }} {{ $member->name }}">
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Manage') }} {{ $member->username ?: __('Unknown user') }}">
                                 <i class="fa-solid fa-user-gear me-1" aria-hidden="true"></i>{{ __('Manage') }}
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -419,7 +419,7 @@
                                 </li>
                                 <li>
                                     <form action="{{ route('community.owner.transfer', $community->id) }}" method="POST"
-                                        data-confirm="true" data-confirm-message="{{ __('Make')}} {{ $member->name }} {{ __('the owner of this community? You will stay as a regular member and can no longer edit the community.')}}">
+                                        data-confirm="true" data-confirm-message="{{ __('Make')}} {{ $member->username ?: __('Unknown user') }} {{ __('the owner of this community? You will stay as a regular member and can no longer edit the community.')}}">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="user_id" value="{{ $member->id }}">
@@ -431,7 +431,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{{ route('community.members.remove', [$community->id, $member->id]) }}" method="POST"
-                                        data-confirm="true" data-confirm-message="{{ __('Remove')}} {{ $member->name }} {{ __('from this community?')}}">
+                                        data-confirm="true" data-confirm-message="{{ __('Remove')}} {{ $member->username ?: __('Unknown user') }} {{ __('from this community?')}}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item small text-danger">
@@ -940,6 +940,9 @@
         const input = form.querySelector('textarea');
         const button = form.querySelector('button[type="submit"]');
         const groupWindow = 5 * 60 * 1000; // 同じ人の発言を1つにまとめる間隔
+        const preferredLocale = Intl.DateTimeFormat.supportedLocalesOf(@json(app()->getLocale()))[0] || 'en';
+        const todayLabel = @json(__('Today'));
+        const yesterdayLabel = @json(__('Yesterday'));
         const messages = [];
         let editing = null; // 編集中のメッセージ { id, draft }
         let lastId = 0;
@@ -954,12 +957,12 @@
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             if (date.toDateString() === new Date().toDateString()) {
-                return 'Today';
+                return todayLabel;
             }
             if (date.toDateString() === yesterday.toDateString()) {
-                return 'Yesterday';
+                return yesterdayLabel;
             }
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return date.toLocaleDateString(preferredLocale, { month: 'short', day: 'numeric', year: 'numeric' });
         };
 
         // 発言の位置に出す編集フォーム
@@ -1082,7 +1085,7 @@
             const side = document.createElement('div');
             side.className = 'community-chat-side';
             const time = document.createElement('time');
-            time.textContent = sentAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            time.textContent = sentAt.toLocaleTimeString(preferredLocale, { hour: 'numeric', minute: '2-digit' });
             time.dateTime = message.datetime;
             side.append(time);
             if (message.is_edited) {

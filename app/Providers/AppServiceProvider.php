@@ -92,7 +92,7 @@ class AppServiceProvider extends ServiceProvider
                     ->all()
                 : [];
             $chats = $currentUserId
-                ? Message::with(['sender:id,username,name', 'sender.profile', 'receiver:id,username,name', 'receiver.profile'])
+                ? Message::with(['sender:id,username', 'sender.profile', 'receiver:id,username', 'receiver.profile'])
                     ->where(function ($query) use ($currentUserId): void {
                         $query->where('sender_id', $currentUserId)
                             ->orWhere('receiver_id', $currentUserId);
@@ -124,7 +124,7 @@ class AppServiceProvider extends ServiceProvider
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->notCommunityFilter()
+                    ->notCommunityHeaderFilter()
                     ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->with('related')
                     ->latest()
@@ -136,7 +136,7 @@ class AppServiceProvider extends ServiceProvider
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
                     // コミュニティ通知と、メッセージ欄に出すコメント・問い合わせはベルから外す
-                    ->notCommunityFilter()
+                    ->notCommunityHeaderFilter()
                     ->whereNotIn('type', ['event_comment', 'admin_contact'])
                     ->count()
                 : 0;
@@ -182,7 +182,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->communityFilter()
+                    ->communityHeaderFilter()
                     ->count()
                 : 0;
             // 確認済み（既読）の通知はコミュニティ通知欄から消す（過去の分は Show All で見られる）
@@ -190,7 +190,7 @@ class AppServiceProvider extends ServiceProvider
                 ? UserNotification::query()
                     ->where('user_id', $currentUserId)
                     ->whereNull('read_at')
-                    ->communityFilter()
+                    ->communityHeaderFilter()
                     ->with('related')
                     ->latest()
                     ->limit(5)
@@ -219,7 +219,7 @@ class AppServiceProvider extends ServiceProvider
                         [$currentUserId]
                     )
                     ->inRandomOrder()
-                    ->get(['id', 'name', 'username'])
+                    ->get(['id', 'username'])
                 : collect();
             $followedMessageRecipients = $messageRecipients->whereIn('id', $followedRecipientIds)->values();
             $otherMessageRecipients = $messageRecipients->whereNotIn('id', $followedRecipientIds)->values();

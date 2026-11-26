@@ -169,19 +169,11 @@
         $percent = $event->capacity ? min(100, round(($joined / $event->capacity) * 100)) : 0;
         $daysLeft = (int) floor(now()->diffInDays($event->join_till, false));
         $isOwner = auth()->id() === $event->owner_id;
-        $formatDateTime = function ($date, bool $includeDate = true): string {
-            if (app()->getLocale() === 'ceb') {
-                return $date->format($includeDate ? 'Y-m-d H:i' : 'H:i');
-            }
-
-            return $date->locale(app()->getLocale())
-                ->isoFormat($includeDate ? 'MMM D (ddd) HH:mm' : 'HH:mm');
-        };
-        $formatRelativeTime = function ($date): string {
-            return app()->getLocale() === 'ceb'
-                ? $date->format('Y-m-d H:i')
-                : $date->locale(app()->getLocale())->diffForHumans();
-        };
+        $formatDateTime = fn ($date, bool $includeDate = true): string => \App\Support\LocalizedValue::dateTime(
+            $date,
+            $includeDate ? 'datetime' : 'time',
+        );
+        $formatRelativeTime = fn ($date): string => \App\Support\LocalizedValue::relativeTime($date);
         $visibilityLabels = [
             'public' => __('All users'),
             'members' => __('Logged-in users'),
@@ -386,11 +378,11 @@
                                 <a href="{{ route('profile.show', $review->user_id) }}"
                                     class="event-avatar user-action-avatar text-decoration-none"
                                     data-user-id="{{ $review->user_id }}"
-                                    data-user-name="{{ $review->user->username ?: $review->user->name }}"
-                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($review->user->name ?? '?', 0, 1)) }}</a>
+                                    data-user-name="{{ $review->user?->username ?: __('Unknown') }}"
+                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($review->user?->username ?: '?', 0, 1)) }}</a>
                                 <div>
                                     <div>
-                                        <strong>{{ $review->user->name ?? __('Unknown') }}</strong>
+                                        <strong>{{ $review->user?->username ?: __('Unknown') }}</strong>
                                         <span
                                             class="review-stars ms-1">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
                                         <span class="event-help ms-1">{{ $formatRelativeTime($review->created_at) }}</span>
@@ -403,7 +395,7 @@
                                                 data-translation-loading="{{ __('Searching...') }}"
                                                 data-translation-error="{{ __('Translation is unavailable right now.') }}"
                                                 aria-label="{{ __('Translate') }}" title="{{ __('Translate') }}">
-                                                <i class="fa-solid fa-language" aria-hidden="true"></i> {{ __('Translate') }}
+                                                <i class="fa-solid fa-language" aria-hidden="true"></i>
                                             </button>
                                             <div class="small text-secondary mt-1 content-translation-result" hidden></div>
                                         @endauth
@@ -451,11 +443,11 @@
                                 <a href="{{ route('profile.show', $comment->user_id) }}"
                                     class="event-avatar user-action-avatar text-decoration-none"
                                     data-user-id="{{ $comment->user_id }}"
-                                    data-user-name="{{ $comment->user->username ?: $comment->user->name }}"
-                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($comment->user->name ?? '?', 0, 1)) }}</a>
+                                    data-user-name="{{ $comment->user?->username ?: __('Unknown') }}"
+                                    aria-label="{{ __('View profile') }}">{{ strtoupper(substr($comment->user?->username ?: '?', 0, 1)) }}</a>
                                 <div class="flex-grow-1">
                                     <div>
-                                        <strong>{{ $comment->user->name ?? __('Unknown') }}</strong>
+                                        <strong>{{ $comment->user?->username ?: __('Unknown') }}</strong>
                                         @if ($comment->user_id === $event->owner_id)
                                             <span class="small text-primary ms-1">{{ __('Host')}}</span>
                                         @endif
@@ -496,7 +488,7 @@
                                                 </p>
                                                 <div class="mb-2">
                                                     <div class="event-info-label">{{ __('User name')}}</div>
-                                                    <div class="event-info-value">{{ $comment->user->name ?? __('Unknown') }}
+                                                    <div class="event-info-value">{{ $comment->user?->username ?: __('Unknown') }}
                                                     </div>
                                                 </div>
                                                 <div>
@@ -602,12 +594,12 @@
                 <div class="event-card">
                     <div class="event-help mb-2">{{ __('Hosted by') }}</div>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
+                        <div class="event-avatar">{{ strtoupper(substr($event->owner?->username ?: '?', 0, 1)) }}</div>
                         <div>
                             @if ($event->owner)
                                 <a href="{{ route('profile.show', $event->owner->id) }}"
                                     class="text-decoration-none text-reset fw-semibold">
-                                    {{ $event->owner->name }}
+                                    {{ $event->owner->username ?: __('Unknown') }}
                                 </a>
                             @else
                                 <div>{{ __('Unknown') }}</div>
@@ -732,9 +724,9 @@
                         </div>
                         <div class="modal-body">
                             <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="event-avatar">{{ strtoupper(substr($event->owner->name ?? '?', 0, 1)) }}</div>
+                                <div class="event-avatar">{{ strtoupper(substr($event->owner?->username ?: '?', 0, 1)) }}</div>
                                 <div>
-                                    <div>{{ $event->owner->name ?? __('Unknown') }}</div>
+                                    <div>{{ $event->owner?->username ?: __('Unknown') }}</div>
                                     <div class="event-help">{{ __('host of :event', ['event' => $event->title]) }}</div>
                                 </div>
                             </div>

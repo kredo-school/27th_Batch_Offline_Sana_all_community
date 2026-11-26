@@ -14,8 +14,8 @@
                 <span class="badge bg-secondary">{{ $notification->type_label }}</span>
                 &middot; {{ __('From') }}: {{ $notification->sender_name ?: '-' }}
                 &middot; {{ __('To') }}: {{ $notification->recipient_name ?: '-' }}
-                &middot; {{ $notification->created_at?->format('M j, Y g:i A') }}
-                &middot; {{ $notification->read_at ? __('Read').' '.$notification->read_at->format('M j, Y g:i A') : __('Unread') }}
+                &middot; {{ \App\Support\LocalizedValue::dateTime($notification->created_at) }}
+                &middot; {{ $notification->read_at ? __('Read').' '.\App\Support\LocalizedValue::dateTime($notification->read_at) : __('Unread') }}
             </p>
             <p style="white-space: pre-wrap;">{{ $notification->message ?: __('No message.') }}</p>
             <div class="d-flex gap-2">

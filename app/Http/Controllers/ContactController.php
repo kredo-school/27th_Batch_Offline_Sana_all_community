@@ -35,10 +35,10 @@ class ContactController extends Controller
 
         $contact = Contact::create([
             'user_id' => $request->user()->id,
-            'name' => $request->user()->name,
+            'name' => $request->user()->username ?: 'Unknown user',
             'username' => $user->username,
             'email' => $request->user()->email,
-            'detail' => "Report about user {$user->name} (ID: {$user->id}):\n\n{$validated['detail']}",
+            'detail' => "Report about user {$user->username} (ID: {$user->id}):\n\n{$validated['detail']}",
         ]);
         $this->notifyAdmins($contact, 'New user report');
 

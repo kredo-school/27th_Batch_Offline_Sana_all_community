@@ -12,7 +12,7 @@
         <div>
             <h1 class="h4 mb-1">Review #{{ $review->id }}</h1>
             <p class="text-secondary small mb-0">
-                By {{ $review->user->name ?? 'Unknown user' }}
+                By {{ $review->user?->username ?: __('Unknown user') }}
                 @if ($review->event)
                     on <a href="{{ route('admin.events.show', $review->event) }}">{{ $review->event->title }}</a>
                 @endif
@@ -32,9 +32,9 @@
         <dt class="col-sm-3">Review</dt>
         <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $review->comment ?: '-' }}</dd>
         <dt class="col-sm-3">Created</dt>
-        <dd class="col-sm-9">{{ $review->created_at?->format('M j, Y g:i A') ?? '-' }}</dd>
+        <dd class="col-sm-9">{{ \App\Support\LocalizedValue::dateTime($review->created_at) }}</dd>
         <dt class="col-sm-3">Updated</dt>
-        <dd class="col-sm-9">{{ $review->updated_at?->format('M j, Y g:i A') ?? '-' }}</dd>
+        <dd class="col-sm-9">{{ \App\Support\LocalizedValue::dateTime($review->updated_at) }}</dd>
     </dl>
 </div>
 @endsection

@@ -57,7 +57,7 @@ class CommunityNotificationReadTest extends TestCase
             ->assertSeeInOrder([
                 'Approval Club', 'Join request from eager_applicant',
             ])
-            ->assertDontSee('New message from chatty_member');
+            ->assertSee('New message from chatty_member');
     }
 
     public function test_opened_notification_disappears_from_the_navbar(): void

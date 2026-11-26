@@ -284,10 +284,7 @@ class HelpController extends Controller
 
         return [
             'calendarDays' => $calendarDays,
-            'displayMonth' => $month
-                ->copy()
-                ->locale(app()->getLocale())
-                ->translatedFormat('F Y'),
+            'displayMonth' => \App\Support\LocalizedValue::dateTime($month, 'month-year'),
             'previousMonthUrl' => route(
                 'helps.index',
                 $previousQuery

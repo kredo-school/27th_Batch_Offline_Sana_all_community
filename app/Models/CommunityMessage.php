@@ -38,9 +38,9 @@ class CommunityMessage extends Model
         return $this->image ? '📷 Photo' : '';
     }
 
-    // チャットに表示する送信者の名前
+    // チャットに表示する送信者のユーザー名
     public function senderName(): string
     {
-        return $this->user?->username ?: $this->user?->name ?: 'Unknown user';
+        return $this->user?->username ?: 'Unknown user';
     }
 }

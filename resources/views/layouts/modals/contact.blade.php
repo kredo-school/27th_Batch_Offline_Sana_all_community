@@ -23,7 +23,7 @@
                                                 <label for="name" class="col-md-4 col-form-label text-md-start">{{ __('Name') }}</label>
 
                                                 <div class="col-md-9">
-                                                    <input id="name" type="text" class="form-control @error('name', 'contact') is-invalid @enderror" name="name" value="{{ old('name', optional(Auth::user())->name) }}" required autocomplete="name" autofocus>
+                                                    <input id="name" type="text" class="form-control @error('name', 'contact') is-invalid @enderror" name="name" value="{{ old('name', optional(Auth::user())->username) }}" required autocomplete="username" autofocus>
 
                                                     @error('name', 'contact')
                                                         <span class="invalid-feedback" role="alert">

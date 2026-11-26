@@ -16,7 +16,7 @@
                         <a class="profile-written-host" href="{{ route('profile.show', $review->event->owner_id) }}">{{ $review->event->owner->name }}</a>
                     @endif
                     @php($reviewDate = \Illuminate\Support\Carbon::parse($review->created_at))
-                    <time datetime="{{ $reviewDate->toIso8601String() }}">{{ $reviewDate->locale(app()->getLocale())->isoFormat('LL') ?: $reviewDate->format('F j, Y') }}</time>
+                    <time datetime="{{ $reviewDate->toIso8601String() }}">{{ \App\Support\LocalizedValue::dateTime($reviewDate, 'date') }}</time>
                 </div>
                 <div class="profile-review-rating" aria-label="{{ $review->rating }} {{ __('out of 5 stars') }}">
                     <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}<span class="profile-review-unfilled">{{ str_repeat('★', 5 - $review->rating) }}</span></span>

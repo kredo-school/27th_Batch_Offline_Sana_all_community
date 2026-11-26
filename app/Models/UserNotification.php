@@ -38,6 +38,43 @@ class UserNotification extends Model
         });
     }
 
+    public function scopeCommunityHeaderFilter(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->where(function (Builder $query): void {
+                $query->where('type', 'like', '%community%')
+                    ->orWhereIn('type', self::COMMUNITY_TYPES);
+            })->orWhere(function (Builder $query): void {
+                $query->where('related_type', Community::class)
+                    ->whereNotNull('related_id');
+            })->orWhere(function (Builder $query): void {
+                $query->where('related_type', Event::class)
+                    ->whereIn(
+                        'related_id',
+                        Event::withTrashed()->select('id')->whereNotNull('community_id'),
+                    );
+            });
+        });
+    }
+
+    public function scopeNotCommunityHeaderFilter(Builder $query): Builder
+    {
+        return $query->notCommunityFilter()
+            ->where(function (Builder $query): void {
+                $query->whereNull('related_type')
+                    ->orWhere(function (Builder $query): void {
+                        $query->where('related_type', '!=', Community::class)
+                            ->where(function (Builder $query): void {
+                                $query->where('related_type', '!=', Event::class)
+                                    ->orWhereNotIn(
+                                        'related_id',
+                                        Event::withTrashed()->select('id')->whereNotNull('community_id'),
+                                    );
+                            });
+                    });
+            });
+    }
+
     protected function casts(): array
     {
         return ['read_at' => 'datetime'];
@@ -55,7 +92,7 @@ class UserNotification extends Model
 
     public function getRecipientNameAttribute(): ?string
     {
-        return $this->recipient_label ?: $this->user?->name;
+        return $this->recipient_label ?: $this->user?->username;
     }
 
     public function getTypeLabelAttribute(): string

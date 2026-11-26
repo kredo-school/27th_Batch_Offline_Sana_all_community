@@ -77,7 +77,7 @@ class MessageController extends Controller
             'unread_count' => $unreadCount,
             'read_count' => $readCount,
             'participant' => [
-                'name' => $user->username ?: $user->name,
+                'name' => $user->username ?: 'Unknown user',
                 'avatar' => $this->avatarUrl($user->profile?->avatar),
             ],
             'can_send' => $canSend,
@@ -114,7 +114,7 @@ class MessageController extends Controller
 
         UserBlock::block((int) $user->id, (int) Auth::id());
 
-        return back()->with('status', 'User blocked. Messages between you are disabled.');
+        return back()->with('status', __('User blocked. Messages between you are disabled.'));
     }
 
     public function unblock(User $user)
@@ -123,7 +123,7 @@ class MessageController extends Controller
 
         UserBlock::unblock((int) $user->id, (int) Auth::id());
 
-        return back()->with('status', 'User unblocked.');
+        return back()->with('status', __('User unblocked.'));
     }
 
     public function destroy(Message $message)
@@ -166,16 +166,17 @@ class MessageController extends Controller
         return [
             'id' => $message->id,
             'body' => $message->message,
-            'sent_at' => $message->created_at?->format('M j, Y g:i A'),
+            'sent_at' => \App\Support\LocalizedValue::dateTime($message->created_at),
             'datetime' => $message->created_at?->toIso8601String(),
             'is_mine' => (int) $message->sender_id === $currentUserId,
             'update_url' => route('messages.update', $message),
             'delete_url' => route('messages.destroy', $message),
             'translate_url' => route('messages.translate', $message),
             'sender' => [
-                'name' => $sender?->name,
-                'username' => $sender?->username ?: $sender?->name,
+                'name' => $sender?->username ?: 'Unknown user',
+                'username' => $sender?->username ?: 'Unknown user',
                 'avatar' => $this->avatarUrl($sender?->profile?->avatar),
+                'profile_url' => $sender ? route('profile.show', $sender->id) : null,
             ],
         ];
     }
