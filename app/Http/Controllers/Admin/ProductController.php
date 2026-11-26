@@ -90,7 +90,8 @@ class ProductController extends Controller
             'stock' => $request->stock,
         ]);
 
-        return redirect()->route('admin.products.index');
+        return redirect()->route('admin.products.index')
+            ->with('status', __('Product updated successfully.'));
     }
 
     // Delete product

@@ -34,7 +34,7 @@
                         <label class="profile-cover-button" for="cover_image"><i class="fa-solid fa-camera" aria-hidden="true"></i> {{ __('Change Cover') }}</label>
                         <input class="visually-hidden" type="file" id="cover_image" name="cover_image" accept="image/jpeg,image/png,image/gif" aria-describedby="profile-cover-help profile-image-help">
                     </div>
-                    @include('profile.partials.image-controls', ['field' => 'cover_image', 'label' => 'cover', 'fallback' => $emptyCover])
+                    @include('profile.partials.image-controls', ['field' => 'cover_image', 'label' => __('Profile cover'), 'fallback' => $emptyCover])
                     <div class="profile-photo-field">
                         <div class="profile-photo-control">
                             <label class="profile-photo-picker" for="avatar" title="{{ __('Change profile photo') }}"><img src="{{ $avatar }}" alt="{{ __('Change profile photo') }}" data-avatar-preview><span><i class="fa-solid fa-camera" aria-hidden="true"></i></span></label>
@@ -45,10 +45,14 @@
                             <p id="profile-image-help">{{ __('JPG, PNG or GIF. Maximum 6 MB per image. Animated GIFs use the first frame.') }}</p>
                         </div>
                     </div>
-                    @include('profile.partials.image-controls', ['field' => 'avatar', 'label' => 'photo', 'fallback' => $defaultAvatar])
+                    @include('profile.partials.image-controls', ['field' => 'avatar', 'label' => __('Profile photo'), 'fallback' => $defaultAvatar])
                     <p class="profile-upload-feedback" role="status" aria-live="polite"></p>
                 </section>
-                <dialog class="profile-image-dialog" id="profile-image-dialog" aria-labelledby="profile-image-title" aria-describedby="profile-image-help-text">
+                <dialog class="profile-image-dialog" id="profile-image-dialog" aria-labelledby="profile-image-title" aria-describedby="profile-image-help-text"
+                    data-adjust-photo="{{ __('Adjust profile photo') }}"
+                    data-adjust-cover="{{ __('Adjust cover') }}"
+                    data-save-feedback="{{ __('Changes are applied to your profile when you save.') }}"
+                    data-remove-feedback="{{ __('Image removed. Save Changes to confirm.') }}">
                     <div class="profile-image-dialog-heading">
                         <h2 id="profile-image-title">{{ __('Adjust photo') }}</h2>
                         <button type="button" class="btn-close" data-crop-cancel aria-label="{{ __('Close image adjustment') }}"></button>
@@ -92,7 +96,7 @@
                                 <select name="birthday_month" aria-label="{{ __('Month') }}" autocomplete="bday-month">
                                     <option value="">{{ __('Month') }}</option>
                                     @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
-                                        @php($monthLabel = \Carbon\Carbon::create(now()->year, $loop->iteration, 1)->locale(app()->getLocale())->translatedFormat('F') ?: $month)
+                                        @php($monthLabel = \App\Support\LocalizedValue::dateTime(\Carbon\Carbon::create(now()->year, $loop->iteration, 1), 'month') ?: $month)
                                         <option value="{{ $loop->iteration }}" @selected((int) $birthdayMonth === $loop->iteration)>{{ $monthLabel }}</option>
                                     @endforeach
                                 </select>
@@ -142,11 +146,11 @@
                 <div class="profile-editor-actions"><a href="{{ route('profile.show', $user->id) }}">{{ __('Cancel') }}</a><button type="submit">{{ __('Save Changes') }}</button></div>
             </form>
         </div>
-        <aside class="profile-preview profile-overview" aria-label="Profile preview">
+        <aside class="profile-preview profile-overview" aria-label="{{ __('Profile Preview') }}">
             <header class="profile-preview-heading">
                 <h2>{{ __('Profile Preview') }}</h2><p class="profile-preview-caption">{{ __('See your changes as you edit.') }}</p>
             </header>
-            <section class="profile-card" aria-label="Your profile preview">
+            <section class="profile-card" aria-label="{{ __('Profile Preview') }}">
                 <img class="profile-cover" src="{{ $cover }}" alt="{{ __('Cover preview') }}" data-cover-preview>
                 <div class="profile-details">
                     <div class="profile-avatar-wrap">

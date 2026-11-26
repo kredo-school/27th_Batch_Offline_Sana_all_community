@@ -60,7 +60,7 @@
 
     .calendar-week {
         margin-bottom: 10px;
-        font-size: 13px;
+        font-size: 11px;
         font-weight: 700;
     }
 
@@ -157,7 +157,7 @@
                     ->startOfWeek(\Carbon\Carbon::SUNDAY);
             @endphp
             @for ($weekday = 0; $weekday < 7; $weekday++)
-                <span>{{ $calendarWeekStart->copy()->addDays($weekday)->translatedFormat('D') }}</span>
+                <span>{{ \App\Support\LocalizedValue::dateTime($calendarWeekStart->copy()->addDays($weekday), 'weekday-short') }}</span>
             @endfor
         </div>
 
@@ -174,7 +174,7 @@
                         {{ !empty($day['is_other_month']) ? 'is-other-month' : '' }}
                         {{ !empty($day['is_selected']) ? 'is-selected' : '' }}
                 ">
-                    {{ \Carbon\Carbon::parse($day['date'])->day }}
+                    {{ \App\Support\LocalizedValue::dateTime(\Carbon\Carbon::parse($day['date']), 'day') }}
                 </a>
             @endforeach
         </div>

@@ -66,13 +66,13 @@
                     <dd class="col-sm-8">{{ $event->community?->name ?? '-' }}</dd>
 
                     <dt class="col-sm-4">{{ __('Starts') }}</dt>
-                    <dd class="col-sm-8">{{ $event->start_at?->translatedFormat('M j, Y g:i A') ?? '-' }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($event->start_at) }}</dd>
 
                     <dt class="col-sm-4">{{ __('Join till') }}</dt>
-                    <dd class="col-sm-8">{{ $event->join_till?->translatedFormat('M j, Y g:i A') ?? '-' }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($event->join_till) }}</dd>
 
                     <dt class="col-sm-4">{{ __('Ends') }}</dt>
-                    <dd class="col-sm-8">{{ $event->end_at?->translatedFormat('M j, Y g:i A') ?? '-' }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($event->end_at) }}</dd>
 
                     <dt class="col-sm-4">{{ __('Location') }}</dt>
                     <dd class="col-sm-8">{{ $event->location ?: '-' }}</dd>
@@ -93,7 +93,7 @@
                     <dd class="col-sm-8">{{ $event->approval_required ? __('Yes') : __('No') }}</dd>
 
                     <dt class="col-sm-4">{{ __('Created') }}</dt>
-                    <dd class="col-sm-8">{{ $event->created_at?->translatedFormat('M j, Y g:i A') ?? '-' }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($event->created_at) }}</dd>
                 </dl>
             </div>
             <section class="mt-4 ms-5 me-5" aria-labelledby="event-reviews-heading">
@@ -131,7 +131,7 @@
                         <dd class="col-sm-8 h1 text-bold">
                             <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center"
                             style="width: 50px; height: 50px;" aria-hidden="true">
-                            {{ strtoupper(substr($event->owner->name, 0, 1)) }}
+                            {{ strtoupper(substr($event->owner->username ?: '?', 0, 1)) }}
                             </span>
                         {{ $event->owner?->username ?? __('Unknown') }}
                         </dd>
@@ -195,7 +195,7 @@
                         </div>
                         <p class="mb-1 mt-2" style="white-space: pre-wrap;">{{ $review->comment ?: __('No written review.') }}</p>
                         <time class="text-secondary small" datetime="{{ $review->created_at?->toIso8601String() }}">
-                            {{ $review->created_at?->translatedFormat('M j, Y g:i A') ?? '-' }}
+                            {{ \App\Support\LocalizedValue::dateTime($review->created_at) }}
                         </time>
                     </article>
                 @empty

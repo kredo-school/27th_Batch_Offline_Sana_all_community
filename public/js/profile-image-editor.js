@@ -27,7 +27,7 @@
         state.control.querySelector('[data-image-remove]').disabled = state.removed || !state.source;
         state.control.querySelector('[data-image-undo]').hidden = !state.removed;
         state.control.querySelector('.profile-image-status').textContent = state.removed
-            ? 'Image removed. Save Changes to confirm.'
+            ? dialog.dataset.removeFeedback
             : (state.uploadLost ? 'Choose your new image again before saving.'
                 : (state.source && !state.canAdjust ? 'Upload this image again to adjust its position.' : ''));
     }
@@ -99,8 +99,10 @@
         canvas.width = state.field === 'avatar' ? 512 : 1600;
         canvas.height = state.field === 'avatar' ? 512 : 340;
         frame.classList.toggle('is-avatar', state.field === 'avatar');
-        document.getElementById('profile-image-title').textContent = state.field === 'avatar' ? 'Adjust profile photo' : 'Adjust cover';
-        dialog.querySelector('.profile-crop-feedback').textContent = 'Changes are applied to your profile when you save.';
+        document.getElementById('profile-image-title').textContent = state.field === 'avatar'
+            ? dialog.dataset.adjustPhoto
+            : dialog.dataset.adjustCover;
+        dialog.querySelector('.profile-crop-feedback').textContent = dialog.dataset.saveFeedback;
         syncSliders();
         render();
         dialog.showModal();

@@ -58,25 +58,15 @@ class EventCancellationNotificationTest extends TestCase
         $this->assertSame(0, UserNotification::whereIn('user_id', [$rejected->id, $owner->id])->count());
     }
 
-    public function test_cancel_notification_is_listed_with_general_notifications_not_the_community_dropdown(): void
+    public function test_community_event_notification_appears_in_the_header_community_dropdown(): void
     {
         [$event, $owner, $approved] = $this->eventWithParticipants();
         $this->actingAs($owner)->patch(route('events.cancel', $event), ['cancel_reason' => 'Storm warning']);
 
-        // ヘッダーの一般通知欄にイベント名と理由が出る
         $this->actingAs($approved)
             ->get(route('profile.show', $approved->id))
             ->assertOk()
-            ->assertSeeInOrder(['Event cancelled', 'Beach Cleanup', 'Storm warning'])
-            ->assertDontSee('Beach Club', false);
-
-        // 通知一覧の一般側に含まれ、コミュニティの絞り込みには含まれない
-        $this->actingAs($approved)
-            ->get(route('notifications.index', ['type' => 'community']))
-            ->assertViewHas('records', fn ($records) => ! $records->pluck('type')->contains('event_cancelled'));
-        $this->actingAs($approved)
-            ->get(route('notifications.index'))
-            ->assertViewHas('records', fn ($records) => $records->pluck('type')->contains('event_cancelled'));
+            ->assertSeeInOrder(['Beach Club', 'Event cancelled', 'Beach Cleanup', 'Storm warning']);
     }
 
     public function test_cancelling_an_event_outside_communities_notifies_approved_and_pending_participants(): void
@@ -95,6 +85,10 @@ class EventCancellationNotificationTest extends TestCase
             $this->assertTrue($notification->related->is($event));
         }
         $this->assertSame(0, UserNotification::whereIn('user_id', [$rejected->id, $owner->id])->count());
+
+        $this->actingAs($approved)
+            ->get(route('notifications.index', ['type' => 'community']))
+            ->assertViewHas('records', fn ($records) => ! $records->pluck('type')->contains('event_cancelled'));
     }
 
     public function test_standalone_event_cancellation_appears_in_the_notification_dropdown(): void

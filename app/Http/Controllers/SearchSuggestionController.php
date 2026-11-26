@@ -50,7 +50,7 @@ class SearchSuggestionController extends Controller
             ->visibleTo(Auth::user())
             ->search($keyword)
             ->withCount(['memberships as approved_members_count' => fn ($query) => $query->where('status', 'approved')])
-            ->orderBy('name')
+            ->orderBy('username')
             ->limit($limit)
             ->get()
             ->map(fn (Community $community) => [
@@ -76,7 +76,10 @@ class SearchSuggestionController extends Controller
                 'type' => 'event',
                 'type_label' => __('Event'),
                 'title' => $event->title,
-                'subtitle' => collect([$event->start_at?->format('M j, Y'), $event->location])->filter()->implode(' · '),
+                'subtitle' => collect([
+                    $event->start_at ? \App\Support\LocalizedValue::dateTime($event->start_at, 'date') : null,
+                    $event->location,
+                ])->filter()->implode(' · '),
                 'url' => route('events.show', $event->id),
             ]);
     }
@@ -109,8 +112,8 @@ class SearchSuggestionController extends Controller
             ->map(fn (User $user) => [
                 'type' => 'user',
                 'type_label' => __('User'),
-                'title' => $user->name,
-                'subtitle' => $user->username ? '@'.$user->username : '',
+                'title' => $user->username ? '@'.$user->username : __('Unknown user'),
+                'subtitle' => '',
                 'url' => route('profile.show', $user->id),
             ]);
     }

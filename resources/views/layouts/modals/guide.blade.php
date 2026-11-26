@@ -1,4 +1,8 @@
-<div class="modal fade" id="modal-guide" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modal-guide" tabindex="-1" aria-hidden="true"
+    data-policy-translation-url="{{ route('policies.translate', 'guidelines') }}"
+    data-policy-source-stored="{{ filled($siteSettings['policy_guidelines'] ?? null) ? 'true' : 'false' }}"
+    data-policy-translation-loading="{{ __('Translating...') }}"
+    data-policy-translation-error="{{ __('Translation is unavailable right now.') }}">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-success">
                 <div class="modal-header border-success bg-danger">

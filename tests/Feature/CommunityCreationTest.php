@@ -254,7 +254,7 @@ class CommunityCreationTest extends TestCase
             ->assertSee('Community Workshop')
             ->assertSee('Event Hosting Community')
             ->assertSee('A hands-on workshop.')
-            ->assertSee($event->start_at->format('M d, Y'))
+            ->assertSee(\App\Support\LocalizedValue::dateTime($event->start_at, 'date'))
             ->assertSee('class="event-card"', false);
     }
 
@@ -310,13 +310,13 @@ class CommunityCreationTest extends TestCase
 
     public function test_detail_page_lists_approved_members_in_members_tab(): void
     {
-        $owner = User::factory()->create(['name' => 'Owner Person']);
+        $owner = User::factory()->create(['name' => 'Owner Person', 'username' => 'owner_person']);
         $community = $owner->communitiesOwned()->create([
             'name' => 'Members Community',
             'description' => 'Has members.',
         ]);
-        $approved = User::factory()->create(['name' => 'Approved Person']);
-        $pending = User::factory()->create(['name' => 'Pending Person']);
+        $approved = User::factory()->create(['name' => 'Approved Person', 'username' => 'approved_person']);
+        $pending = User::factory()->create(['name' => 'Pending Person', 'username' => 'pending_person']);
         $community->members()->attach($approved->id, ['role' => 'member', 'status' => 'approved', 'joined_at' => now()]);
         $community->members()->attach($pending->id, ['role' => 'member', 'status' => 'pending']);
 
@@ -326,15 +326,15 @@ class CommunityCreationTest extends TestCase
             ->assertSee('id="members"', false)
             ->getContent();
 
-        // レイアウトのメッセージ一覧にも全ユーザー名が出るため、Members タブの中だけを確認する
+        // レイアウトのメッセージ一覧にもユーザー名が出るため、Members タブの中だけを確認する
         // 申請中の人はオーナーには「Join requests」に出て、メンバー一覧には出ない
         $requests = Str::between($html, 'Join requests', 'community-member-list');
         $memberList = Str::between($html, 'community-member-list', 'id="about"');
 
-        $this->assertStringContainsString('Pending Person', $requests);
-        $this->assertStringContainsString('Owner Person', $memberList);
-        $this->assertStringContainsString('Approved Person', $memberList);
-        $this->assertStringNotContainsString('Pending Person', $memberList);
+        $this->assertStringContainsString('pending_person', $requests);
+        $this->assertStringContainsString('owner_person', $memberList);
+        $this->assertStringContainsString('approved_person', $memberList);
+        $this->assertStringNotContainsString('pending_person', $memberList);
     }
 
     public function test_replacing_community_icon_deletes_the_old_file(): void

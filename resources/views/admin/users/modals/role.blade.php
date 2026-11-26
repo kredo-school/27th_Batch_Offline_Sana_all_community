@@ -1,7 +1,7 @@
 @php($newRole = $user->role === 'admin' ? 'user' : 'admin')
 
 <div class="modal fade" id="change-role-user-{{ $user->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="h5 modal-title">{{ __('Change user role') }}</h3>
@@ -9,7 +9,7 @@
             </div>
             <div class="modal-body">
                 {{ __('Change :name role to :role?', [
-                    'name' => $user->name,
+                    'name' => $user->username ?: __('Unknown user'),
                     'role' => $newRole === 'admin' ? __('Admin') : __('User'),
                 ]) }}
             </div>

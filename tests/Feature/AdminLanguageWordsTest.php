@@ -182,7 +182,8 @@ class AdminLanguageWordsTest extends TestCase
                 'key' => 'See you',
                 'value' => 'またね',
             ])
-            ->assertRedirect(route('admin.languages.index', ['locale' => 'ja']));
+            ->assertRedirect(route('admin.languages.index', ['locale' => 'ja']))
+            ->assertSessionHas('status');
 
         $this->actingAs($admin)
             ->delete(route('admin.languages.destroy', ['locale' => 'ja', 'key' => 'See you']))
@@ -210,6 +211,45 @@ class AdminLanguageWordsTest extends TestCase
             ? json_decode(file_get_contents($cebuanoPath), true)
             : [];
         $this->assertArrayNotHasKey('Goodbye', $cebuano);
+    }
+
+    public function test_admin_language_word_update_returns_to_index_with_a_success_message(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'preferred_language' => 'ja',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.languages.update', ['locale' => 'ja', 'key' => 'Hello']), [
+                'key' => 'Welcome',
+                'value' => 'ようこそ',
+            ])
+            ->assertRedirect(route('admin.languages.index', ['locale' => 'ja']))
+            ->assertSessionHas('status');
+
+        $this->get(route('admin.languages.index', ['locale' => 'ja']))
+            ->assertOk()
+            ->assertSee('alert alert-success', false);
+    }
+
+    public function test_language_word_edit_and_delete_icons_use_visible_admin_button_styles(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'preferred_language' => 'ja',
+        ]);
+        $this->app->make(LanguageFileWriter::class)->write('ja', [
+            'Hello' => 'こんにちは',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.languages.index', ['locale' => 'ja']))
+            ->assertOk()
+            ->assertSee(route('admin.languages.edit', ['locale' => 'ja', 'key' => 'Hello']), false)
+            ->assertSee(route('admin.languages.destroy', ['locale' => 'ja', 'key' => 'Hello']), false)
+            ->assertSee('btn btn-outline-primary btn-sm', false)
+            ->assertSee('btn btn-outline-danger btn-sm', false);
     }
 
     public function test_language_words_are_paginated_twenty_per_page(): void

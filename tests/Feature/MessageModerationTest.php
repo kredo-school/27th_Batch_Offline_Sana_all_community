@@ -66,6 +66,25 @@ class MessageModerationTest extends TestCase
         $this->assertSoftDeleted($message);
     }
 
+    public function test_conversation_payload_uses_usernames_instead_of_display_names(): void
+    {
+        $viewer = User::factory()->create();
+        $sender = User::factory()->create(['name' => 'Private Display Name', 'username' => 'chat_sender']);
+        $message = Message::create([
+            'sender_id' => $sender->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Hello',
+        ]);
+
+        $this->actingAs($viewer)
+            ->getJson(route('messages.conversation', $sender))
+            ->assertOk()
+            ->assertJsonPath('participant.name', 'chat_sender')
+            ->assertJsonPath('messages.0.sender.name', 'chat_sender')
+            ->assertJsonPath('messages.0.sender.username', 'chat_sender')
+            ->assertJsonPath('messages.0.sender.profile_url', route('profile.show', $sender));
+    }
+
     public function test_layout_displays_unread_received_message_count(): void
     {
         $user = User::factory()->create();

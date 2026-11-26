@@ -287,6 +287,10 @@
             </a>
         </div>
 
+        @if (session('status'))
+            <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
+        @endif
+
         <table class="table table-hover align-middle bg-white border">
             <thead class="table-success">
                 <tr>

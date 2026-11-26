@@ -18,7 +18,7 @@
         <optgroup label="{{ __('Single user') }}">
             @foreach ($users as $user)
                 <option value="{{ $user->id }}" @selected($selectedUser === (string) $user->id)>
-                    {{ $user->name }}@if ($user->username) ({{ $user->username }})@endif
+                    {{ $user->username ?: __('Unknown user') }}
                 </option>
             @endforeach
         </optgroup>
@@ -31,7 +31,7 @@
     <label class="form-label d-block">{{ __('From') }}</label>
     @php
         $currentFrom = old('from', ($notification->sender_name ?? __('Admin')) === __('Admin') ? 'admin' : 'self');
-        $myName = Auth::user()->username ?: Auth::user()->name;
+        $myName = Auth::user()->username ?: __('Unknown user');
     @endphp
     <div class="btn-group" role="group" aria-label="{{ __('Sender') }}">
         <input type="radio" class="btn-check" name="from" id="from_admin" value="admin" autocomplete="off"

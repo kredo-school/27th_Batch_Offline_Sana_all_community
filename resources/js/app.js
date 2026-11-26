@@ -54,6 +54,71 @@ if (confirmationModalElement && confirmationMessage && confirmationSubmit) {
 	});
 }
 
+document.addEventListener('show.bs.modal', async (event) => {
+	const modal = event.target;
+	if (!(modal instanceof HTMLElement)) {
+		return;
+	}
+
+	const translationUrl = modal.dataset.policyTranslationUrl;
+	const body = modal.querySelector('.modal-body');
+	if (
+		!translationUrl
+		|| !body
+		|| modal.dataset.policyTranslationLoaded === 'true'
+		|| modal.dataset.policyTranslationPending === 'true'
+	) {
+		return;
+	}
+
+	body.querySelector('.policy-translation-notice')?.remove();
+	const originalNodes = Array.from(body.childNodes, (node) => node.cloneNode(true));
+	const requestBody = modal.dataset.policySourceStored === 'true'
+		? {}
+		: { source: body.innerText || body.textContent || '' };
+	modal.dataset.policyTranslationPending = 'true';
+	const loading = document.createElement('p');
+	loading.className = 'text-muted';
+	loading.setAttribute('role', 'status');
+	loading.textContent = modal.dataset.policyTranslationLoading || 'Translating...';
+	body.replaceChildren(loading);
+
+	try {
+		const response = await fetch(translationUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+				'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+				'X-Requested-With': 'XMLHttpRequest',
+			},
+			body: JSON.stringify(requestBody),
+		});
+		const data = await response.json();
+		if (!response.ok) {
+			throw new Error(data.message || modal.dataset.policyTranslationError || 'Translation is unavailable right now.');
+		}
+
+		const policyText = document.createElement('p');
+		policyText.style.whiteSpace = 'pre-line';
+		policyText.textContent = data.translation;
+		body.replaceChildren(policyText);
+		modal.dataset.policyTranslationLoaded = 'true';
+	} catch (error) {
+		body.replaceChildren(...originalNodes);
+		const notice = document.createElement('p');
+		notice.className = 'alert alert-warning policy-translation-notice';
+		notice.setAttribute('role', 'status');
+		notice.textContent = error instanceof Error
+			? error.message
+			: modal.dataset.policyTranslationError || 'Translation is unavailable right now.';
+		body.prepend(notice);
+	} finally {
+		delete modal.dataset.policyTranslationPending;
+	}
+});
+
 const chatPanel = document.querySelector('#message-chat-panel');
 const chatTitle = document.querySelector('#message-chat-title');
 const chatStatus = document.querySelector('#message-chat-status');
@@ -154,8 +219,12 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		const senderHeader = document.createElement('div');
 		senderHeader.className = 'message-chat-sender';
 
-		const avatar = document.createElement('span');
+		const avatar = document.createElement(sender.profile_url ? 'a' : 'span');
 		avatar.className = 'message-chat-avatar';
+		if (sender.profile_url) {
+			avatar.href = sender.profile_url;
+			avatar.setAttribute('aria-label', `${chatPanel.dataset.profileLabel || 'View profile'}: ${senderName}`);
+		}
 		if (sender.avatar) {
 			const image = document.createElement('img');
 			image.src = sender.avatar;
@@ -233,6 +302,54 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 		chatList.scrollTop = currentScroll;
 	};
 
+	const mirrorTranslationForm = document.querySelector('#mirror-translation-form');
+	if (mirrorTranslationForm) {
+		const sourceText = mirrorTranslationForm.querySelector('#mirror-source-text');
+		const resultText = mirrorTranslationForm.querySelector('#mirror-result');
+		const status = mirrorTranslationForm.querySelector('#mirror-translation-status');
+		const count = mirrorTranslationForm.querySelector('#mirror-character-count');
+		const submit = mirrorTranslationForm.querySelector('button[type="submit"]');
+
+		sourceText.addEventListener('input', () => {
+			count.textContent = sourceText.value.length;
+		});
+
+		mirrorTranslationForm.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			submit.disabled = true;
+			status.textContent = 'Translating...';
+			resultText.value = '';
+
+			try {
+				const response = await fetch(mirrorTranslationForm.action, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+						'X-Requested-With': 'XMLHttpRequest',
+					},
+					body: JSON.stringify({
+						text: sourceText.value,
+						source: mirrorTranslationForm.querySelector('[name="source"]').value,
+						target: mirrorTranslationForm.querySelector('[name="target"]').value,
+					}),
+				});
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(data.message || mirrorTranslationForm.dataset.error);
+				}
+				resultText.value = data.translation;
+				status.textContent = '';
+			} catch (error) {
+				status.textContent = error.message || mirrorTranslationForm.dataset.error;
+			} finally {
+				submit.disabled = false;
+			}
+		});
+	}
+
 	document.addEventListener('click', async (event) => {
 		if (event.target.closest('form')) {
 			return;
@@ -255,54 +372,6 @@ if (chatPanel && chatTitle && chatStatus && chatList && chatForm && chatInput) {
 					headers: { Accept: 'application/json' },
 					credentials: 'same-origin',
 				});
-
-				const mirrorTranslationForm = document.querySelector('#mirror-translation-form');
-				if (mirrorTranslationForm) {
-					const sourceText = mirrorTranslationForm.querySelector('#mirror-source-text');
-					const resultText = mirrorTranslationForm.querySelector('#mirror-result');
-					const status = mirrorTranslationForm.querySelector('#mirror-translation-status');
-					const count = mirrorTranslationForm.querySelector('#mirror-character-count');
-					const submit = mirrorTranslationForm.querySelector('button[type="submit"]');
-
-					sourceText.addEventListener('input', () => {
-						count.textContent = sourceText.value.length;
-					});
-
-					mirrorTranslationForm.addEventListener('submit', async (event) => {
-						event.preventDefault();
-						submit.disabled = true;
-						status.textContent = 'Translating...';
-						resultText.value = '';
-
-						try {
-							const response = await fetch(mirrorTranslationForm.action, {
-								method: 'POST',
-								credentials: 'same-origin',
-								headers: {
-									Accept: 'application/json',
-									'Content-Type': 'application/json',
-									'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-									'X-Requested-With': 'XMLHttpRequest',
-								},
-								body: JSON.stringify({
-									text: sourceText.value,
-									source: mirrorTranslationForm.querySelector('[name="source"]').value,
-									target: mirrorTranslationForm.querySelector('[name="target"]').value,
-								}),
-							});
-							const data = await response.json();
-							if (!response.ok) {
-								throw new Error(data.message || mirrorTranslationForm.dataset.error);
-							}
-							resultText.value = data.translation;
-							status.textContent = '';
-						} catch (error) {
-							status.textContent = error.message || mirrorTranslationForm.dataset.error;
-						} finally {
-							submit.disabled = false;
-						}
-					});
-				}
 
 				if (!response.ok) {
 					throw new Error('Unable to load conversation');

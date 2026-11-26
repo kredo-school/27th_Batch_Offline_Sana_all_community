@@ -49,8 +49,14 @@ class StatisticsController extends Controller
 
             return (object) [
                 'key' => $date->format($monthlyBuckets ? 'Y-m' : 'Y-m-d'),
-                'label' => $date->format($monthlyBuckets ? 'm/y' : 'm/d'),
-                'title' => $date->format($monthlyBuckets ? 'F Y' : 'M j, Y'),
+                'label' => \App\Support\LocalizedValue::dateTime(
+                    $date,
+                    $monthlyBuckets ? 'month-year-short' : 'date-short',
+                ),
+                'title' => \App\Support\LocalizedValue::dateTime(
+                    $date,
+                    $monthlyBuckets ? 'month-year' : 'date',
+                ),
             ];
         });
         $seriesFromCounts = function ($counts) use ($chartBuckets) {
@@ -187,7 +193,7 @@ class StatisticsController extends Controller
             })
             ->select(
                 'users.id',
-                'users.name',
+                'users.username',
                 'users.email',
                 DB::raw('COALESCE(page_activity.page_view_count, 0) as page_view_count'),
                 DB::raw('COALESCE(category_activity.category_view_count, 0) as category_view_count')
@@ -198,7 +204,7 @@ class StatisticsController extends Controller
 
         $recentPageViewsQuery = DB::table('page_views')
             ->leftJoin('users', 'page_views.user_id', '=', 'users.id')
-            ->select('page_views.url', 'page_views.ip_address', 'page_views.created_at', 'users.name as user_name')
+            ->select('page_views.url', 'page_views.ip_address', 'page_views.created_at', 'users.username as user_name')
             ->orderByDesc('page_views.created_at');
 
         $recentPageViews = $loadSection($recentPageViewsQuery, 'recent-page-views');

@@ -44,7 +44,7 @@
                     <dt class="col-sm-4">{{ __('Community') }} ID</dt>
                     <dd class="col-sm-8">{{ $community->id }}</dd>
                     <dt class="col-sm-4">{{ __('Owner') }}</dt>
-                    <dd class="col-sm-8">{{ $community->owner?->name ?? '-' }}</dd>
+                    <dd class="col-sm-8">{{ $community->owner?->username ?? '-' }}</dd>
                     <dt class="col-sm-4">{{ __('Members') }}</dt>
                     <dd class="col-sm-8">{{ $community->members_count }}</dd>
                     <dt class="col-sm-4">{{ __('Events') }}</dt>
@@ -71,9 +71,9 @@
                         @endif
                     </dd>
                     <dt class="col-sm-4">{{ __('Created') }}</dt>
-                    <dd class="col-sm-8">{{ $community->created_at?->format('M d, Y H:i') }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($community->created_at) }}</dd>
                     <dt class="col-sm-4">{{ __('Updated') }}</dt>
-                    <dd class="col-sm-8">{{ $community->updated_at?->format('M d, Y H:i') }}</dd>
+                    <dd class="col-sm-8">{{ \App\Support\LocalizedValue::dateTime($community->updated_at) }}</dd>
                 </dl>
 
                 <h2 class="h5">{{ __('Members') }}</h2>
@@ -90,10 +90,10 @@
                         <tbody>
                             @forelse ($memberships as $membership)
                                 <tr>
-                                    <td>{{ $membership->user?->username ?? $membership->user?->name ?? __('Deleted user') }}</td>
+                                    <td>{{ $membership->user?->username ?? __('Deleted user') }}</td>
                                     <td>{{ $membership->role_label }}</td>
                                     <td>{{ $membership->status_label }}</td>
-                                    <td>{{ $membership->joined_at?->format('M d, Y') ?? '-' }}</td>
+                                    <td>{{ \App\Support\LocalizedValue::dateTime($membership->joined_at, 'date') }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -125,7 +125,7 @@
                                     </td>
                                     <td>{{ $event->status_label }}</td>
                                     <td>{{ $event->visibility_label }}</td>
-                                    <td>{{ $event->start_at?->format('M d, Y H:i') ?? '-' }}</td>
+                                    <td>{{ \App\Support\LocalizedValue::dateTime($event->start_at) }}</td>
                                 </tr>
                             @empty
                                 <tr>

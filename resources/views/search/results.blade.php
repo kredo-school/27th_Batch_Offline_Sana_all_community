@@ -41,7 +41,7 @@
                 @foreach ($events as $event)
                     <a class="search-result-card" href="{{ route('events.show', $event) }}">
                         <h3>{{ $event->title }}</h3>
-                        <p>{{ $event->start_at?->format('M d, Y') }}{{ $event->location ? ' · '.$event->location : '' }}</p>
+                        <p>{{ \App\Support\LocalizedValue::dateTime($event->start_at, 'date') }}{{ $event->location ? ' · '.$event->location : '' }}</p>
                     </a>
                 @endforeach
             </div>
@@ -72,8 +72,7 @@
             <div class="search-result-grid">
                 @foreach ($users as $user)
                     <a class="search-result-card" href="{{ route('profile.show', $user) }}">
-                        <h3>{{ $user->name }}</h3>
-                        <p>{{ '@'.$user->username }}</p>
+                        <h3>{{ $user->username ? '@'.$user->username : __('Unknown user') }}</h3>
                     </a>
                 @endforeach
             </div>

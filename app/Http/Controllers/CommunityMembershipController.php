@@ -52,10 +52,10 @@ class CommunityMembershipController extends Controller
             $owner = $request->user();
             UserNotification::create([
                 'user_id' => $invitee->id,
-                'sender_name' => $owner->username ?: $owner->name,
+                'sender_name' => $owner->username ?: 'Unknown user',
                 'type' => 'community_invite',
                 'title' => 'Community invitation',
-                'message' => ($owner->username ?: $owner->name) . " invited you to join '{$community->name}'.",
+                'message' => ($owner->username ?: 'Unknown user') . " invited you to join '{$community->name}'.",
                 'related_type' => Community::class,
                 'related_id' => $community->id,
             ]);
@@ -87,7 +87,7 @@ class CommunityMembershipController extends Controller
     {
         UserNotification::create([
             'user_id' => $requester->id,
-            'sender_name' => $owner->username ?: $owner->name,
+            'sender_name' => $owner->username ?: 'Unknown user',
             'type' => $approved ? 'community_join_approved' : 'community_join_declined',
             'title' => $approved ? 'Community join request approved' : 'Community join request declined',
             'message' => $approved
@@ -101,7 +101,7 @@ class CommunityMembershipController extends Controller
             ->whereIn('user_id', $community->managerIds())
             ->where('type', 'community_join_request')
             ->where('related_id', $community->id)
-            ->where('sender_name', $requester->username ?: $requester->name)
+            ->where('sender_name', $requester->username ?: 'Unknown user')
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
     }
@@ -143,10 +143,10 @@ class CommunityMembershipController extends Controller
         foreach ($approved ? [] : $community->managerIds() as $managerId) {
             UserNotification::create([
                 'user_id' => $managerId,
-                'sender_name' => $user->username ?: $user->name,
+                'sender_name' => $user->username ?: 'Unknown user',
                 'type' => 'community_join_request',
                 'title' => 'Community join request',
-                'message' => "{$user->name} requested to join '{$community->name}'.",
+                'message' => ($user->username ?: 'Unknown user')." requested to join '{$community->name}'.",
                 'related_type' => Community::class,
                 'related_id' => $community->id,
             ]);
@@ -236,7 +236,7 @@ class CommunityMembershipController extends Controller
                 $owner = $request->user();
                 UserNotification::create([
                     'user_id' => $membership->user_id,
-                    'sender_name' => $owner->username ?: $owner->name,
+                    'sender_name' => $owner->username ?: 'Unknown user',
                     'type' => 'community_moderator_added',
                     'title' => 'You are now a moderator',
                     'message' => "You can now approve join requests and delete chat messages in '{$community->name}'.",
@@ -281,10 +281,10 @@ class CommunityMembershipController extends Controller
 
         UserNotification::create([
             'user_id' => $newOwner->id,
-            'sender_name' => $oldOwner->username ?: $oldOwner->name,
+            'sender_name' => $oldOwner->username ?: 'Unknown user',
             'type' => 'community_ownership_transferred',
             'title' => 'You are now the community owner',
-            'message' => ($oldOwner->username ?: $oldOwner->name) . " made you the owner of '{$community->name}'.",
+            'message' => ($oldOwner->username ?: 'Unknown user') . " made you the owner of '{$community->name}'.",
             'related_type' => Community::class,
             'related_id' => $community->id,
         ]);

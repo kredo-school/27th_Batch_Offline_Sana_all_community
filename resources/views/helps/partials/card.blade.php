@@ -258,14 +258,10 @@
     $eventDateLabel = null;
 
     if ($help->event_start_at) {
-        $eventDateLabel = $help->event_start_at
-            ->locale(app()->getLocale())
-            ->isoFormat('lll');
+        $eventDateLabel = \App\Support\LocalizedValue::dateTime($help->event_start_at);
 
         if ($help->event_end_at) {
-            $eventDateLabel .= ' - ' . $help->event_end_at
-                ->locale(app()->getLocale())
-                ->isoFormat('lll');
+            $eventDateLabel .= ' - ' . \App\Support\LocalizedValue::dateTime($help->event_end_at);
         }
     }
 
@@ -415,7 +411,7 @@
         <time datetime="{{ $help->application_deadline?->format('Y-m-d') ?? '' }}">
             @if ($help->application_deadline)
                 {{ __('Apply by') }}
-                {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('ll') }}
+                {{ \App\Support\LocalizedValue::dateTime($help->application_deadline, 'date') }}
             @else
                 {{ __('Open application') }}
             @endif

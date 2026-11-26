@@ -10,11 +10,11 @@
 
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mt-3 mb-4">
         <div>
-            <h1 class="h4 mb-1">Comment #{{ $comment->id }}</h1>
+            <h1 class="h4 mb-1">{{ __('Comment')}} #{{ $comment->id }}</h1>
             <p class="text-secondary small mb-0">
-                By {{ $comment->user->name ?? 'Unknown user' }}
+                {{ __('By')}} {{ $comment->user?->username ?: __('Unknown user') }}
                 @if ($comment->event)
-                    on <a href="{{ route('admin.events.show', $comment->event) }}">{{ $comment->event->title }}</a>
+                    {{ __('on')}} <a href="{{ route('admin.events.show', $comment->event) }}">{{ $comment->event->title }}</a>
                 @endif
             </p>
         </div>
@@ -27,14 +27,14 @@
     </div>
 
     <dl class="row">
-        <dt class="col-sm-3">Comment</dt>
+        <dt class="col-sm-3">{{ __('Comment')}}</dt>
         <dd class="col-sm-9" style="white-space: pre-wrap;">{{ $comment->content }}</dd>
-        <dt class="col-sm-3">Language</dt>
+        <dt class="col-sm-3">{{ __('Language')}}</dt>
         <dd class="col-sm-9">{{ $comment->language_label }}</dd>
-        <dt class="col-sm-3">Created</dt>
-        <dd class="col-sm-9">{{ $comment->created_at?->format('M j, Y g:i A') ?? '-' }}</dd>
-        <dt class="col-sm-3">Updated</dt>
-        <dd class="col-sm-9">{{ $comment->updated_at?->format('M j, Y g:i A') ?? '-' }}</dd>
+        <dt class="col-sm-3">{{ __('Created')}}</dt>
+        <dd class="col-sm-9">{{ \App\Support\LocalizedValue::dateTime($comment->created_at) }}</dd>
+        <dt class="col-sm-3">{{ __('Updated')}}</dt>
+        <dd class="col-sm-9">{{ \App\Support\LocalizedValue::dateTime($comment->updated_at) }}</dd>
     </dl>
 </div>
 @endsection

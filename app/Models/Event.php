@@ -238,9 +238,7 @@ class Event extends Model
         }
 
         // after 8 days left
-        $localizedDate = $joinTill->copy()
-            ->locale(app()->getLocale())
-            ->isoFormat('LL') ?: $joinTill->format('F j, Y');
+        $localizedDate = \App\Support\LocalizedValue::dateTime($joinTill, 'date');
 
         return [
             'label' => $localizedDate,

@@ -6,7 +6,7 @@
 <div class="container py-4" style="max-width: 720px;">
     <h1 class="h4 mb-1">{{ __('Edit comment') }} #{{ $comment->id }}</h1>
     <p class="text-secondary small mb-4">
-        {{ __('By') }} {{ $comment->user->name ?? __('Unknown user') }}
+        {{ __('By') }} {{ $comment->user?->username ?: __('Unknown user') }}
         @if ($comment->event)
             {{ __('on') }} <a href="{{ route('admin.events.show', $comment->event) }}">{{ $comment->event->title }}</a>
         @endif

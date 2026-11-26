@@ -271,32 +271,166 @@ class NotificationTest extends TestCase
             });
     }
 
-    public function test_community_view_provides_owned_and_joined_chat_summaries(): void
+    public function test_community_filter_includes_notifications_related_to_communities(): void
     {
         $user = User::factory()->create();
-        $joinedOwner = User::factory()->create();
-        $owned = Community::create(['owner_id' => $user->id, 'name' => 'Owned Club', 'description' => 'Talks.']);
-        $joined = Community::create(['owner_id' => $joinedOwner->id, 'name' => 'Joined Club', 'description' => 'Talks.']);
-        $joined->members()->attach($user->id, ['role' => 'member', 'status' => 'approved', 'joined_at' => now()]);
-        $owned->messages()->create(['user_id' => $user->id, 'message' => 'One']);
-        $owned->messages()->create(['user_id' => $user->id, 'message' => 'Two']);
+        $community = Community::create([
+            'owner_id' => User::factory()->create()->id,
+            'name' => 'Related Club',
+            'description' => 'Community notices.',
+        ]);
         UserNotification::create([
             'user_id' => $user->id,
-            'type' => 'community_message',
-            'title' => 'New community message',
+            'type' => 'general',
+            'title' => 'Community-related notice',
             'related_type' => Community::class,
-            'related_id' => $owned->id,
+            'related_id' => $community->id,
         ]);
 
         $this->actingAs($user)
             ->get(route('notifications.index', ['type' => 'community']))
             ->assertOk()
-            ->assertViewHas('ownedCommunities', function ($communities) use ($owned): bool {
-                return $communities->firstWhere('id', $owned->id)->total_chat_messages === 2
-                    && $communities->firstWhere('id', $owned->id)->unread_chat_messages === 1;
-            })
-            ->assertViewHas('joinedCommunities', function ($communities) use ($joined): bool {
-                return $communities->firstWhere('id', $joined->id) !== null;
-            });
+            ->assertViewHas('records', fn ($records) => $records->count() === 1
+                && $records->first()->title === 'Community-related notice');
+    }
+
+    public function test_community_chat_notifications_are_listed_and_open_the_chat(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create([
+            'owner_id' => $user->id,
+            'name' => 'Chat Notices',
+            'description' => 'New messages.',
+        ]);
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'community_message',
+            'title' => 'New community chat message',
+            'message' => 'There is a new message.',
+            'related_type' => Community::class,
+            'related_id' => $community->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['type' => 'community']))
+            ->assertOk()
+            ->assertViewHas('records', fn ($records) => $records->contains('id', $notification->id))
+            ->assertSee('New community chat message')
+            ->assertSee(route('community.show', $community->id).'#chat', false);
+
+        $this->get(route('notifications.show', $notification))
+            ->assertRedirect(route('community.show', $community->id).'#chat');
+    }
+
+    public function test_community_event_notifications_open_the_related_event_pages(): void
+    {
+        $owner = User::factory()->create();
+        $community = Community::create([
+            'owner_id' => $owner->id,
+            'name' => 'Event Notices',
+            'description' => 'Community events.',
+        ]);
+        $event = Event::create([
+            'owner_id' => $owner->id,
+            'community_id' => $community->id,
+            'title' => 'Community Event',
+            'description' => 'An event.',
+            'start_at' => now()->addDay(),
+            'join_till' => now()->addHours(12),
+            'end_at' => now()->addDays(2),
+            'status' => 'published',
+            'visibility' => 'public',
+        ]);
+        $updated = UserNotification::create([
+            'user_id' => $owner->id,
+            'type' => 'event_updated',
+            'title' => 'Event updated',
+            'related_type' => Event::class,
+            'related_id' => $event->id,
+        ]);
+        $participantCancelled = UserNotification::create([
+            'user_id' => $owner->id,
+            'type' => 'participant_cancelled',
+            'title' => 'Participant cancelled',
+            'related_type' => Event::class,
+            'related_id' => $event->id,
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('notifications.index', ['type' => 'community']))
+            ->assertOk()
+            ->assertViewHas('records', fn ($records) => $records->count() === 2);
+
+        $this->get(route('notifications.show', $updated))
+            ->assertRedirect(route('events.show', $event));
+        $this->get(route('notifications.show', $participantCancelled))
+            ->assertRedirect(route('events.participants', $event));
+    }
+
+    public function test_community_filter_stays_on_notifications_and_shows_related_notices(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create([
+            'owner_id' => User::factory()->create()->id,
+            'name' => 'Related Club',
+            'description' => 'Community notices.',
+        ]);
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'general',
+            'title' => 'Community-related notice',
+            'related_type' => Community::class,
+            'related_id' => $community->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['type' => 'community']))
+            ->assertOk()
+            ->assertViewHas('title', 'Community')
+            ->assertViewHas('records', fn ($records) => $records->count() === 1)
+            ->assertSee('View All')
+            ->assertSee('Communities')
+            ->assertSee('Community-related notice')
+            ->assertSee(route('notifications.show', $notification), false)
+            ->assertDontSee('href="'.route('notifications.index').'" class="btn btn-white text-danger', false)
+            ->assertDontSee('href="'.route('notifications.index', ['type' => 'general']).'"', false)
+            ->assertDontSee('href="'.route('notifications.index', ['type' => 'maintenance']).'"', false)
+            ->assertDontSee('href="'.route('notifications.index', ['type' => 'community']).'" class="btn btn-white text-success border-success', false)
+            ->assertDontSee('Owned Communities')
+            ->assertDontSee('Joined Communities');
+    }
+
+    public function test_community_filter_includes_notifications_for_soft_deleted_community_events(): void
+    {
+        $user = User::factory()->create();
+        $community = Community::create([
+            'owner_id' => $user->id,
+            'name' => 'Archived Event Club',
+            'description' => 'Community event notices.',
+        ]);
+        $event = Event::create([
+            'owner_id' => $user->id,
+            'community_id' => $community->id,
+            'title' => 'Archived Community Event',
+            'description' => 'An event.',
+            'start_at' => now()->addDay(),
+            'join_till' => now()->addHours(12),
+            'end_at' => now()->addDays(2),
+            'status' => 'published',
+            'visibility' => 'public',
+        ]);
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'event_cancelled',
+            'title' => 'Event cancelled',
+            'related_type' => Event::class,
+            'related_id' => $event->id,
+        ]);
+        $event->delete();
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['type' => 'community']))
+            ->assertOk()
+            ->assertViewHas('records', fn ($records) => $records->contains('id', $notification->id));
     }
 }

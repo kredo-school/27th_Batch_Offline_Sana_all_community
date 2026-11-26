@@ -6,7 +6,7 @@
 <div class="container py-4" style="max-width: 720px;">
     <h1 class="h4 mb-1">{{ __('Edit review') }} #{{ $review->id }}</h1>
     <p class="text-secondary small mb-4">
-        {{ __('By') }} {{ $review->user->name ?? __('Unknown user') }}
+        {{ __('By') }} {{ $review->user?->username ?: __('Unknown user') }}
         @if ($review->event)
             {{ __('on') }} <a href="{{ route('admin.events.show', $review->event) }}">{{ $review->event->title }}</a>
         @endif

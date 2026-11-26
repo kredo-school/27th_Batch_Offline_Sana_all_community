@@ -17,10 +17,26 @@ class NotificationController extends Controller
 
         $records = UserNotification::query()
             ->where('user_id', Auth::id())
-            ->where('type', '!=', 'community_message')
+            ->when(
+                $type !== 'community',
+                fn ($query) => $query->where('type', '!=', 'community_message')
+            )
             ->when(
                 $type === 'community',
-                fn ($query) => $query->communityFilter()
+                fn ($query) => $query->where(function ($query): void {
+                    $query->communityFilter()
+                        ->orWhere(function ($query): void {
+                            $query->where('related_type', Community::class)
+                                ->whereNotNull('related_id');
+                        })
+                        ->orWhere(function ($query): void {
+                            $query->where('related_type', Event::class)
+                                ->whereIn(
+                                    'related_id',
+                                        Event::withTrashed()->select('id')->whereNotNull('community_id'),
+                                );
+                        });
+                })
             )
             ->when(
                 in_array($type, ['general', 'maintenance'], true),
@@ -30,45 +46,8 @@ class NotificationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $ownedCommunities = collect();
-        $joinedCommunities = collect();
-        if ($request->user() && $type === 'community') {
-            $userId = $request->user()->id;
-            $unreadCounts = UserNotification::query()
-                ->where('user_id', $userId)
-                ->where('type', 'community_message')
-                ->whereNull('read_at')
-                ->selectRaw('related_id, count(*) as unread_chat_messages')
-                ->groupBy('related_id')
-                ->pluck('unread_chat_messages', 'related_id');
-
-            $addUnreadCounts = static function ($communities) use ($unreadCounts) {
-                return $communities->each(function (Community $community) use ($unreadCounts): void {
-                    $community->setAttribute(
-                        'unread_chat_messages',
-                        (int) $unreadCounts->get($community->id, 0),
-                    );
-                });
-            };
-
-            $ownedCommunities = $addUnreadCounts(Community::query()
-                ->where('owner_id', $userId)
-                ->withCount(['messages as total_chat_messages'])
-                ->orderBy('name')
-                ->get());
-
-            $joinedCommunities = $addUnreadCounts(Community::query()
-                ->where('owner_id', '!=', $userId)
-                ->whereHas('memberships', fn ($query) => $query
-                    ->where('user_id', $userId)
-                    ->where('status', 'approved'))
-                ->withCount(['messages as total_chat_messages'])
-                ->orderBy('name')
-                ->get());
-        }
-
         // Keep canonical titles for view logic; Blade translations handle display.
-        $title = 'Notifications';
+        $title = $type === 'community' ? 'Community' : 'Notifications';
         $columns = [
             __('From') => 'sender_name',
             __('Type') => 'type',
@@ -78,9 +57,7 @@ class NotificationController extends Controller
             __('Created') => 'created_at',
         ];
 
-        return view('layouts.home.show', compact(
-            'title', 'columns', 'records', 'ownedCommunities', 'joinedCommunities'
-        ));
+        return view('layouts.home.show', compact('title', 'columns', 'records'));
     }
 
     public function show(UserNotification $notification)
@@ -104,7 +81,7 @@ class NotificationController extends Controller
         }
 
         if ($notification->type === 'event_join_request' && $notification->related_id !== null) {
-            return redirect()->route('events.participants', $notification->related_id);
+            return $this->eventNotificationRedirect((int) $notification->related_id, true);
         }
 
         if ($notification->type === 'help_application' && $notification->related_id !== null) {
@@ -118,8 +95,18 @@ class NotificationController extends Controller
             return redirect()->route('helps.show', $notification->related_id);
         }
 
-        if ($notification->type === 'event_comment' && $notification->related_id !== null) {
-            return redirect()->route('events.show', $notification->related_id);
+        if (in_array($notification->type, ['event_joined', 'participant_cancelled'], true)
+            && $notification->related_id !== null) {
+            return $this->eventNotificationRedirect((int) $notification->related_id, true);
+        }
+
+        if (in_array($notification->type, [
+            'event_comment',
+            'event_updated',
+            'event_join_approved',
+            'event_join_rejected',
+        ], true) && $notification->related_id !== null) {
+            return $this->eventNotificationRedirect((int) $notification->related_id);
         }
 
         // 招待・参加申請の結果のお知らせは、そのコミュニティのページを開く
@@ -142,15 +129,24 @@ class NotificationController extends Controller
 
         // コミュニティのイベントの中止のお知らせは、そのイベントの詳細ページで中止の理由を見せる
         if ($notification->type === 'event_cancelled') {
-            $event = Event::find($notification->related_id);
-
-            // Keep this notification in the general notification flow if the event is no longer visible.
-            return $event && $event->isVisibleTo(Auth::user())
-                ? redirect()->route('events.show', $event->id)
-                : redirect()->route('notifications.index');
+            return $this->eventNotificationRedirect((int) $notification->related_id);
         }
 
         return view('notifications.show', compact('notification'));
+    }
+
+    private function eventNotificationRedirect(int $eventId, bool $participants = false): RedirectResponse
+    {
+        $event = Event::withTrashed()->find($eventId);
+        if ($event && $event->isVisibleTo(Auth::user())) {
+            return $participants
+                ? redirect()->route('events.participants', $event)
+                : redirect()->route('events.show', $event);
+        }
+
+        return $event?->community_id
+            ? redirect()->route('notifications.index', ['type' => 'community'])
+            : redirect()->route('notifications.index');
     }
 
     public function markRead(UserNotification $notification): RedirectResponse

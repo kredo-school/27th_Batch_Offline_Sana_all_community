@@ -65,10 +65,10 @@
 
             @forelse ($pending as $participant)
                 <div class="participant-row">
-                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a></a>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user?->username ?: __('Unknown'), 0, 1)) }}</div></a></a>
                     <div class="flex-grow-1">
-                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
-                        <div class="participant-help">Requested {{ $participant->requested_at?->diffForHumans() }}</div>
+                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->username ?: __('Unknown') }}</a>@else Unknown @endif</div>
+                        <div class="participant-help">Requested {{ \App\Support\LocalizedValue::relativeTime($participant->requested_at) }}</div>
                     </div>
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
                         @csrf
@@ -92,10 +92,10 @@
 
         @forelse ($approved as $participant)
             <div class="participant-row">
-                <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a>
+                <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user?->username ?: __('Unknown'), 0, 1)) }}</div></a>
                 <div>
-                    <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
-                    <div class="participant-help">{{ __('Joined')}} {{ $participant->responded_at?->diffForHumans() }}</div>
+                    <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->username ?: __('Unknown') }}</a>@else Unknown @endif</div>
+                    <div class="participant-help">{{ __('Joined')}} {{ \App\Support\LocalizedValue::relativeTime($participant->responded_at) }}</div>
                 </div>
             </div>
         @empty
@@ -109,9 +109,9 @@
 
             @foreach ($rejected as $participant)
                 <div class="participant-row">
-                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user->name ?? __('Unknown'), 0, 1)) }}</div></a>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user?->username ?: __('Unknown'), 0, 1)) }}</div></a>
                     <div class="flex-grow-1">
-                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->name }}</a>@else Unknown @endif</div>
+                        <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->username ?: __('Unknown') }}</a>@else Unknown @endif</div>
                     </div>
                     <form action="{{ route('events.participants.approve', [$event, $participant]) }}" method="POST">
                         @csrf

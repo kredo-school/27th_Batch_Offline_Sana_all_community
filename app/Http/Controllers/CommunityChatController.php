@@ -122,7 +122,7 @@ class CommunityChatController extends Controller
         foreach ($recipientIds as $recipientId) {
             UserNotification::create([
                 'user_id' => $recipientId,
-                'sender_name' => $request->user()->username ?: $request->user()->name,
+                'sender_name' => $request->user()->username ?: 'Unknown user',
                 'type' => 'community_message',
                 'title' => 'New community message',
                 'message' => "There is a new message in '{$community->name}'.",
@@ -133,7 +133,7 @@ class CommunityChatController extends Controller
 
         if ($request->expectsJson()) {
             $canManage = $community->canManage($request->user());
-            $message->load(['user:id,name,username', 'user.profile']);
+            $message->load(['user:id,username', 'user.profile']);
 
             return response()->json(['message' => $this->serialize($message, $request->user()->id, $canManage)], 201);
         }
@@ -224,7 +224,7 @@ class CommunityChatController extends Controller
             'community_notification_count' => UserNotification::query()
                 ->where('user_id', $userId)
                 ->whereNull('read_at')
-                ->communityFilter()
+                ->communityHeaderFilter()
                 ->count(),
         ]);
     }
@@ -271,7 +271,7 @@ class CommunityChatController extends Controller
                 'id' => (int) $message->user_id,
                 'name' => $message->senderName(),
                 'profile_url' => $user ? route('profile.show', $user->id) : null,
-                'initial' => strtoupper(substr($user?->name ?? '?', 0, 1)),
+                'initial' => strtoupper(substr($user?->username ?: '?', 0, 1)),
                 'avatar' => $avatar,
             ],
         ];
@@ -280,7 +280,7 @@ class CommunityChatController extends Controller
     private function withChatData(Community $community, int $userId, int $unreadCount): Community
     {
         $community->setRelation('latestMessages', $community->messages()
-            ->with(['user:id,name,username'])
+            ->with(['user:id,username'])
             ->latest('id')
             ->limit(5)
             ->get()

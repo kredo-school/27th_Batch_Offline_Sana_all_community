@@ -288,7 +288,7 @@
             <time datetime="{{ $event->start_at?->format('Y-m-d') ?? '' }}">
                 {{ __('Held on') }}
                 @if ($event->start_at)
-                    {{ $event->start_at->copy()->locale(app()->getLocale())->isoFormat('LL') ?: $event->start_at->format('F j, Y') }}
+                    {{ \App\Support\LocalizedValue::dateTime($event->start_at, 'date') }}
                 @else
                     {{ __('Date TBD') }}
                 @endif

@@ -153,6 +153,9 @@
     @include('admin.partials.sidebar')
 
     <section class="admin-main">
+        @if (session('status'))
+            <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
+        @endif
         @if (session('translation_failures'))
             <div class="alert alert-warning" role="alert">
                 <strong>{{ __('Some translations could not be completed.') }}</strong>
@@ -219,21 +222,26 @@
                             <td><code>{{ $key }}</code></td>
                             <td>{{ $value }}</td>
                             <td class="text-end">
-                                <a href="{{ route('admin.languages.edit', ['locale' => $locale, 'key' => $key]) }}"
-                                    class="btn btn-sm btn-primary" title="{{ __('Edit') }}">
-                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                </a>
-                                <form action="{{ route('admin.languages.destroy', ['locale' => $locale, 'key' => $key]) }}"
-                                    method="POST" class="d-inline" data-confirm="true"
-                                    data-confirm-action="{{ __('Delete') }}"
-                                    data-confirm-message="{{ __('Delete this word?') }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger"
-                                        title="{{ __('Delete') }}">
-                                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
-                                    </button>
-                                </form>
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <a href="{{ route('admin.languages.edit', ['locale' => $locale, 'key' => $key]) }}"
+                                        class="btn btn-outline-primary btn-sm"
+                                        title="{{ __('Edit') }}"
+                                        aria-label="{{ __('Edit :name', ['name' => $key]) }}">
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                    </a>
+                                    <form action="{{ route('admin.languages.destroy', ['locale' => $locale, 'key' => $key]) }}"
+                                        method="POST" class="mb-0" data-confirm="true"
+                                        data-confirm-action="{{ __('Delete') }}"
+                                        data-confirm-message="{{ __('Delete this word?') }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            title="{{ __('Delete') }}"
+                                            aria-label="{{ __('Delete :name', ['name' => $key]) }}">
+                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -176,7 +176,8 @@ class LanguageController extends Controller
         $words[$validated['key']] = $validated['value'];
         $languageFiles->write($locale, $words);
 
-        return redirect()->route('admin.languages.index', ['locale' => $locale]);
+        return redirect()->route('admin.languages.index', ['locale' => $locale])
+            ->with('status', __('Language word updated successfully.'));
     }
 
     public function destroy(string $locale, string $key, LanguageFileWriter $languageFiles)

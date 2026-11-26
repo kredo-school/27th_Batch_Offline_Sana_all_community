@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
-@section('title', __('Show') . ' ' . __($title))
+@php
+    $translatedTitle = match ($title) {
+        'Notifications' => __('Notifications'),
+        'Messages' => __('Messages'),
+        'Community' => __('Communities'),
+        default => $title,
+    };
+    $isNotificationList = in_array($title, ['Notifications', 'Community'], true);
+@endphp
+
+@section('title', __('Show') . ' ' . $translatedTitle)
 
 @section('content')
     <style>
@@ -104,27 +114,6 @@
             color: #ffffff !important;
         }
 
-        .community-summary-row {
-            border: 1px solid var(--show-line);
-            border-radius: 5px;
-            color: var(--show-ink);
-            background: #fff;
-        }
-
-        .community-summary-row:hover {
-            color: #126b6b;
-            background: #f0faf8;
-        }
-
-        .community-summary-row--unread {
-            border-color: #b7dfc8;
-            background: #e3f2ec;
-        }
-
-        .community-summary-row--unread:hover {
-            background: #cfe8dc;
-        }
-
         @media (max-width: 760px) {
             .show-section-layout {
                 grid-template-columns: minmax(0, 1fr);
@@ -154,59 +143,25 @@
             }
         }
     </style>
-@php
-    $isCommunityNotifications = $title === 'Notifications' && request('type') === 'community';
-    $translatedTitle = match ($title) {
-        'Notifications' => __('Notifications'),
-        'Messages' => __('Messages'),
-        default => $title,
-    };
-@endphp
 <div class="show-section-layout">
     @include('layouts.home.partials.top-sidebar')
 
     <section class="show-section-main">
         <header class="mb-4">
             <p class="text-uppercase small fw-bold text-success mb-1">{{ __('View All') }}</p>
-            <h1 class="h3 mb-0">{{ $isCommunityNotifications ? __('Community') : $translatedTitle }}</h1>
-            @if (!$isCommunityNotifications)
-                <p class="text-secondary small mt-2 mb-0">{{ __('records', ['count' => $records->total()]) }}</p>
-            @endif
+            <h1 class="h3 mb-0">{{ $translatedTitle }}</h1>
+            <p class="text-secondary small mt-2 mb-0">{{ __('records', ['count' => $records->total()]) }}</p>
         </header>
         @if (session('status'))
             <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
         @endif
         @if ($title === 'Notifications')
-            @if (request('type') === 'community')
-                <div class="community-summary-list">
-                    @foreach ([['title' => __('Owned Communities'), 'communities' => $ownedCommunities], ['title' => __('Joined Communities'), 'communities' => $joinedCommunities]] as $section)
-                        <section class="community-summary-section mb-4" aria-labelledby="{{ str($section['title'])->slug() }}-title">
-                            <h2 id="{{ str($section['title'])->slug() }}-title" class="h5 mb-3">{{ $section['title'] }}</h2>
-                            @forelse ($section['communities'] as $community)
-                                <a href="{{ route('community.show', $community->id) }}#chat"
-                                    class="community-summary-row d-flex align-items-center justify-content-between gap-3 p-3 mb-2 text-decoration-none {{ $community->unread_chat_messages > 0 ? 'community-summary-row--unread' : '' }}">
-                                    <span class="fw-semibold">{{ $community->name }}</span>
-                                    <span class="d-flex flex-wrap justify-content-end gap-2 small text-nowrap">
-                                        <span>{{ $community->total_chat_messages }} {{ __('chat messages') }}</span>
-                                        <span class="{{ $community->unread_chat_messages > 0 ? 'fw-bold text-danger' : 'text-muted' }}">
-                                            {{ $community->unread_chat_messages }} {{ __('unread chats') }}
-                                        </span>
-                                    </span>
-                                </a>
-                            @empty
-                                <p class="text-secondary small">{{ __('You have no :section.', ['section' => strtolower($section['title'])]) }}</p>
-                            @endforelse
-                        </section>
-                    @endforeach
-                </div>
-            @else
-                <ul class="mb-3">
-                    <a href="{{ route('notifications.index') }}" class="btn btn-white text-danger border-danger rounded me-0 ms-0 btn-noti btn-outline-danger btn-custom-outline">{{ __('All') }}</a>
-                    <a href="{{ route('notifications.index', ['type' => 'general']) }}" class="btn btn-white text-primary border-primary rounded me-0 ms-0 btn-noti btn-outline-primary btn-custom-outline">{{ __('General') }}</a>
-                    <a href="{{ route('notifications.index', ['type' => 'maintenance']) }}" class="btn btn-white text-warning border-warning rounded me-0 ms-0 btn-noti btn-outline-warning btn-custom-outline">{{ __('Maintenance') }}</a>
-                    <a href="{{ route('notifications.index', ['type' => 'community']) }}" class="btn btn-white text-success border-success rounded ms-0 btn-noti btn-outline-success btn-custom-outline fs-6">{{ __('Communities') }}</a>
-                </ul>
-            @endif
+            <ul class="mb-3">
+                <a href="{{ route('notifications.index') }}" class="btn btn-white text-danger border-danger rounded me-0 ms-0 btn-noti btn-outline-danger btn-custom-outline">{{ __('All') }}</a>
+                <a href="{{ route('notifications.index', ['type' => 'general']) }}" class="btn btn-white text-primary border-primary rounded me-0 ms-0 btn-noti btn-outline-primary btn-custom-outline">{{ __('General') }}</a>
+                <a href="{{ route('notifications.index', ['type' => 'maintenance']) }}" class="btn btn-white text-warning border-warning rounded me-0 ms-0 btn-noti btn-outline-warning btn-custom-outline">{{ __('Maintenance') }}</a>
+                <a href="{{ route('notifications.index', ['type' => 'community']) }}" class="btn btn-white text-success border-success rounded ms-0 btn-noti btn-outline-success btn-custom-outline fs-6">{{ __('Communities') }}</a>
+            </ul>
         @elseif($title === 'Messages')
             <button type="button" class="btn btn-outline-primary btn-white text-primary btn-custom-outline mb-3 ms-4 btn-noti" data-bs-toggle="modal"
                 data-bs-target="#create-message-modal">{{ __('Create Message') }}</button>
@@ -227,11 +182,11 @@
                                 $chatParticipant = $title === 'Messages'
                                     ? ((int) $record->sender_id === (int) Auth::id() ? $record->receiver : $record->sender)
                                     : null;
-                                $isUnread = $title === 'Notifications'
+                                $isUnread = $isNotificationList
                                     ? $record->read_at === null
                                     : $chatParticipant !== null
                                         && in_array((int) $chatParticipant->id, $unreadMessageSenderIds ?? [], true);
-                                $showUrl = $title !== 'Notifications'
+                                $showUrl = ! $isNotificationList
                                     ? null
                                     : ($record->type === 'community_message' && $record->related_id
                                         ? route('community.show', $record->related_id).'#chat'
@@ -241,7 +196,7 @@
                                 @if ($chatParticipant)
                                     data-message-chat-url="{{ route('messages.conversation', $chatParticipant->id) }}"
                                     data-message-chat-send-url="{{ route('messages.send', $chatParticipant->id) }}"
-                                    data-message-chat-name="{{ $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user') }}"
+                                    data-message-chat-name="{{ $chatParticipant->username ?: __('Unknown user') }}"
                                     role="button" tabindex="0"
                                 @elseif ($showUrl)
                                     style="cursor: pointer;"
@@ -249,7 +204,7 @@
                                 @endif>
                                 @if ($chatParticipant)
                                     @php
-                                        $participantName = $chatParticipant->username ?? $chatParticipant->name ?? __('Unknown user');
+                                        $participantName = $chatParticipant->username ?: __('Unknown user');
                                         $participantAvatar = $chatParticipant->profile?->avatar;
                                     @endphp
                                     <td>
@@ -273,7 +228,7 @@
                                     @php
                                         $value = data_get($record, $key);
                                     @endphp
-                                    @if ($title === 'Notifications' && $key === 'title')
+                                    @if ($isNotificationList && $key === 'title')
                                         <td>
                                             @php
                                                 $notificationUrl = $record->type === 'community_message' && $record->related_id
@@ -283,7 +238,7 @@
                                             <a href="{{ $notificationUrl }}" class="text-decoration-none text-dark">{{ $value ?: $record->type_label }}</a>
                                         </td>
                                     @else
-                                        <td>{{ $value instanceof \DateTimeInterface ? $value->format('M d, Y H:i') : (is_string($value) ? \Illuminate\Support\Str::limit($value, 120) : ($value ?? '-')) }}</td>
+                                        <td>{{ $value instanceof \DateTimeInterface ? \App\Support\LocalizedValue::dateTime($value) : (is_string($value) ? \Illuminate\Support\Str::limit($value, 120) : ($value ?? '-')) }}</td>
                                     @endif
                                 @endforeach
                                 @if ($chatParticipant)

@@ -38,7 +38,7 @@
                                 class="form-select @error('owner_id') is-invalid @enderror" required>
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}" @selected(old('owner_id', $community->owner_id) === $user->id)>
-                                        {{ $user->name }}{{ $user->username ? ' (@'.$user->username.')' : '' }}
+                                        {{ $user->username ?: __('Unknown user') }}
                                     </option>
                                 @endforeach
                             </select>
@@ -141,10 +141,7 @@
                 <h2 class="h5 mb-3">{{ __('Organizer') }}</h2>
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                     <div>
-                        <strong>{{ $community->owner?->name ?? '-' }}</strong>
-                        @if ($community->owner?->username)
-                            <span class="text-secondary small">{{ '@'.$community->owner->username }}</span>
-                        @endif
+                        <strong>{{ $community->owner?->username ?? '-' }}</strong>
                     </div>
                     @if ($organizerCandidates->isNotEmpty())
                         <form action="{{ route('admin.communities.owner.replace', $community) }}" method="POST"
@@ -158,7 +155,7 @@
                                 <option value="" hidden>{{ __('Choose new organizer') }}</option>
                                 @foreach ($organizerCandidates as $candidate)
                                     <option value="{{ $candidate->user->id }}">
-                                        {{ $candidate->user->name }}{{ $candidate->user->username ? ' (@'.$candidate->user->username.')' : '' }}
+                                        {{ $candidate->user->username ?: __('Unknown user') }}
                                     </option>
                                 @endforeach
                             </select>
@@ -189,7 +186,7 @@
                         <tbody>
                             @forelse ($memberships as $membership)
                                 <tr>
-                                    <td>{{ $membership->user?->username ?? $membership->user?->name ?? __('Deleted user') }}</td>
+                                    <td>{{ $membership->user?->username ?? __('Deleted user') }}</td>
                                     <td>
                                         @if ((int) $membership->user_id !== (int) $community->owner_id)
                                             {{ $membership->role_label }}
@@ -198,7 +195,7 @@
                                         @endif
                                     </td>
                                     <td>{{ $membership->status_label }}</td>
-                                    <td>{{ $membership->joined_at?->format('M d, Y') ?? '-' }}</td>
+                                    <td>{{ \App\Support\LocalizedValue::dateTime($membership->joined_at, 'date') }}</td>
                                     <td>
                                         @if ((int) $membership->user_id !== (int) $community->owner_id)
                                             <div class="d-flex justify-content-end align-items-center gap-2">

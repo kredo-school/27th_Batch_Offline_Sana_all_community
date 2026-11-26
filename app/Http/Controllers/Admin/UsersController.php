@@ -67,13 +67,13 @@ class UsersController extends Controller
     //this function will deactivate the user
     public function deactivate($id){
         $this->user->destroy($id);
-        return redirect()->back();
+        return redirect()->route('admin.users')->with('status', __('User deactivated.'));
     }
 
     //this function will activate user 
     public function activate($id){
         $this->user->onlyTrashed()->findOrFail($id)->restore();
-        return redirect()->back();
+        return redirect()->route('admin.users')->with('status', __('User activated.'));
     }
 
     public function changeRole(Request $request, $id)
@@ -86,7 +86,7 @@ class UsersController extends Controller
 
         $this->user->withTrashed()->findOrFail($id)->update($validated);
 
-        return redirect()->back();
+        return redirect()->route('admin.users')->with('status', __('User role updated.'));
     }
 
      // ユーザー詳細画面：その人のアクティブ状況や好みのカテゴリを表示

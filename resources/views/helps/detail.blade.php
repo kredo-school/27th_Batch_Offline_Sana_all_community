@@ -209,14 +209,10 @@
         $eventDateLabel = null;
 
         if ($help->event_start_at) {
-            $eventDateLabel = $help->event_start_at
-                ->locale(app()->getLocale())
-                ->isoFormat('lll');
+            $eventDateLabel = \App\Support\LocalizedValue::dateTime($help->event_start_at);
 
             if ($help->event_end_at) {
-                $eventDateLabel .= ' - ' . $help->event_end_at
-                    ->locale(app()->getLocale())
-                    ->isoFormat('lll');
+                $eventDateLabel .= ' - ' . \App\Support\LocalizedValue::dateTime($help->event_end_at);
             }
         }
 
@@ -398,7 +394,7 @@
                                 </div>
                                 <div class="help-info-value">
                                     @if ($help->application_deadline)
-                                        {{ $help->application_deadline->locale(app()->getLocale())->isoFormat('LL') }}
+                                        {{ \App\Support\LocalizedValue::dateTime($help->application_deadline, 'date') }}
                                         <span class="text-muted">
                                             ({{ __($deadlineBadge['label']) }})
                                         </span>
@@ -559,7 +555,7 @@
                         @if ($help->user)
                             <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
                                 <div class="help-avatar">
-                                    {{ strtoupper(substr($help->user->name, 0, 1)) }}
+                                    {{ strtoupper(substr($help->user->username ?: '?', 0, 1)) }}
                                 </div>
                             </a>
                         @else
@@ -570,7 +566,7 @@
                             <div class="fw-semibold">
                                 @if ($help->user)
                                     <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
-                                        {{ __($help->user->name) }}
+                                        {{ $help->user->username ?: __('Unknown user') }}
                                     </a>
                                 @else
                                     {{ __('Unknown') }}

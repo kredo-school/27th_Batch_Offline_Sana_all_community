@@ -55,6 +55,9 @@ Route::get('/translate', [\App\Http\Controllers\TranslationController::class, 'i
 Route::post('/translate', [\App\Http\Controllers\TranslationController::class, 'translate'])
     ->middleware('throttle:30,1')
     ->name('translate.store');
+Route::post('/policies/{suffix}/translate', [\App\Http\Controllers\PolicyTranslationController::class, 'translate'])
+    ->middleware('throttle:30,1')
+    ->name('policies.translate');
 
 // Login User Middleware (Daichi)
 
@@ -206,6 +209,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/reviews', [ContentController::class, 'reviews'])->name('reviews');
         Route::get('/contacts', [AdminContactController::class, 'index'])->name('contacts');
         Route::get('/contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
+        Route::post('/contacts/{contact}/translate', [AdminContactController::class, 'translate'])->name('contacts.translate');
         Route::post('/contacts/{contact}/reply', [AdminContactController::class, 'reply'])->name('contacts.reply');
 
         // Categories Management Admin (Masa)
