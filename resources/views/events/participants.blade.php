@@ -65,7 +65,7 @@
 
             @forelse ($pending as $participant)
                 <div class="participant-row">
-                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user?->username ?: __('Unknown'), 0, 1)) }}</div></a></a>
+                    <a href="{{ $participant->user ? route('profile.show', $participant->user->id) : '#' }}" class="text-decoration-none text-reset"><div class="participant-avatar">{{ strtoupper(substr($participant->user?->username ?: __('Unknown'), 0, 1)) }}</div></a>
                     <div class="flex-grow-1">
                         <div>@if ($participant->user)<a href="{{ route('profile.show', $participant->user->id) }}" class="text-decoration-none text-reset fw-semibold">{{ $participant->user->username ?: __('Unknown') }}</a>@else Unknown @endif</div>
                         <div class="participant-help">Requested {{ \App\Support\LocalizedValue::relativeTime($participant->requested_at) }}</div>
