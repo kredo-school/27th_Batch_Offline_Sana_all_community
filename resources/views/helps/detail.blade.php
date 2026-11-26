@@ -16,7 +16,7 @@
         .help-cover {
             position: relative;
             border-radius: 12px;
-            overflow: hidden;
+            overflow: hidden; isolation: isolate;
             background: #e9ecef;
             aspect-ratio: 16 / 9;
             margin-bottom: 16px;

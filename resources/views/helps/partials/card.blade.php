@@ -4,7 +4,7 @@
         background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 16px;
-        overflow: hidden;
+        overflow: hidden; isolation: isolate;
         display: flex;
         flex-direction: column;
         width: 100%;
@@ -23,7 +23,7 @@
         width: 100%;
         height: 160px;
         background-color: #f3f4f6;
-        overflow: hidden;
+        overflow: hidden; isolation: isolate;
     }
 
     .help-card-image {
@@ -169,7 +169,7 @@
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-        overflow: hidden;
+        overflow: hidden; isolation: isolate;
         overflow-wrap: anywhere;
         height: 1.8em;
         flex-shrink: 0;
@@ -183,7 +183,7 @@
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-        overflow: hidden;
+        overflow: hidden; isolation: isolate;
         overflow-wrap: anywhere;
         height: 3em;
         flex-shrink: 0;

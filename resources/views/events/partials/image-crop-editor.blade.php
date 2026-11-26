@@ -16,7 +16,7 @@
 
     {{-- プレビュー（詳細ページと同じ横長の形） --}}
     <div id="crop-frame"
-        style="position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: #eee; cursor: grab; touch-action: none;">
+        style="position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; isolation: isolate; border-radius: 12px; background: #eee; cursor: grab; touch-action: none;">
         <img id="crop-image" src="{{ $imageUrl }}" alt="" draggable="false"
             style="width: 100%; height: 100%; object-fit: contain; user-select: none; pointer-events: none;">
     </div>
