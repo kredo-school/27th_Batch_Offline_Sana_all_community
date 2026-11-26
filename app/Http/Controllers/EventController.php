@@ -350,7 +350,7 @@ class EventController extends Controller
             'location'          => 'required|string|max:60',
             'image'             => 'nullable|image|max:2048',
             'image_crop'        => 'nullable|array',
-            'image_crop.zoom'   => 'nullable|numeric|min:1|max:3',
+            'image_crop.zoom'   => 'nullable|numeric|min:1|max:10',
             'image_crop.x'      => 'nullable|numeric|min:0|max:100',
             'image_crop.y'      => 'nullable|numeric|min:0|max:100',
             'language'          => ['required', Rule::in(array_keys(config('app.supported_locales')))],

@@ -23,6 +23,7 @@
         width: 100%;
         height: 160px;
         background-color: #f3f4f6;
+        overflow: hidden;
     }
 
     .help-card-image {
