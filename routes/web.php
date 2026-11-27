@@ -274,7 +274,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ==========================================================================
-// =============================== Job->Help Routes ===============================
+// =============================== Help Routes ===============================
 // ==========================================================================
 Route::get('/helps', [HelpController::class, 'index'])->name('helps.index');
 
@@ -283,7 +283,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/helps', [HelpController::class, 'store'])->name('helps.store');
     Route::get('/helps/{help}/edit', [HelpController::class, 'edit'])->name('helps.edit');
     Route::put('/helps/{help}', [HelpController::class, 'update'])->name('helps.update');
-    Route::delete('/helps/{help}', [HelpController::class, 'destroy'])->name('helps.destroy');
+    Route::patch('helps/{help}/cancel', [HelpController::class, 'cancel'])->name('helps.cancel');
 
     // Application
     Route::post('/helps/{help}/applications', [HelpApplicationController::class, 'store'])->name('helps.applications.store');

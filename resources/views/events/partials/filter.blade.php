@@ -117,7 +117,7 @@
     <form action="{{ route('events.index') }}" method="GET" class="event-search-form">
         <div class="search-input-wrapper">
             <span class="search-icon">⌕</span>
-            <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="{{ __('Search events')}}"
+            <input type="search" name="keyword" value="{{ request('keyword') }}" placeholder="{{ __('Search events') }}"
                 aria-label="search-event" @include('partials.search-suggest-attributes', ['type' => 'events'])>
         </div>
 
@@ -143,7 +143,9 @@
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="sortDropdownMenu">
                 <li>
                     <a class="dropdown-item {{ $sort === 'date_asc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), [
+                        href="{{ route(
+                            'events.index',
+                            array_merge(request()->all(), [
                                 'sort' => 'date_asc',
                             ]),
                         ) }}">
@@ -152,7 +154,9 @@
                 </li>
                 <li>
                     <a class="dropdown-item {{ $sort === 'date_desc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), [
+                        href="{{ route(
+                            'events.index',
+                            array_merge(request()->all(), [
                                 'sort' => 'date_desc',
                             ]),
                         ) }}">
@@ -161,7 +165,9 @@
                 </li>
                 <li>
                     <a class="dropdown-item {{ $sort === 'created_desc' ? 'active' : '' }}"
-                        href="{{ route('events.index', array_merge(request()->all(), [
+                        href="{{ route(
+                            'events.index',
+                            array_merge(request()->all(), [
                                 'sort' => 'created_desc',
                             ]),
                         ) }}">
@@ -171,10 +177,11 @@
             </ul>
         </div>
 
-        <a href="{{ route('events.create') }}" class="btn btn-primary create-event-button">
-            + {{ __('Create event') }}
-
-        </a>
+        @auth
+            <a href="{{ route('events.create') }}" class="btn btn-primary create-event-button">
+                + {{ __('Create event') }}
+            </a>
+        @endauth
     </div>
 
     {{-- Chose Category --}}
@@ -192,9 +199,12 @@
         {{-- Categories --}}
         @foreach ($categories as $value => $label)
             @php
-                $isHelpCategory = strcasecmp((string) $label, (string) \App\Models\Category::localizeName('Help')) === 0;
+                $isHelpCategory =
+                    strcasecmp((string) $label, (string) \App\Models\Category::localizeName('Help')) === 0;
             @endphp
-            <a href="{{ $isHelpCategory ? route('helps.index') : route('events.index', [
+            <a href="{{ $isHelpCategory
+                ? route('helps.index')
+                : route('events.index', [
                     'category' => $value,
                     'keyword' => request('keyword'),
                     'sort' => request('sort'),

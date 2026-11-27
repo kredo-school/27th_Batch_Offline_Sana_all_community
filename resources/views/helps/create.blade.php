@@ -122,8 +122,8 @@
                     </div>
 
                     <input type="text" name="title" id="title"
-                        class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" maxlength="60"
-                        placeholder="{{ __('e.g. Laravel Backend Developer') }}" required>
+                        class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}"
+                        maxlength="60" placeholder="{{ __('e.g. Laravel Backend Developer') }}" required>
 
                     <small class="help-form-help">
                         {{ __('Maximum 60 characters.') }}
@@ -144,7 +144,7 @@
                         </label>
 
                         <span class="help-form-required">
-                            {{ __('REQUIRED')}}
+                            {{ __('REQUIRED') }}
                         </span>
                     </div>
 
@@ -331,7 +331,12 @@
 
                         <input type="number" name="reward_amount" id="reward_amount"
                             class="form-control @error('reward_amount') is-invalid @enderror"
-                            value="{{ old('reward_amount') }}" min="0" step="0.01" placeholder="{{ __('e.g. 3000') }}">
+                            value="{{ old('reward_amount') }}" min="0" step="0.01"
+                            placeholder="{{ __('e.g. 3000') }}">
+
+                        <small class="help-form-help">
+                            {{ __('Set the unit to Philippine pesos') }}
+                        </small>
 
                         @error('reward_amount')
                             <div class="text-danger small">
@@ -599,7 +604,7 @@
                 try {
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=en&lat=${e.latlng.lat}&lon=${e.latlng.lng}`
-                        );
+                    );
                     const data = await res.json();
                     input.value = shortAddress(data);
                 } catch (err) {
@@ -614,7 +619,7 @@
                 try {
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`
-                        );
+                    );
                     const results = await res.json();
                     if (results.length) {
                         const lat = parseFloat(results[0].lat);

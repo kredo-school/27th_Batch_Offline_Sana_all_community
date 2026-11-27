@@ -298,8 +298,17 @@
     </div>
 </article>
 
-@if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
-    @include('events.partials.delete-event-modal', [
-        'event' => $event,
-    ])
-@endif
+@foreach ($events as $event)
+    @if (auth()->check() && (int) $event->owner_id === (int) auth()->id())
+        @php
+            $modalId = 'cancelEventModal-' . $event->id;
+            $reasonId = 'cancel_reason-' . $event->id;
+        @endphp
+
+        @include('events.partials.cancel-event-modal', [
+            'event' => $event,
+            'modalId' => $modalId,
+            'reasonId' => $reasonId,
+        ])
+    @endif
+@endforeach

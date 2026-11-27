@@ -32,6 +32,7 @@ class Help extends Model
         'application_deadline',
         'status',
         'published_at',
+        'delete_reason',
     ];
 
     protected $casts = [

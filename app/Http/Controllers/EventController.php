@@ -26,7 +26,14 @@ class EventController extends Controller
     public function index(Request $request)
     {
         // コミュニティ内のイベントはイベントページに出さない
-        $query = Event::query()->whereNull('community_id')->where('end_at', '>=', now());
+        $query = Event::query()
+            ->whereNull('community_id')
+            ->where(function ($statusQuery) {
+                $statusQuery
+                    ->whereNull('status')
+                    ->orWhere('status', '!=', 'cancelled');
+            })
+            ->where('end_at', '>=', now());
 
         // get categories
         $categories = Category::query()
@@ -47,7 +54,7 @@ class EventController extends Controller
         $keyword = trim($validated['keyword'] ?? '');
 
         // サイト共通の検索ルール（タイトル・説明・場所・主催者・カテゴリー。言葉を分けると全部を含むもの）
-        $query->when($keyword !== '', fn ($query) => $query->search($keyword));
+        $query->when($keyword !== '', fn($query) => $query->search($keyword));
 
         // search categories
         $query->when(

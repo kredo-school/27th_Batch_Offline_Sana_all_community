@@ -169,11 +169,18 @@
         $percent = $event->capacity ? min(100, round(($joined / $event->capacity) * 100)) : 0;
         $daysLeft = (int) floor(now()->diffInDays($event->join_till, false));
         $isOwner = auth()->id() === $event->owner_id;
-        $formatDateTime = fn ($date, bool $includeDate = true): string => \App\Support\LocalizedValue::dateTime(
-            $date,
-            $includeDate ? 'datetime' : 'time',
-        );
-        $formatRelativeTime = fn ($date): string => \App\Support\LocalizedValue::relativeTime($date);
+        $formatDateTime = function ($date, bool $includeDate = true): string {
+            if (app()->getLocale() === 'ceb') {
+                return $date->format($includeDate ? 'Y-m-d H:i' : 'H:i');
+            }
+
+            return $date->locale(app()->getLocale())->isoFormat($includeDate ? 'MMM D (ddd) HH:mm' : 'HH:mm');
+        };
+        $formatRelativeTime = function ($date): string {
+            return app()->getLocale() === 'ceb'
+                ? $date->format('Y-m-d H:i')
+                : $date->locale(app()->getLocale())->diffForHumans();
+        };
         $visibilityLabels = [
             'public' => __('All users'),
             'members' => __('Logged-in users'),
@@ -203,6 +210,8 @@
             $myParticipation &&
             $myParticipation->status === 'approved' &&
             !$myHostReview;
+        $cancelModalId = 'cancelEventModal-' . $event->id;
+        $cancelReasonId = 'cancel_reason-' . $event->id;
     @endphp
 
     <div class="container py-4" style="max-width: 1000px;">
@@ -213,7 +222,8 @@
                 class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to') }}
                 {{ $event->community->name }}</a>
         @else
-            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr; {{ __('Back to events') }}</a>
+            <a href="{{ route('events.index') }}" class="text-decoration-none text-dark d-inline-block mb-3">&larr;
+                {{ __('Back to events') }}</a>
         @endif
         @if (session('error'))
             <div class="alert alert-danger">{{ __(session('error')) }}</div>
@@ -348,7 +358,7 @@
                             <form action="{{ route('events.reviews.store', $event) }}" method="POST"
                                 class="border rounded p-3 mb-3">
                                 @csrf
-                                <div class="event-info-label mb-1">{{ __('How was this event?')}}</div>
+                                <div class="event-info-label mb-1">{{ __('How was this event?') }}</div>
                                 <div class="star-rating mb-2">
                                     @for ($star = 5; $star >= 1; $star--)
                                         <input type="radio" name="rating" id="star{{ $star }}"
@@ -366,10 +376,10 @@
                                     <div class="text-danger small">{{ $message }}</div>
                                 @enderror
 
-                                <button type="submit" class="btn btn-primary">{{ __('Post review')}}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Post review') }}</button>
                             </form>
                         @elseif ($myReview)
-                            <p class="event-help">{{ __('You have already reviewed this event.')}}</p>
+                            <p class="event-help">{{ __('You have already reviewed this event.') }}</p>
                         @endif
 
                         {{-- レビュー一覧 --}}
@@ -388,7 +398,8 @@
                                         <span class="event-help ms-1">{{ $formatRelativeTime($review->created_at) }}</span>
                                     </div>
                                     @if ($review->comment)
-                                        <div class="content-translation-source" style="white-space: pre-line;">{{ $review->comment }}</div>
+                                        <div class="content-translation-source" style="white-space: pre-line;">
+                                            {{ $review->comment }}</div>
                                         @auth
                                             <button type="button" class="btn btn-link btn-sm p-0 content-translate-button"
                                                 data-translation-url="{{ route('reviews.translate', $review) }}"
@@ -403,7 +414,7 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="event-help mb-0">{{ __('No reviews yet.')}}</p>
+                            <p class="event-help mb-0">{{ __('No reviews yet.') }}</p>
                         @endforelse
                     </div>
                 @endif
@@ -417,18 +428,20 @@
                             <form action="{{ route('events.comments.store', $event) }}" method="POST"
                                 class="d-flex gap-2 mb-1">
                                 @csrf
-                                <input type="text" name="content" class="form-control @error('content') is-invalid @enderror"
+                                <input type="text" name="content"
+                                    class="form-control @error('content') is-invalid @enderror"
                                     placeholder="{{ __('Write a comment') }}" maxlength="500" required>
-                                <button type="submit" class="btn btn-primary text-nowrap flex-shrink-0">{{ __('Post comment') }}</button>
+                                <button type="submit"
+                                    class="btn btn-primary text-nowrap flex-shrink-0">{{ __('Post comment') }}</button>
                             </form>
                             @error('content')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         @else
-                            <p class="event-help">{{ __('Please log in to write a comment.')}}</p>
+                            <p class="event-help">{{ __('Please log in to write a comment.') }}</p>
                         @endauth
                     @else
-                        <p class="event-help">{{ __('Comments are closed because this event has ended.')}}</p>
+                        <p class="event-help">{{ __('Comments are closed because this event has ended.') }}</p>
                     @endif
 
                     <div class="mt-3">
@@ -449,11 +462,13 @@
                                     <div>
                                         <strong>{{ $comment->user?->username ?: __('Unknown') }}</strong>
                                         @if ($comment->user_id === $event->owner_id)
-                                            <span class="small text-primary ms-1">{{ __('Host')}}</span>
+                                            <span class="small text-primary ms-1">{{ __('Host') }}</span>
                                         @endif
-                                        <span class="event-help ms-1">{{ $formatRelativeTime($comment->created_at) }}</span>
+                                        <span
+                                            class="event-help ms-1">{{ $formatRelativeTime($comment->created_at) }}</span>
                                     </div>
-                                    <div class="content-translation-source" style="white-space: pre-line;">{{ $comment->content }}</div>
+                                    <div class="content-translation-source" style="white-space: pre-line;">
+                                        {{ $comment->content }}</div>
                                     @auth
                                         <button type="button" class="btn btn-link btn-sm p-0 content-translate-button"
                                             data-translation-url="{{ route('comments.translate', $comment) }}"
@@ -468,7 +483,7 @@
                                 @if ($canDeleteComment)
                                     <button type="button" class="btn btn-link text-secondary p-0 align-self-start"
                                         data-bs-toggle="modal" data-bs-target="#deleteComment{{ $comment->id }}"
-                                        aria-label="{{ __('Delete')}}">
+                                        aria-label="{{ __('Delete') }}">
                                         <i class="fa-regular fa-trash-can"></i>
                                     </button>
                                 @endif
@@ -479,12 +494,13 @@
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content border-danger">
                                             <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">{{ __('Delete comment')}}</h5>
+                                                <h5 class="modal-title">{{ __('Delete comment') }}</h5>
                                                 <button type="button" class="btn-close btn-close-white"
                                                     data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p class="text-danger mb-3">{{ __('Are you sure you want to delete this comment?')}}
+                                                <p class="text-danger mb-3">
+                                                    {{ __('Are you sure you want to delete this comment?') }}
                                                 </p>
                                                 <div class="mb-2">
                                                     <div class="event-info-label">{{ __('User name')}}</div>
@@ -492,19 +508,20 @@
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div class="event-info-label">{{ __('Detail')}}</div>
+                                                    <div class="event-info-label">{{ __('Detail') }}</div>
                                                     <div class="event-info-value" style="white-space: pre-line;">
                                                         {{ $comment->content }}</div>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-outline-secondary"
-                                                    data-bs-dismiss="modal">{{ __('Cancel')}}</button>
+                                                    data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                                                 <form action="{{ route('events.comments.destroy', [$event, $comment]) }}"
                                                     method="POST">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger">{{ __('Delete')}}</button>
+                                                    <button type="submit"
+                                                        class="btn btn-danger">{{ __('Delete') }}</button>
                                                 </form>
                                             </div>
                                         </div>
@@ -530,15 +547,23 @@
                         <div class="progress-bar" style="width: {{ $percent }}%;"></div>
                     </div>
                     @if ($isCancelled)
-                        <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('This event has been cancelled.') }}</div>
+                        <div class="alert alert-secondary text-center small py-2 mb-0">
+                            {{ __('This event has been cancelled.') }}</div>
                     @elseif ($isOwner)
-                        <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary w-100 mb-2">{{ __('Edit event') }}</a>
+                        <a href="{{ route('events.edit', $event) }}"
+                            class="btn btn-outline-primary w-100 mb-2">{{ __('Edit event') }}</a>
                         <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal"
-                            data-bs-target="#cancelEventModal">
+                            data-bs-target="#{{ $cancelModalId }}">
                             {{ __('Cancel the event') }}
                         </button>
+                        @include('events.partials.cancel-event-modal', [
+                            'event' => $event,
+                            'modalId' => $cancelModalId,
+                            'reasonId' => $cancelReasonId,
+                        ])
                     @elseif ($hasEnded)
-                        <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('This event has ended.') }}</div>
+                        <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('This event has ended.') }}
+                        </div>
                     @else
                         @guest
                             <a href="{{ route('login') }}" class="btn btn-primary w-100">{{ __('Log in to join') }}</a>
@@ -552,11 +577,13 @@
                                     <div class="event-help text-center mt-2">{{ __('Host approval required') }}</div>
                                 @endif
                             @elseif ($myParticipation->status === 'pending')
-                                <div class="alert alert-warning text-center small py-2 mb-2">{{ __('Waiting for host approval') }}</div>
+                                <div class="alert alert-warning text-center small py-2 mb-2">
+                                    {{ __('Waiting for host approval') }}</div>
                                 <form action="{{ route('events.join.cancel', $event) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger w-100">{{ __('Cancel request') }}</button>
+                                    <button type="submit"
+                                        class="btn btn-outline-danger w-100">{{ __('Cancel request') }}</button>
                                 </form>
                             @elseif ($myParticipation->status === 'approved')
                                 <div class="alert alert-success text-center small py-2 mb-2">{{ __("You're joined!") }}</div>
@@ -566,7 +593,8 @@
                                     <button type="submit" class="btn btn-outline-danger w-100">{{ __('Cancel') }}</button>
                                 </form>
                             @else
-                                <div class="alert alert-secondary text-center small py-2 mb-0">{{ __('Your request was not accepted.') }}
+                                <div class="alert alert-secondary text-center small py-2 mb-0">
+                                    {{ __('Your request was not accepted.') }}
                                 </div>
                             @endif
                         @endguest
@@ -607,7 +635,8 @@
                             <div class="event-help">
                                 {{ __('host') }}
                                 @if ($hostReviewCount)
-                                    <span class="review-stars ms-1">★</span> {{ $hostRating }} ({{ $hostReviewCount }})
+                                    <span class="review-stars ms-1">★</span> {{ $hostRating }}
+                                    ({{ $hostReviewCount }})
                                 @endif
                             </div>
                         </div>
@@ -626,7 +655,8 @@
                         <p class="event-help mb-0">{{ __('Log in to review the host.') }}</p>
                     @endif
                 @else
-                    <a href="{{ route('events.participants', $event) }}" class="btn btn-primary btn-sm">{{ __('See all participants') }}</a>
+                    <a href="{{ route('events.participants', $event) }}"
+                        class="btn btn-primary btn-sm">{{ __('See all participants') }}</a>
                 @endif
             </div>
         </div>
@@ -639,7 +669,8 @@
                         @csrf
                         <div class="modal-header">
                             <h5 class="modal-title">{{ __('Do you want to join this event?') }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="{{ __('Close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-2">
@@ -655,11 +686,13 @@
                                 <div class="event-info-value">{{ $priceText }}</div>
                             </div>
                             @if ($event->approval_required)
-                                <p class="event-help mb-0 mt-3">{{ __('The host needs to approve your request before you can join.') }}</p>
+                                <p class="event-help mb-0 mt-3">
+                                    {{ __('The host needs to approve your request before you can join.') }}</p>
                             @endif
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                             <button type="submit" class="btn btn-primary">{{ __('Send request') }}</button>
                         </div>
                     </form>
@@ -667,50 +700,6 @@
             </div>
         </div>
     @endauth
-    @if ($isOwner && $event->community_id)
-        @include('events.partials.delete-event-modal')
-    @endif
-    @if ($isOwner && !$isCancelled)
-        <div class="modal fade" id="cancelEventModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-danger">
-                    <form action="{{ route('events.cancel', $event) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title">{{ __('Cancel the event') }}</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                aria-label="{{ __('Close') }}"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="text-danger mb-3">{{ __('Are you sure you want to cancel this event? This cannot be undone.') }}
-                            </p>
-                            <div class="mb-2">
-                                <div class="event-info-label">{{ __('Event name') }}</div>
-                                <div class="event-info-value">{{ $event->title }}</div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="event-info-label">{{ __('Date') }}</div>
-                                <div class="event-info-value">{{ $dateText }}</div>
-                            </div>
-                            <label for="cancel_reason" class="event-info-label">{{ __('Reason') }}</label>
-                            <textarea name="cancel_reason" id="cancel_reason" rows="3" maxlength="500" required
-                                class="form-control @error('cancel_reason') is-invalid @enderror"
-                                placeholder="{{ __('Please tell the participants why the event is cancelled.') }}">{{ old('cancel_reason') }}</textarea>
-                            @error('cancel_reason')
-                                <div class="text-danger small">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary"
-                                data-bs-dismiss="modal">{{ __('Back') }}</button>
-                            <button type="submit" class="btn btn-danger">{{ __('Cancel the event') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
     @if ($canReviewHost)
         <div class="modal fade" id="hostReviewModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -761,10 +750,12 @@
     @endif
     @auth
         <div id="user-action-menu" class="user-action-menu " role="menu" aria-hidden="true">
-            <a id="user-action-profile" class="btn btn-link d-block text-start px-0 text-decoration-none text-dark" href="#">
+            <a id="user-action-profile" class="btn btn-link d-block text-start px-0 text-decoration-none text-dark"
+                href="#">
                 {{ __('View profile') }}
             </a>
-            <button id="user-action-message" type="button" class="btn btn-link d-block text-start px-0 js-open-message-chat text-decoration-none text-dark"
+            <button id="user-action-message" type="button"
+                class="btn btn-link d-block text-start px-0 js-open-message-chat text-decoration-none text-dark"
                 data-message-chat-url="" data-message-chat-send-url="" data-message-chat-name="">
                 {{ __('Send message') }}
             </button>
@@ -777,13 +768,13 @@
             <form id="user-action-report-form" method="POST">
                 @csrf
                 <label for="user-action-report-detail" class="small text-muted">{{ __('Report user') }}</label>
-                <textarea id="user-action-report-detail" name="detail" class="form-control form-control-sm mb-2"
-                    rows="2" maxlength="2000" required placeholder="{{ __('Reason for report') }}"></textarea>
+                <textarea id="user-action-report-detail" name="detail" class="form-control form-control-sm mb-2" rows="2"
+                    maxlength="2000" required placeholder="{{ __('Reason for report') }}"></textarea>
                 <button type="submit" class="btn btn-sm btn-outline-danger w-100">{{ __('Report to admin') }}</button>
             </form>
         </div>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 const menu = document.getElementById('user-action-menu');
                 const profileLink = document.getElementById('user-action-profile');
                 const messageButton = document.getElementById('user-action-message');
@@ -796,8 +787,8 @@
                 const blockTemplate = @json(route('messages.block', '__USER__'));
                 const reportTemplate = @json(route('users.report', '__USER__'));
 
-                document.querySelectorAll('.user-action-avatar').forEach(function (avatar) {
-                    avatar.addEventListener('contextmenu', function (event) {
+                document.querySelectorAll('.user-action-avatar').forEach(function(avatar) {
+                    avatar.addEventListener('contextmenu', function(event) {
                         event.preventDefault();
                         const userId = avatar.dataset.userId;
                         if (String(userId) === String(@json(auth()->id()))) {
@@ -811,13 +802,15 @@
                         blockForm.action = userUrl(blockTemplate, userId);
                         reportForm.action = userUrl(reportTemplate, userId);
                         menu.style.display = 'block';
-                        menu.style.left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
-                        menu.style.top = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8) + 'px';
+                        menu.style.left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth -
+                            8) + 'px';
+                        menu.style.top = Math.min(event.clientY, window.innerHeight - menu
+                            .offsetHeight - 8) + 'px';
                         menu.setAttribute('aria-hidden', 'false');
                     });
                 });
 
-                document.addEventListener('click', function (event) {
+                document.addEventListener('click', function(event) {
                     if (!menu.contains(event.target)) {
                         menu.style.display = 'none';
                         menu.setAttribute('aria-hidden', 'true');

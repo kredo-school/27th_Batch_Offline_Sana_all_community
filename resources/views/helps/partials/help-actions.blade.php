@@ -1,5 +1,6 @@
 <div class="help-actions dropdown">
-    <button type="button" class="help-menu-button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Help actions') }}">
+    <button type="button" class="help-menu-button" data-bs-toggle="dropdown" aria-expanded="false"
+        aria-label="{{ __('Help actions') }}">
         ⋮
     </button>
 
@@ -11,10 +12,16 @@
         </li>
 
         <li>
-            <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
-                data-bs-target="#deleteHelpModal{{ $help->id }}">
-                {{ __('Delete') }}
-            </button>
+            @php
+                $isOwner = (int) auth()->id() === (int) $help->user_id;
+            @endphp
+
+            @if ($isOwner && $help->status !== 'canceld')
+                <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
+                    data-bs-target="#cancelHelpModal-{{ $help->id }}">
+                    {{ __('Cancel') }}
+                </button>
+            @endif
         </li>
     </ul>
 </div>

@@ -178,9 +178,7 @@
         $myApplication = null;
         $applicationBadge = null;
 
-        $statusLabel = $help->status
-            ? __(\Illuminate\Support\Str::headline($help->status))
-            : __('Unknown');
+        $statusLabel = $help->status ? __(\Illuminate\Support\Str::headline($help->status)) : __('Unknown');
 
         if (auth()->check() && $help->relationLoaded('applications')) {
             $myApplication = $help->applications->first();
@@ -205,7 +203,6 @@
         $canApply =
             auth()->check() && !$isOwner && !$myApplication && $help->status === 'published' && !$isDeadlinePassed;
 
-
         $eventDateLabel = null;
 
         if ($help->event_start_at) {
@@ -213,8 +210,7 @@
 
             if ($help->event_end_at) {
                 $eventDateLabel .= ' - ' . \App\Support\LocalizedValue::dateTime($help->event_end_at);
-            }
-        }
+        }}
 
         $rewardTypeLabel = match ($help->reward_type) {
             'hourly' => __('Hourly'),
@@ -275,21 +271,6 @@
                 {{-- Help basics --}}
                 <div class="help-card">
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        {{-- @if ($help->category)
-                            <span class="help-badge">
-                                {{ __($help->category->name) }}
-                            </span>
-                        @endif
-
-                        @if ($help->requester_type)
-                            <span class="help-badge-secondary">
-                                {{ __($help->requester_type) }}
-                            </span>
-                        @endif
-
-                        @if ($help->status)
-                            <span class="help-badge-secondary">
-                                {{ __($statusLabel) }} --}}
                         @if ($category && filled($category->name))
                             <span class="help-detail-badge help-detail-category">
                                 {{ __($category->name) }}
@@ -361,7 +342,7 @@
                                     {{ __('Reward') }}
                                 </div>
                                 <div class="help-info-value">
-                                    {{ __($rewardLabel) ?: __('Not specified') }}
+                                    {{ __($rewardLabel) ?: __('Not specified') }} PHP
                                 </div>
                             </div>
                         </div>
@@ -451,8 +432,25 @@
                         </a>
 
                         <a href="{{ route('helps.edit', $help) }}" class="btn btn-outline-primary w-100 mb-2">
-                            {{ __('Edit Help') }}
+                            {{ __('Edit help') }}
                         </a>
+
+                        @php
+                            $isOwner = (int) auth()->id() === (int) $help->user_id;
+                        @endphp
+
+                        @if ($isOwner && $help->status !== 'canceled')
+                            <p>
+                                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
+                                    data-bs-target="#cancelHelpModal-{{ $help->id }}">
+                                    {{ __('Cancel the help') }}
+                                </button>
+                            </p>
+
+                            @include('helps.partials.cancel-help-modal', [
+                                'help' => $help,
+                            ])
+                        @endif
 
                         @if ($errors->has('help'))
                             <div class="alert alert-danger small">
@@ -460,16 +458,6 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('helps.destroy', $help) }}" method="POST"
-                            onsubmit="return confirm('{{ __('Are you sure you want to delete this help?') }}')">
-                            @csrf
-                            @method('DELETE')
-
-                            <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
-                                data-bs-target="#deletehelpModal{{ $help->id }}">
-                                {{ __('Delete Help') }}
-                            </button>
-                        </form>
                     @elseif ($isDeadlinePassed)
                         <div class="alert alert-secondary text-center small mb-0">
                             {{ __('Applications are closed.') }}
@@ -553,7 +541,8 @@
 
                     <div class="d-flex align-items-center gap-2">
                         @if ($help->user)
-                            <a href="{{ route('profile.show', $help->user->id) }}" class="text-decoration-none text-reset">
+                            <a href="{{ route('profile.show', $help->user->id) }}"
+                                class="text-decoration-none text-reset">
                                 <div class="help-avatar">
                                     {{ strtoupper(substr($help->user->username ?: '?', 0, 1)) }}
                                 </div>
@@ -582,7 +571,7 @@
             </div>
         </div>
     </div>
-    @include('helps.partials.delete-help-modal', [
+    @include('helps.partials.cancel-help-modal', [
         'help' => $help,
     ])
 @endsection

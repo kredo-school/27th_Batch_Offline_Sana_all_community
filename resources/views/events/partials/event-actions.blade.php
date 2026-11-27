@@ -1,6 +1,10 @@
+@php
+    $modalId = $modalId ?? 'cancelEventModal-' . $event->id;
+@endphp
+
 <div class="event-actions dropdown">
     <button type="button" class="event-menu-button" id="eventMenu{{ $event->id }}" data-bs-toggle="dropdown"
-        aria-expanded="false" aria-label="event-menu">
+        aria-expanded="false" aria-label="{{ __('Event menu') }}">
         <span aria-hidden="true">⋮</span>
     </button>
 
@@ -17,8 +21,8 @@
 
         <li>
             <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal"
-                data-bs-target="#deleteEventModal{{ $event->id }}">
-                {{ __('Delete') }}
+                data-bs-target="#{{ $modalId }}">
+                {{ __('Cancel') }}
             </button>
         </li>
     </ul>

@@ -6,9 +6,11 @@ use App\Http\Requests\StoreHelpRequest;
 use App\Http\Requests\UpdateHelpRequest;
 use App\Models\Help;
 use App\Models\HelpCategory;
+use App\Models\UserNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -431,27 +433,71 @@ class HelpController extends Controller
             ->with('success', 'Help updated successfully.');
     }
 
-    public function destroy(Help $help)
-    {
-        abort_unless(
-            Auth::id() === $help->user_id,
-            403
-        );
+    public function cancel(Request $request, Help $help)
+{
+    if ((int) $help->user_id !== (int) $request->user()->id) {
+        abort(403);
+    }
 
-        if ($help->applications()->exists()) {
-            return back()->withErrors([
-                'Help' => 'This Help cannot be deleted because it has applications.',
+    if ($help->status === 'canceled') {
+        return back()->with(
+            'error',
+            __('This Help has already been canceled.')
+        );
+    }
+
+    $validated = $request->validate([
+        'cancel_reason' => [
+            'required',
+            'string',
+            'max:500',
+        ],
+    ]);
+
+    DB::transaction(function () use (
+        $request,
+        $help,
+        $validated
+    ): void {
+        $owner = $request->user();
+
+        $applicantIds = $help->applications()
+            ->whereIn('status', [
+                'approved',
+                'pending',
+            ])
+            ->where('user_id', '!=', $help->user_id)
+            ->pluck('user_id')
+            ->unique();
+
+        $help->status = 'canceled';
+        $help->delete_reason = $validated['cancel_reason'];
+        $help->save();
+
+        foreach ($applicantIds as $userId) {
+            UserNotification::create([
+                'user_id' => $userId,
+                'sender_name' => $owner->username ?: $owner->name,
+                'type' => 'help_canceled',
+                'title' => __('Help canceled'),
+                'message' => __(
+                    "The Help ':title' has been canceled.\nReason: :reason",
+                    [
+                        'title' => $help->title,
+                        'reason' => $help->delete_reason,
+                    ]
+                ),
+                'related_type' => Help::class,
+                'related_id' => $help->id,
             ]);
         }
+    });
 
-        if ($help->image_path) {
-            Storage::disk('public')->delete($help->image_path);
-        }
-
-        $help->delete();
-
-        return redirect()
-            ->route('helps.index')
-            ->with('success', 'Help deleted successfully.');
-    }
+    return redirect()
+        ->route('helps.index')
+        ->with(
+            'success',
+            __('The Help has been canceled.')
+        );
+}
 }

@@ -391,7 +391,7 @@
         @if ($rewardLabel)
             <div class="mb-1">
                 <span aria-hidden="true">🎁</span>
-                {{ $rewardLabel }}
+                {{ $rewardLabel }} PHP
             </div>
         @endif
 
@@ -426,7 +426,7 @@
 </article>
 
 @if (auth()->check() && (int) $help->user_id === (int) auth()->id())
-@include('helps.partials.delete-help-modal', [
+@include('helps.partials.cancel-help-modal', [
     'help' => $help,
 ])
 @endif

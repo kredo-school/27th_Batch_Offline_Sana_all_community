@@ -357,6 +357,10 @@
                             class="form-control @error('reward_amount') is-invalid @enderror"
                             value="{{ old('reward_amount', $help->reward_amount) }}" min="0" step="0.01"
                             placeholder="{{ __('e.g. 3000') }}">
+                        
+                        <small class="help-form-help">
+                            {{ __('Set the unit to Philippine pesos') }}
+                        </small>
 
                         @error('reward_amount')
                             <div class="text-danger small">
